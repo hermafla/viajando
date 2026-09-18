@@ -479,10 +479,11 @@
   function mostrarMensaje() {
     const origen = document.getElementById("origen").value.trim();
     const cuando = document.getElementById("cuando").value;
+    const flexibilidad = document.getElementById("flexibilidad").value;
     const viajeros = document.getElementById("viajeros").value;
     const duracion = document.getElementById("duracion").value;
     const presupuesto = document.getElementById("presupuesto").value;
-    const tipo = document.getElementById("tipoViaje").value || "cualquier tipo de viaje";
+    const tipo = document.getElementById("tipoViaje").value || "Sorprendeme";
     const mensaje = document.getElementById("mensaje");
 
     if (!origen || !presupuesto) {
@@ -491,12 +492,17 @@
       return;
     }
 
-    const duracionTexto = duracion ? " durante " + duracion.toLowerCase() : "";
-    mensaje.textContent = "Buscaremos opciones saliendo desde " + origen +
-      ", para " + viajeros + " viajero(s), " + cuando.toLowerCase() +
-      duracionTexto + ", con hasta USD " + presupuesto +
-      ", buscando " + tipo.toLowerCase() + ".";
-    mensaje.style.display = "block";
+    const params = new URLSearchParams({
+      origen,
+      cuando,
+      flexibilidad,
+      viajeros,
+      duracion,
+      presupuesto,
+      tipo
+    });
+
+    window.location.href = "resultados.html?" + params.toString();
   }
 </script>
 
