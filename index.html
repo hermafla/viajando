@@ -85,7 +85,7 @@
       padding: 18px;
       border-radius: 18px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       box-shadow: 0 15px 40px rgba(0,0,0,.16);
       text-align: left;
@@ -297,36 +297,61 @@
 
       <div class="campo">
         <label>DESDE</label>
-        <input type="text" placeholder="Ej. Buenos Aires">
+        <input id="origen" type="text" placeholder="Ej. Buenos Aires">
       </div>
 
       <div class="campo">
         <label>¿CUÁNDO?</label>
-        <select>
-          <option>Cualquier fecha</option>
-          <option>Enero</option>
-          <option>Febrero</option>
-          <option>Marzo</option>
-          <option>Abril</option>
-          <option>Mayo</option>
-          <option>Junio</option>
-          <option>Julio</option>
-          <option>Agosto</option>
-          <option>Septiembre</option>
-          <option>Octubre</option>
-          <option>Noviembre</option>
-          <option>Diciembre</option>
+        <select id="cuando">
+          <option>Cualquier fecha</option><option>Enero</option><option>Febrero</option>
+          <option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option>
+          <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+          <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
         </select>
       </div>
 
       <div class="campo">
-        <label>PRESUPUESTO TOTAL</label>
-        <input type="number" placeholder="Ej. USD 2000">
+        <label>FLEXIBILIDAD</label>
+        <select id="flexibilidad">
+          <option>Fechas flexibles</option>
+          <option>Fechas exactas</option>
+          <option>Me da igual mientras sea más barato</option>
+        </select>
       </div>
 
-      <button class="boton" onclick="mostrarMensaje()">
-        Buscar ideas
-      </button>
+      <div class="campo">
+        <label>VIAJEROS</label>
+        <select id="viajeros">
+          <option value="1">1 persona</option><option value="2" selected>2 personas</option>
+          <option value="3">3 personas</option><option value="4">4 personas</option>
+          <option value="5">5 personas</option><option value="6">6 personas</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>DURACIÓN</label>
+        <select id="duracion">
+          <option value="">Cualquier duración</option>
+          <option>3 a 5 días</option><option>6 a 8 días</option><option>9 a 12 días</option>
+          <option>13 a 16 días</option><option>17 a 21 días</option><option>Más de 21 días</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>PRESUPUESTO TOTAL (USD)</label>
+        <input id="presupuesto" type="number" min="1" placeholder="Ej. 2000">
+      </div>
+
+      <div class="campo">
+        <label>TIPO DE VIAJE</label>
+        <select id="tipoViaje">
+          <option value="">Sorprendeme</option><option>Playa</option><option>Ciudad</option>
+          <option>Naturaleza</option><option>Aventura</option><option>Romántico</option>
+          <option>Familiar</option><option>Relax</option>
+        </select>
+      </div>
+
+      <button class="boton" onclick="mostrarMensaje()">Descubrir dónde puedo viajar</button>
 
     </div>
 
@@ -452,7 +477,26 @@
 
 <script>
   function mostrarMensaje() {
-    document.getElementById("mensaje").style.display = "block";
+    const origen = document.getElementById("origen").value.trim();
+    const cuando = document.getElementById("cuando").value;
+    const viajeros = document.getElementById("viajeros").value;
+    const duracion = document.getElementById("duracion").value;
+    const presupuesto = document.getElementById("presupuesto").value;
+    const tipo = document.getElementById("tipoViaje").value || "cualquier tipo de viaje";
+    const mensaje = document.getElementById("mensaje");
+
+    if (!origen || !presupuesto) {
+      mensaje.textContent = "Completá desde dónde viajás y tu presupuesto total para buscar ideas.";
+      mensaje.style.display = "block";
+      return;
+    }
+
+    const duracionTexto = duracion ? " durante " + duracion.toLowerCase() : "";
+    mensaje.textContent = "Buscaremos opciones saliendo desde " + origen +
+      ", para " + viajeros + " viajero(s), " + cuando.toLowerCase() +
+      duracionTexto + ", con hasta USD " + presupuesto +
+      ", buscando " + tipo.toLowerCase() + ".";
+    mensaje.style.display = "block";
   }
 </script>
 
