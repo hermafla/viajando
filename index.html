@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Viajando | Encontrá tu próximo viaje</title>
+  <meta name="description" content="Viajando te ayuda a descubrir destinos, comparar opciones y planificar tu próximo viaje según tu presupuesto y preferencias.">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f7f9fc;
+      color: #172033;
+      line-height: 1.5;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav {
+      max-width: 1150px;
+      margin: auto;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1677ff;
+      text-decoration: none;
+    }
+
+    .logo span {
+      color: #ff7a00;
+    }
+
+    nav a {
+      color: #344054;
+      text-decoration: none;
+      margin-left: 24px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0877f9, #38a3ff);
+      color: white;
+      padding: 75px 20px 95px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 64px);
+      max-width: 850px;
+      margin: auto;
+      line-height: 1.08;
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 20px auto 35px;
+      font-size: 19px;
+      opacity: .95;
+    }
+
+    .buscador {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 18px;
+      border-radius: 18px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      box-shadow: 0 15px 40px rgba(0,0,0,.16);
+      text-align: left;
+    }
+
+    .campo label {
+      display: block;
+      color: #667085;
+      font-size: 12px;
+      font-weight: bold;
+      margin: 0 0 6px 3px;
+    }
+
+    .campo input,
+    .campo select {
+      width: 100%;
+      height: 48px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-size: 15px;
+      background: white;
+      color: #172033;
+    }
+
+    .boton {
+      border: none;
+      background: #ff7a00;
+      color: white;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      height: 48px;
+      align-self: end;
+    }
+
+    .boton:hover {
+      background: #e96f00;
+    }
+
+    section {
+      padding: 65px 20px;
+    }
+
+    .contenedor {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .titulo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .titulo h2 {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    .titulo p {
+      color: #667085;
+      max-width: 680px;
+      margin: auto;
+    }
+
+    .tarjetas {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .tarjeta {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 5px 20px rgba(16,24,40,.07);
+      border: 1px solid #eaecf0;
+    }
+
+    .icono {
+      font-size: 34px;
+      margin-bottom: 15px;
+    }
+
+    .tarjeta h3 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .tarjeta p {
+      color: #667085;
+    }
+
+    .como-funciona {
+      background: white;
+    }
+
+    .pasos {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      text-align: center;
+    }
+
+    .numero {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 15px;
+      border-radius: 50%;
+      background: #eaf3ff;
+      color: #1677ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .paso p {
+      color: #667085;
+      margin-top: 8px;
+    }
+
+    .aviso {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #eef6ff;
+      border: 1px solid #cfe4ff;
+      border-radius: 16px;
+      padding: 24px;
+      color: #344054;
+      text-align: center;
+    }
+
+    footer {
+      background: #101828;
+      color: #d0d5dd;
+      padding: 40px 20px;
+    }
+
+    .footer-contenido {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    footer strong {
+      color: white;
+      font-size: 21px;
+    }
+
+    footer p {
+      margin-top: 8px;
+      max-width: 580px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 800px) {
+      nav {
+        display: none;
+      }
+
+      .buscador {
+        grid-template-columns: 1fr;
+      }
+
+      .tarjetas,
+      .pasos {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 55px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="nav">
+    <a href="#" class="logo">Viaj<span>ando</span></a>
+
+    <nav>
+      <a href="#buscar">Buscar viajes</a>
+      <a href="#servicios">Qué hacemos</a>
+      <a href="#como-funciona">Cómo funciona</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero" id="buscar">
+    <h1>Descubrí hasta dónde puede llevarte tu presupuesto</h1>
+
+    <p>
+      Encontrá ideas para tu próximo viaje según tu presupuesto,
+      fechas y preferencias. Compará opciones y elegí la que mejor
+      se adapte a vos.
+    </p>
+
+    <div class="buscador">
+
+      <div class="campo">
+        <label>DESDE</label>
+        <input type="text" placeholder="Ej. Buenos Aires">
+      </div>
+
+      <div class="campo">
+        <label>¿CUÁNDO?</label>
+        <select>
+          <option>Cualquier fecha</option>
+          <option>Enero</option>
+          <option>Febrero</option>
+          <option>Marzo</option>
+          <option>Abril</option>
+          <option>Mayo</option>
+          <option>Junio</option>
+          <option>Julio</option>
+          <option>Agosto</option>
+          <option>Septiembre</option>
+          <option>Octubre</option>
+          <option>Noviembre</option>
+          <option>Diciembre</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>PRESUPUESTO TOTAL</label>
+        <input type="number" placeholder="Ej. USD 2000">
+      </div>
+
+      <button class="boton" onclick="mostrarMensaje()">
+        Buscar ideas
+      </button>
+
+    </div>
+
+    <p id="mensaje" style="display:none;font-size:14px;margin-top:20px;">
+      Estamos preparando nuestro buscador inteligente de viajes.
+    </p>
+
+  </section>
+
+  <section id="servicios">
+    <div class="contenedor">
+
+      <div class="titulo">
+        <h2>Un viaje pensado desde tu presupuesto</h2>
+        <p>
+          Queremos simplificar la búsqueda reuniendo distintas opciones
+          para ayudarte a decidir dónde viajar.
+        </p>
+      </div>
+
+      <div class="tarjetas">
+
+        <article class="tarjeta">
+          <div class="icono">✈️</div>
+          <h3>Vuelos</h3>
+          <p>
+            Explorá alternativas de vuelos y fechas para encontrar
+            opciones que se ajusten a tu viaje.
+          </p>
+        </article>
+
+        <article class="tarjeta">
+          <div class="icono">🏨</div>
+          <h3>Alojamiento</h3>
+          <p>
+            Compará opciones de alojamiento según destino,
+            duración y presupuesto.
+          </p>
+        </article>
+
+        <article class="tarjeta">
+          <div class="icono">🚗</div>
+          <h3>Todo el viaje</h3>
+          <p>
+            Considerá alojamiento, transporte, actividades y otros
+            servicios para entender mejor el costo total.
+          </p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="como-funciona" id="como-funciona">
+    <div class="contenedor">
+
+      <div class="titulo">
+        <h2>¿Cómo funcionará Viajando?</h2>
+      </div>
+
+      <div class="pasos">
+
+        <div class="paso">
+          <div class="numero">1</div>
+          <h3>Contanos tu idea</h3>
+          <p>
+            Indicá desde dónde viajás, cuándo querés hacerlo
+            y cuánto querés gastar.
+          </p>
+        </div>
+
+        <div class="paso">
+          <div class="numero">2</div>
+          <h3>Descubrí opciones</h3>
+          <p>
+            Te mostraremos destinos y alternativas compatibles
+            con tus preferencias.
+          </p>
+        </div>
+
+        <div class="paso">
+          <div class="numero">3</div>
+          <h3>Elegí y reservá</h3>
+          <p>
+            Cuando encuentres una opción, podrás continuar con
+            el proveedor correspondiente para consultar disponibilidad
+            y realizar la reserva.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="aviso">
+      <strong>Viajando está en etapa de desarrollo.</strong><br><br>
+      Nuestro objetivo es ayudarte a descubrir y comparar alternativas
+      de viaje. Los precios y la disponibilidad serán confirmados por
+      cada proveedor antes de realizar una reserva.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-contenido">
+
+    <div>
+      <strong>Viajando</strong>
+      <p>
+        Plataforma independiente de búsqueda, comparación y
+        planificación de viajes.
+      </p>
+    </div>
+
+    <div>
+      <p>© 2026 Viajando. Todos los derechos reservados.</p>
+    </div>
+
+  </div>
+</footer>
+
+<script>
+  function mostrarMensaje() {
+    document.getElementById("mensaje").style.display = "block";
+  }
+</script>
+
+</body>
+</html>
