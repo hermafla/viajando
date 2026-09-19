@@ -1,0 +1,1 @@
+Prueba de conexión de escritura entre ChatGPT y GitHub.
