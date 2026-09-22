@@ -78,5 +78,5 @@ document.getElementById("calPrev").addEventListener("click",()=>{calCursor=new D
 document.getElementById("calNext").addEventListener("click",()=>{calCursor=new Date(Date.UTC(calCursor.getUTCFullYear(),calCursor.getUTCMonth()+1,1));renderCalendar()});
 document.addEventListener("click",e=>{const f=document.getElementById("dateRangeField");if(f&&!f.contains(e.target))document.getElementById("calendarPop").classList.remove("open")});
 
-setMode(document.querySelector(".mode.active"));
+const modoInicial=new URLSearchParams(location.search).get("modo");const botonInicial=document.querySelector(`.mode[data-mode="${modoInicial}"]`)||document.querySelector(".mode.active");setMode(botonInicial);
 </script></body></html>
