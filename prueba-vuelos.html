@@ -30,13 +30,13 @@
         const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
         let selectedResults='';
         if(/\/search\/wl\/results/i.test(u)){
-          const wanted=['"price":425','"value":425','"price":391','"value":391','"price":364','"value":364'];
-          const low=text.toLowerCase();
-          const pos=wanted.map(v=>low.indexOf(v)).filter(v=>v>=0);
-          if(pos.length){
-            const p=Math.min(...pos);
-            selectedResults=text.slice(Math.max(0,p-900),Math.min(text.length,p+2600));
+          const re=/"(?:price|value)"\s*:\s*([0-9]+(?:\.[0-9]+)?)/gi;
+          let m, p=-1;
+          while((m=re.exec(text))){
+            const n=Number(m[1]);
+            if(n>=100 && n<=5000){ p=m.index; break; }
           }
+          if(p>=0) selectedResults=text.slice(Math.max(0,p-900),Math.min(text.length,p+2600));
         }
         netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000),selectedResults});
         if(netLog.length>80) netLog.splice(0,netLog.length-80);
