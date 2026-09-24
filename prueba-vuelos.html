@@ -94,6 +94,7 @@
       <div id="selected-fare-main" style="font-size:20px;font-weight:800;color:#172033"></div>
       <div id="selected-fare-sub" style="font-size:13px;color:#475569;margin-top:4px"></div>
       <div id="selected-fare-compare" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px;font-size:13px;line-height:1.45;color:#334155"></div>
+      <button id="selected-fare-continue" type="button" style="display:none;width:100%;margin-top:12px;border:0;border-radius:10px;background:#07558f;color:#fff;font-weight:800;padding:11px 14px;cursor:pointer">Continuar con el proveedor →</button>
     </section>
     <section id="diag" style="position:fixed;right:12px;bottom:12px;z-index:2147483647;width:min(430px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28)">
       <h2 style="margin:0 0 8px;font-size:18px">Diagnóstico técnico · EN VIVO</h2>
@@ -113,7 +114,17 @@
       const selectedFareMain=document.getElementById('selected-fare-main');
       const selectedFareSub=document.getElementById('selected-fare-sub');
       const selectedFareCompare=document.getElementById('selected-fare-compare');
+      const selectedFareContinue=document.getElementById('selected-fare-continue');
+      let pendingProviderUrl='';
+      let allowProviderNavigation=false;
       let timer;
+
+      selectedFareContinue.addEventListener('click',()=>{
+        if(!pendingProviderUrl) return;
+        allowProviderNavigation=true;
+        window.open(pendingProviderUrl,'_blank','noopener');
+        setTimeout(()=>{allowProviderNavigation=false;},800);
+      });
 
       async function renderPaymentComparison(usd){
         selectedFareCompare.style.display='block';
@@ -173,7 +184,10 @@
           selectedFareMain.textContent=(fare.currency||'USD')+' '+Number(fare.value).toLocaleString('es-AR');
           selectedFareSub.textContent=provider+' · agent_id '+clickId;
           selectedFareBox.style.display='block';
-          window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value)};
+          pendingProviderUrl=redirect;
+          selectedFareContinue.textContent='Continuar con '+provider+' →';
+          selectedFareContinue.style.display='block';
+          window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value),redirect_url:redirect};
           if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
         }catch(_){}
       }
@@ -213,7 +227,28 @@
       }
 
       document.addEventListener('pointerdown',captureClick,true);
-      document.addEventListener('click',captureClick,true);
+      document.addEventListener('click',function(e){
+        captureClick(e);
+        if(allowProviderNavigation) return;
+        const path=typeof e.composedPath==='function'?e.composedPath():[];
+        const text=path.map(n=>(n&&((n.innerText||n.textContent)||''))+'').join(' ').trim();
+        const isBuy=/\bcomprar\b|\bbuy\b/i.test(text);
+        const clues=[];
+        path.slice(0,14).forEach(n=>{
+          if(!n) return;
+          if(n.href) clues.push(String(n.href));
+          try{
+            if(n.attributes) [...n.attributes].forEach(a=>{if(/tpscr\.com\/wl\/redirect/i.test(a.value||'')) clues.push(a.value);});
+          }catch(_){}
+        });
+        const hasRedirect=clues.some(v=>/tpscr\.com\/wl\/redirect/i.test(v));
+        if(isBuy && (hasRedirect || pendingProviderUrl)){
+          e.preventDefault();
+          e.stopPropagation();
+          if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
+          showSelectedFareFromCapture(clickCaptures[clickCaptures.length-1]);
+        }
+      },true);
 
       window.addEventListener('message',e=>{
         let data;
