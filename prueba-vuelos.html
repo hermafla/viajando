@@ -126,9 +126,19 @@
             let decoded=raw;
             try{ decoded=decodeURIComponent(raw); }catch(_){}
             const m=decoded.match(/\/clicks\/([^/?#]+)/i);
-            if(m){ clickId=m[1]; return true; }
+            if(m){
+              let token=m[1];
+              try{ token=decodeURIComponent(token); }catch(_){}
+              const idMatch=String(token).match(/(\d+)/);
+              if(idMatch){ clickId=idMatch[1]; return true; }
+            }
             return false;
           });
+          if(!clickId){
+            const joined=(capture.clues||[]).join(' ');
+            const m=joined.match(/clicks(?:%2F|\/)(?:%2F)?(\d+)(?:%3A|:)/i);
+            if(m) clickId=m[1];
+          }
           if(!clickId) return;
           const logs=window.__TPWL_NET_LOG||[];
           let fare=null;
