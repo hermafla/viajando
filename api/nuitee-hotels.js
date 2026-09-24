@@ -12,7 +12,7 @@ export default async function handler(req,res){
   try{
     const [catalogRes,ratesRes]=await Promise.all([
       fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({countryCode,cityName:city,limit:'200'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({countryCode,cityName:city,checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:1,timeout:10,limit:100})})
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({countryCode,cityName:city,checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:1,timeout:10,limit:100,roomMapping:true})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
@@ -24,7 +24,7 @@ export default async function handler(req,res){
       const feeSource=rr.taxesAndFees||rate.taxesAndFees||room.taxesAndFees||[];
       const fees=(Array.isArray(feeSource)?feeSource:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
       const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
-      hotels.push({hotelId:item.hotelId,offerId:room.offerId||rate.offerId||'',name:meta.name||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,retailRate:amount,currency,fees,dueAtProperty,estimatedTotal:amount+dueAtProperty,refundableTag:(rate.cancellationPolicies&&rate.cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||''});
+      hotels.push({hotelId:item.hotelId,offerId:room.offerId||rate.offerId||'',name:meta.name||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,retailRate:amount,currency,fees,dueAtProperty,estimatedTotal:amount+dueAtProperty,roomName:rate.name||room.name||'',boardName:rate.boardName||rate.boardType||room.boardName||'',mappedRoomId:rate.mappedRoomId||room.mappedRoomId||null,refundableTag:(rate.cancellationPolicies&&rate.cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||''});
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal); return res.status(200).json({sandbox:true,hotels});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
