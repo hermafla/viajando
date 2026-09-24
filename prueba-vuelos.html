@@ -29,11 +29,7 @@
         const fullText=String(body||'');
         const text=fullText.slice(0,200000);
         const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
-        let parsedFull=null;
-        if(/\/search\/wl\/results/i.test(u)){
-          try{ parsedFull=JSON.parse(fullText); }catch(_){}
-        }
-        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000),parsedFull});
+        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000)});
         if(netLog.length>80) netLog.splice(0,netLog.length-80);
       };
       const ofetch=window.fetch;
@@ -257,8 +253,8 @@
             logs.forEach(x=>{
               if(!/\/search\/wl\/results/i.test(x.url||'')) return;
               const raw=String(x.preview||'');
-              let parsed=x.parsedFull||null;
-              if(!parsed){ try{ parsed=JSON.parse(raw); }catch(_){} }
+              let parsed=null;
+              try{ parsed=JSON.parse(raw); }catch(_){} 
               hits.push({url:x.url,status:x.status,parsed,raw:parsed?undefined:raw.slice(0,30000)});
             });
             return hits;
@@ -444,7 +440,7 @@
             resultsPayload,
             resultsCompact,
             proposalsSummary,
-            networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview,hasParsedFull:!!x.parsedFull})),
+            networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
         },450);
