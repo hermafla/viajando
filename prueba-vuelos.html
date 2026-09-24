@@ -284,7 +284,7 @@
           const pricesPayload=extractPricesPayload();
           function huntVisibleFlightData(){
             const logs=window.__TPWL_NET_LOG||[];
-            const needles=['562867','562.867','JetSmart','jetsmart'];
+            const needles=['364','391','427','JetSmart','jetsmart'];
             const hits=[];
             logs.forEach(x=>{
               const full=String(x.preview||'')+'\n'+((x.money||[]).join('\n'));
@@ -338,7 +338,7 @@
             '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
             '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
-            '<strong>BUSQUEDA 562867 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
+            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
