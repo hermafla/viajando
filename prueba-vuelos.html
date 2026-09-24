@@ -566,9 +566,45 @@
         },450);
       }
 
-      new MutationObserver(inspect).observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
-      setInterval(inspect,2000);
+      // Ajuste visual del formulario embebido: etiquetas más claras para el usuario
+      // y mayor contraste, incluso dentro de los Shadow DOM abiertos del widget.
+      function polishSearchLabels(){
+        const roots=[document];
+        const walk=r=>{
+          try{
+            r.querySelectorAll('*').forEach(el=>{
+              if(el.shadowRoot){ roots.push(el.shadowRoot); walk(el.shadowRoot); }
+            });
+          }catch(_){}
+        };
+        walk(document);
+        roots.forEach(root=>{
+          try{
+            const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+            let node;
+            while((node=walker.nextNode())){
+              const txt=(node.nodeValue||'').trim();
+              if(txt==='Llegada') node.nodeValue=node.nodeValue.replace('Llegada','Destino');
+              if(txt==='Buenos Aires' || txt==='Origen'){
+                // El origen ya puede venir completado; no reemplazamos la ciudad.
+              }
+              if(['Destino','Llegada','Salida','Vuelta'].includes((node.nodeValue||'').trim())){
+                const el=node.parentElement;
+                if(el){
+                  el.style.setProperty('color','#172033','important');
+                  el.style.setProperty('opacity','1','important');
+                  el.style.setProperty('font-weight','600','important');
+                }
+              }
+            }
+          }catch(_){}
+        });
+      }
+
+      new MutationObserver(()=>{inspect();polishSearchLabels();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+      setInterval(()=>{inspect();polishSearchLabels();},2000);
       inspect();
+      polishSearchLabels();
     })();
   </script>
 </body>
