@@ -9,7 +9,7 @@ export default async function handler(req,res){
   try{
     const r=await fetch('https://book.liteapi.travel/v3.0/rates/prebook?timeout=30',{method:'POST',headers:{'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({offerId,usePaymentSdk:false})});
     const j=await r.json();
-    if(!r.ok) return res.status(r.status).json({error:j.message||j.error||'La tarifa cambió o ya no está disponible. Volvé a buscar.'});
+    if(!r.ok) return res.status(r.status).json({error:(typeof j.message==='string'?j.message:(typeof j.error==='string'?j.error:(j.error?.message||j.message?.message)))||'La tarifa cambió o ya no está disponible. Volvé a buscar.'});
     const d=j.data||j;
     const rr=d.retailRate||d.rate?.retailRate||d.room?.retailRate||d.roomType?.retailRate||{};
     const rawTotal=Array.isArray(rr.total)?rr.total[0]:rr.total;
@@ -19,5 +19,5 @@ export default async function handler(req,res){
     const fees=(Array.isArray(fs)?fs:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
     const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
     return res.status(200).json({sandbox:true,prebookId:d.prebookId||'',price,currency,fees,dueAtProperty,estimatedTotal:price!=null?price+dueAtProperty:null,refundableTag:d.cancellationPolicies?.refundableTag||d.refundableTag||''});
-  }catch(e){return res.status(502).json({error:e.message||'No se pudo reconfirmar la tarifa'});}
+  }catch(e){return res.status(502).json({error:(typeof e?.message==='string'?e.message:'No se pudo reconfirmar la tarifa')});}
 }
