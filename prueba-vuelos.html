@@ -570,33 +570,52 @@
       // y mayor contraste, incluso dentro de los Shadow DOM abiertos del widget.
       function polishSearchLabels(){
         const roots=[document];
-        const walk=r=>{
+        const seen=new Set();
+        const collect=root=>{
+          if(!root||seen.has(root)) return;
+          seen.add(root); roots.push(root);
           try{
-            r.querySelectorAll('*').forEach(el=>{
-              if(el.shadowRoot){ roots.push(el.shadowRoot); walk(el.shadowRoot); }
+            root.querySelectorAll('*').forEach(el=>{
+              if(el.shadowRoot) collect(el.shadowRoot);
             });
           }catch(_){}
         };
-        walk(document);
+        roots.length=0; collect(document);
+
+        const mapLabel=v=>{
+          const t=String(v||'').trim();
+          if(['Salida desde','Origen'].includes(t)) return 'Origen';
+          if(['Llegada','Destino'].includes(t)) return 'Destino';
+          if(['Salida','Ida'].includes(t)) return 'Ida';
+          if(['Vuelta','Regreso'].includes(t)) return 'Vuelta';
+          return null;
+        };
+
         roots.forEach(root=>{
           try{
-            const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-            let node;
-            while((node=walker.nextNode())){
-              const txt=(node.nodeValue||'').trim();
-              if(txt==='Llegada') node.nodeValue=node.nodeValue.replace('Llegada','Destino');
-              if(txt==='Buenos Aires' || txt==='Origen'){
-                // El origen ya puede venir completado; no reemplazamos la ciudad.
-              }
-              if(['Destino','Llegada','Salida','Vuelta'].includes((node.nodeValue||'').trim())){
-                const el=node.parentElement;
-                if(el){
+            root.querySelectorAll('*').forEach(el=>{
+              // Text rendered as ordinary DOM.
+              if(el.childNodes.length===1 && el.firstChild?.nodeType===Node.TEXT_NODE){
+                const mapped=mapLabel(el.textContent);
+                if(mapped){
+                  el.firstChild.nodeValue=mapped;
                   el.style.setProperty('color','#172033','important');
                   el.style.setProperty('opacity','1','important');
                   el.style.setProperty('font-weight','600','important');
                 }
               }
-            }
+              // Inputs often use placeholder/aria-label/title instead of a text node.
+              ['placeholder','aria-label','title'].forEach(attr=>{
+                const current=el.getAttribute?.(attr);
+                const mapped=mapLabel(current);
+                if(mapped) el.setAttribute(attr,mapped);
+              });
+              if(el.matches?.('input')){
+                el.style.setProperty('color','#172033','important');
+                el.style.setProperty('opacity','1','important');
+                el.style.setProperty('font-weight','600','important');
+              }
+            });
           }catch(_){}
         });
       }
