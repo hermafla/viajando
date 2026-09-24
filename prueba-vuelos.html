@@ -241,8 +241,11 @@
             if(n.attributes) [...n.attributes].forEach(a=>{if(/tpscr\.com\/wl\/redirect/i.test(a.value||'')) clues.push(a.value);});
           }catch(_){}
         });
-        const hasRedirect=clues.some(v=>/tpscr\.com\/wl\/redirect/i.test(v));
-        if(isBuy && (hasRedirect || pendingProviderUrl)){
+        const redirectUrl=clues.find(v=>/tpscr\.com\/wl\/redirect/i.test(v));
+        // Sólo frenamos el clic de compra cuando ESTE MISMO clic contiene
+        // el redirect afiliado. Así "Mostrar hoteles" y demás controles internos
+        // del widget siguen funcionando normalmente.
+        if(isBuy && redirectUrl){
           e.preventDefault();
           e.stopPropagation();
           if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
