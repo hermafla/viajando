@@ -93,6 +93,7 @@
       <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px">TARIFA SELECCIONADA</div>
       <div id="selected-fare-main" style="font-size:20px;font-weight:800;color:#172033"></div>
       <div id="selected-fare-sub" style="font-size:13px;color:#475569;margin-top:4px"></div>
+      <div id="selected-fare-compare" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px;font-size:13px;line-height:1.45;color:#334155"></div>
     </section>
     <section id="diag" style="position:fixed;right:12px;bottom:12px;z-index:2147483647;width:min(430px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28)">
       <h2 style="margin:0 0 8px;font-size:18px">Diagnóstico técnico · EN VIVO</h2>
@@ -111,7 +112,29 @@
       const selectedFareBox=document.getElementById('selected-fare');
       const selectedFareMain=document.getElementById('selected-fare-main');
       const selectedFareSub=document.getElementById('selected-fare-sub');
+      const selectedFareCompare=document.getElementById('selected-fare-compare');
       let timer;
+
+      async function renderPaymentComparison(usd){
+        selectedFareCompare.style.display='block';
+        selectedFareCompare.textContent='Calculando referencia en pesos…';
+        try{
+          const [tarjeta,oficial]=await Promise.all([
+            fetch('https://dolarapi.com/v1/dolares/tarjeta',{cache:'no-store'}).then(r=>r.json()),
+            fetch('https://dolarapi.com/v1/dolares/oficial',{cache:'no-store'}).then(r=>r.json())
+          ]);
+          const arsTarjeta=Math.round(usd*Number(tarjeta.venta));
+          const arsReferencia=Math.round(usd*Number(oficial.venta));
+          const fmt=n=>'$ '+Number(n).toLocaleString('es-AR');
+          selectedFareCompare.innerHTML=
+            '<strong>Compará cómo cancelar la tarjeta</strong><br>'+
+            '🇦🇷 Resumen cancelado en pesos: <strong>'+fmt(arsTarjeta)+'</strong><br>'+
+            '💵 Saldo en USD: <strong>USD '+usd.toLocaleString('es-AR')+'</strong><br>'+
+            '<span style="color:#64748b">Referencia oficial: '+fmt(oficial.venta)+'/USD · dólar tarjeta: '+fmt(tarjeta.venta)+'/USD. Valores orientativos; el importe final depende del resumen y del banco.</span>';
+        }catch(e){
+          selectedFareCompare.textContent='No pudimos obtener la cotización de referencia en este momento.';
+        }
+      }
 
       function showSelectedFareFromCapture(capture){
         try{
@@ -151,6 +174,7 @@
           selectedFareSub.textContent=provider+' · agent_id '+clickId;
           selectedFareBox.style.display='block';
           window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value)};
+          if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
         }catch(_){}
       }
 
