@@ -96,6 +96,43 @@
           const buyButtons=rootData.flatMap(x=>x.buttons).filter(x=>/comprar|billete|buy|select/i.test(x.text+' '+x.aria+' '+x.title)).slice(0,30);
           const links=rootData.flatMap(x=>x.links).filter(x=>x.href).slice(0,50);
 
+          const buyNeighborhoods=[];
+          roots.forEach((root,rootIndex)=>{
+            if(!root.querySelectorAll) return;
+            [...root.querySelectorAll('button')].forEach(btn=>{
+              const label=(btn.innerText||btn.textContent||btn.getAttribute('aria-label')||'').trim();
+              if(!/comprar|buy/i.test(label)) return;
+              let el=btn;
+              const ancestry=[];
+              for(let level=0; level<7 && el; level++,el=el.parentElement){
+                const attrs={};
+                if(el.attributes) [...el.attributes].forEach(a=>attrs[a.name]=a.value);
+                ancestry.push({
+                  level,
+                  tag:el.tagName||'',
+                  id:el.id||'',
+                  className:typeof el.className==='string'?el.className:'',
+                  text:(el.innerText||el.textContent||'').trim().slice(0,1500),
+                  attrs,
+                  html:(el.outerHTML||'').slice(0,2500)
+                });
+              }
+              buyNeighborhoods.push({rootIndex,label,ancestry});
+            });
+          });
+
+          const rawTextNodes=[];
+          roots.forEach((root,rootIndex)=>{
+            try{
+              const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+              let n;
+              while((n=walker.nextNode()) && rawTextNodes.length<300){
+                const v=(n.nodeValue||'').trim();
+                if(v) rawTextNodes.push({rootIndex,text:v.slice(0,300),parent:n.parentElement?n.parentElement.tagName:''});
+              }
+            }catch(_){}
+          });
+
           status.textContent='Shadow DOM abiertos: '+(roots.length-1)+
             ' · Precios detectados: '+allPrices.length+
             ' · Coincidencias: '+(providerHits.join(', ')||'ninguna')+'.';
@@ -104,6 +141,8 @@
             providerHits,
             buyButtons,
             links,
+            buyNeighborhoods,
+            rawTextNodes,
             roots:rootData
           },null,2);
         },450);
