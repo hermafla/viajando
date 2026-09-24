@@ -236,12 +236,12 @@
           }
           if(!fare) return;
           selectedFareMain.textContent=(fare.currency||'USD')+' '+Number(fare.value).toLocaleString('es-AR');
-          selectedFareSub.textContent='Oferta seleccionada en '+provider;
+          selectedFareSub.textContent='Oferta de nuestro proveedor';
           selectedFareBox.style.display='block';
           selectedFareBox.classList.add('is-open');
           selectedFareBackdrop.style.display='block';
           pendingProviderUrl=redirect;
-          selectedFareContinue.textContent='Continuar con '+provider+' →';
+          selectedFareContinue.textContent='Continuar con el pago →';
           selectedFareContinue.style.display='block';
           window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value),redirect_url:redirect};
           if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
