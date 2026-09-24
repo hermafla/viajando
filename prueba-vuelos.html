@@ -309,7 +309,22 @@
               }
               Object.values(v).forEach(x=>{if(x&&typeof x==='object') walk(x,next)});
             }
-            resultsPayload.forEach(x=>walk(x.parsed));
+            resultsPayload.forEach(x=>{
+              if(x.parsed) walk(x.parsed);
+              if(!x.parsed && x.raw){
+                let p=null;
+                try{ p=JSON.parse(x.raw); }catch(_){
+                  try{ p=JSON.parse(JSON.parse('"'+String(x.raw).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"')); }catch(__){}
+                }
+                if(p) walk(p);
+                else{
+                  const raw=String(x.raw);
+                  const re=/"currency_code"\\s*:\\s*"([^"]+)"[\\s\\S]{0,220}?"value"\\s*:\\s*([0-9.]+)/g;
+                  let m;
+                  while((m=re.exec(raw))) rows.push({value:Number(m[2]),currency:m[1],price_per_person:'',id:'',fare_code:'',airline:'',flight_number:'',available:'',keys:['raw-fallback']});
+                }
+              }
+            });
             return rows.slice(0,120);
           }
           const proposalsSummary=proposalSummary();
