@@ -37,6 +37,33 @@
     </section>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
+    <section id="diag" style="margin-top:28px;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(0,0,0,.06)">
+      <h2 style="margin:0 0 8px;font-size:18px">Diagnóstico técnico</h2>
+      <p id="diag-status" style="margin:0 0 10px">Esperando resultados de Travelpayouts…</p>
+      <pre id="diag-output" style="white-space:pre-wrap;word-break:break-word;background:#f5f7fb;padding:12px;border-radius:10px;max-height:260px;overflow:auto"></pre>
+    </section>
+
   </main>
+  <script>
+    (function(){
+      const host=document.getElementById('tpwl-tickets');
+      const status=document.getElementById('diag-status');
+      const out=document.getElementById('diag-output');
+      let timer;
+      function inspect(){
+        clearTimeout(timer);
+        timer=setTimeout(()=>{
+          const text=(host.innerText||host.textContent||'').trim();
+          const links=[...host.querySelectorAll('a')].slice(0,20).map(a=>({text:(a.innerText||'').trim(),href:a.href}));
+          const buttons=[...host.querySelectorAll('button')].slice(0,20).map(b=>(b.innerText||b.textContent||'').trim()).filter(Boolean);
+          const prices=(text.match(/(?:USD|US\\$|\\$)\\s?[\\d.]+(?:,[\\d]{1,2})?/g)||[]).slice(0,20);
+          status.textContent=text ? 'Sí: Valijeando puede leer contenido insertado en #tpwl-tickets.' : 'Todavía no hay texto legible en #tpwl-tickets.';
+          out.textContent=JSON.stringify({textPreview:text.slice(0,2500),prices,links,buttons},null,2);
+        },700);
+      }
+      new MutationObserver(inspect).observe(host,{subtree:true,childList:true,characterData:true,attributes:true});
+      inspect();
+    })();
+  </script>
 </body>
 </html>
