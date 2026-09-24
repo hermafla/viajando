@@ -193,7 +193,20 @@
                       nested[k]={url:params[k],host:nu.host,params:np};
                     }catch(_){ nested[k]={url:params[k]}; }
                   });
-                  found.push({raw,host:u.host,path:u.pathname,params,nested});
+                  const internal={};
+                  Object.entries(nested).forEach(([key,obj])=>{
+                    try{
+                      const pu=new URL(obj.url);
+                      const m=pu.pathname.match(/\/searches\/([^/]+)\/clicks\/([^/?#]+)/i);
+                      if(m) internal[key]={
+                        searchId:m[1],
+                        clickId:m[2],
+                        host:pu.host,
+                        path:pu.pathname
+                      };
+                    }catch(_){}
+                  });
+                  found.push({raw,host:u.host,path:u.pathname,params,nested,internal});
                 }catch(_){}
               });
             });
@@ -211,7 +224,8 @@
             '<strong>Proveedor:</strong> '+(providerNear.join(', ')||'no detectado')+
             ' · <strong>Precio:</strong> '+(priceNear.join(', ')||'no detectado')+'<br>'+
             '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado')+'<br>'+
-            '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado');
+            '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado')+'<br>'+
+            '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
