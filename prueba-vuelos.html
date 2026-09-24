@@ -15,7 +15,8 @@
     .notice{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:22px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .notice h1{margin:0 0 6px;font-size:22px}
     .notice p{margin:0;line-height:1.5}
-    #tpwl-search{margin-bottom:24px}\n    #tpwl-tickets{min-height:200px}
+    #tpwl-search{margin-bottom:24px}
+    #tpwl-tickets{min-height:200px}
     .notice{background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff;padding:24px 26px}
     .notice h1{font-size:28px;letter-spacing:-.02em}
     .notice p{color:rgba(255,255,255,.88)}
@@ -102,7 +103,8 @@
       <h1>Prueba técnica de vuelos</h1>
       <p>Página temporal para probar el nuevo White Label Widget de Travelpayouts. No modifica el buscador actual de Valijeando.</p>
     </section>
-    <div id="tpwl-search"></div>\n    <div id="tpwl-tickets"></div>
+    <div id="tpwl-search"></div>
+    <div id="tpwl-tickets"></div>
     <div id="selected-fare-backdrop"></div>
     <section id="selected-fare" style="display:none">
       <button id="selected-fare-close" type="button" aria-label="Cerrar">×</button>
@@ -607,7 +609,7 @@
       new MutationObserver(()=>{inspect();polishSearchLabels();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
       setInterval(()=>{inspect();polishSearchLabels();},2000);
       inspect();
-      polishSearchLabels();\n      positionOneWayHint();
+      polishSearchLabels();
     })();
   </script>
 </body>
