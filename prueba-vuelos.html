@@ -173,9 +173,9 @@
           const arsReferencia=Math.round(usd*Number(oficial.venta));
           const fmt=n=>'$ '+Number(n).toLocaleString('es-AR');
           selectedFareCompare.innerHTML=
-            '<div style="font-size:18px;font-weight:800;color:#172033;margin-bottom:12px">Compará cómo cancelar la tarjeta</div>'+
-            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:9px">🇦🇷 <strong>Si cancelás el resumen en pesos</strong><br><span style="font-size:22px;font-weight:800;color:#172033">'+fmt(arsTarjeta)+'</span></div>'+
-            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:10px">💵 <strong>Si cancelás el saldo en dólares</strong><br><span style="font-size:22px;font-weight:800;color:#172033">USD '+usd.toLocaleString('es-AR')+'</span></div>'+
+            '<div style="font-size:18px;font-weight:800;color:#172033;margin-bottom:12px">Compará cómo pagar tu vuelo</div>'+
+            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:9px"><strong>Si pagás en pesos</strong><br><span style="font-size:22px;font-weight:800;color:#172033">'+fmt(arsTarjeta)+'</span></div>'+
+            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:10px"><strong>Si pagás en dólares</strong><br><span style="font-size:22px;font-weight:800;color:#172033">USD '+usd.toLocaleString('es-AR')+'</span></div>'+
             '<span style="color:#64748b;font-size:12px">Referencia oficial: '+fmt(oficial.venta)+'/USD · dólar tarjeta: '+fmt(tarjeta.venta)+'/USD. Valores orientativos; el importe final depende del resumen y del banco.</span>';
         }catch(e){
           selectedFareCompare.textContent='No pudimos obtener la cotización de referencia en este momento.';
