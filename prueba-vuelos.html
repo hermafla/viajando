@@ -18,6 +18,40 @@
     #tpwl-search{margin-bottom:24px}
     #tpwl-tickets{min-height:200px}
   </style>
+  <script>
+    // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
+    (function(){
+      const netLog=[];
+      window.__TPWL_NET_LOG=netLog;
+      const keep=(kind,url,status,body)=>{
+        const u=String(url||'');
+        if(!/tpscr|tpwgts|apistp|aviasales|travelpayouts/i.test(u)) return;
+        const text=String(body||'').slice(0,200000);
+        const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
+        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000)});
+        if(netLog.length>80) netLog.splice(0,netLog.length-80);
+      };
+      const ofetch=window.fetch;
+      window.fetch=async function(...args){
+        const res=await ofetch.apply(this,args);
+        try{
+          const clone=res.clone();
+          const text=await clone.text();
+          keep('fetch',args[0]&&args[0].url?args[0].url:args[0],res.status,text);
+        }catch(_){}
+        return res;
+      };
+      const XHR=window.XMLHttpRequest;
+      if(XHR){
+        const open=XHR.prototype.open, send=XHR.prototype.send;
+        XHR.prototype.open=function(method,url,...rest){this.__tpurl=url;return open.call(this,method,url,...rest)};
+        XHR.prototype.send=function(...args){
+          this.addEventListener('load',()=>{try{keep('xhr',this.__tpurl,this.status,typeof this.responseText==='string'?this.responseText:'')}catch(_){}});
+          return send.apply(this,args);
+        };
+      }
+    })();
+  </script>
   <script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1">
     (function () {
       var script = document.createElement("script");
@@ -225,7 +259,8 @@
             ' · <strong>Precio:</strong> '+(priceNear.join(', ')||'no detectado')+'<br>'+
             '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado')+'<br>'+
             '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado')+'<br>'+
-            '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados');
+            '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados')+'<br>'+
+            '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length;
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -235,6 +270,7 @@
             rawTextNodes,
             clickCaptures,
             redirectDecoded,
+            networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
         },450);
