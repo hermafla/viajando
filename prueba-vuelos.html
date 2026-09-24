@@ -50,7 +50,44 @@
       const status=document.getElementById('diag-status');
       const out=document.getElementById('diag-output');
       const messages=[];
+      const clickCaptures=[];
       let timer;
+
+      function describeNode(node){
+        if(!node) return null;
+        const attrs={};
+        try{ if(node.attributes) [...node.attributes].forEach(a=>attrs[a.name]=a.value); }catch(_){}
+        return {
+          tag:node.tagName||'',
+          text:(node.innerText||node.textContent||'').trim().slice(0,1000),
+          href:node.href||'',
+          attrs
+        };
+      }
+
+      function captureClick(e){
+        const path=typeof e.composedPath==='function'?e.composedPath():[];
+        const nodes=path.slice(0,14).map(describeNode).filter(Boolean);
+        const urls=[];
+        nodes.forEach(n=>{
+          if(n.href) urls.push(n.href);
+          Object.values(n.attrs||{}).forEach(v=>{
+            if(typeof v==='string' && /https?:|ticketId|ticket_id|deeplink|search/i.test(v)) urls.push(v);
+          });
+        });
+        clickCaptures.push({
+          time:new Date().toISOString(),
+          type:e.type,
+          target:describeNode(e.target),
+          path:nodes,
+          clues:[...new Set(urls)].slice(0,30)
+        });
+        if(clickCaptures.length>12) clickCaptures.shift();
+        inspect();
+      }
+
+      document.addEventListener('pointerdown',captureClick,true);
+      document.addEventListener('click',captureClick,true);
 
       window.addEventListener('message',e=>{
         let data;
@@ -143,6 +180,7 @@
             links,
             buyNeighborhoods,
             rawTextNodes,
+            clickCaptures,
             roots:rootData
           },null,2);
         },450);
