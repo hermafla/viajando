@@ -60,68 +60,57 @@
         inspect();
       });
 
-      function shadowInfo(root=document){
-        const found=[];
-        const walk=node=>{
-          if(!node || !node.querySelectorAll) return;
-          node.querySelectorAll('*').forEach(el=>{
-            if(el.shadowRoot){
-              found.push({
-                tag:el.tagName.toLowerCase(),
-                id:el.id||'',
-                className:typeof el.className==='string'?el.className:'',
-                mode:'open',
-                text:(el.shadowRoot.innerText||el.shadowRoot.textContent||'').trim().slice(0,1200)
-              });
-              walk(el.shadowRoot);
-            }
+      function collectRoots(root=document, acc=[]){
+        acc.push(root);
+        if(root.querySelectorAll){
+          root.querySelectorAll('*').forEach(el=>{
+            if(el.shadowRoot) collectRoots(el.shadowRoot,acc);
           });
-        };
-        walk(root);
-        return found.slice(0,20);
+        }
+        return acc;
       }
 
       function inspect(){
         clearTimeout(timer);
         timer=setTimeout(()=>{
-          const text=(host.innerText||host.textContent||'').trim();
-          const frames=[...document.querySelectorAll('iframe')].map(f=>({
-            src:f.src||'',
-            title:f.title||'',
-            id:f.id||'',
-            name:f.name||'',
-            parentId:f.parentElement&&f.parentElement.id||''
-          })).slice(0,30);
-          const shadows=shadowInfo();
-          const hostHTML=host.innerHTML.slice(0,2500);
-          const hostChildren=[...host.children].map(el=>({
-            tag:el.tagName,
-            id:el.id||'',
-            className:typeof el.className==='string'?el.className:'',
-            html:el.outerHTML.slice(0,800)
-          })).slice(0,20);
-          const summary={
-            hostReadableText:text.slice(0,2000),
-            hostHTML,
-            hostChildren,
-            iframes:frames,
-            openShadowRoots:shadows,
-            postMessages:messages
-          };
-          const clues=[];
-          if(text) clues.push('texto DOM');
-          if(frames.length) clues.push(frames.length+' iframe(s)');
-          if(shadows.length) clues.push(shadows.length+' Shadow DOM abierto(s)');
-          if(messages.length) clues.push(messages.length+' mensaje(s) postMessage');
-          status.textContent=clues.length
-            ? 'Detectado: '+clues.join(', ')+'.'
-            : 'Sin acceso directo detectado: resultados visibles, pero encapsulados.';
-          out.textContent=JSON.stringify(summary,null,2);
-        },500);
+          const roots=collectRoots();
+          const rootData=roots.map((root,i)=>{
+            const text=(root.innerText||root.textContent||'').trim();
+            const links=root.querySelectorAll ? [...root.querySelectorAll('a')].map(a=>({
+              text:(a.innerText||a.textContent||'').trim(),
+              href:a.href||''
+            })).filter(x=>x.text||x.href).slice(0,40) : [];
+            const buttons=root.querySelectorAll ? [...root.querySelectorAll('button')].map(b=>({
+              text:(b.innerText||b.textContent||'').trim(),
+              aria:b.getAttribute('aria-label')||'',
+              title:b.getAttribute('title')||''
+            })).filter(x=>x.text||x.aria||x.title).slice(0,40) : [];
+            const prices=(text.match(/(?:USD|US\\$|ARS|\\$)\\s?[\\d][\\d. ]*(?:,[\\d]{1,2})?/g)||[]).slice(0,50);
+            return {index:i,type:root===document?'document':'shadowRoot',textPreview:text.slice(0,5000),prices,links,buttons};
+          });
+
+          const allText=rootData.map(x=>x.textPreview).join('\n');
+          const providerHits=['Gotogate','Mytrip','Flightnetwork','JetSmart','Comprar','Seleccione billete']
+            .filter(x=>allText.toLowerCase().includes(x.toLowerCase()));
+          const allPrices=[...new Set(rootData.flatMap(x=>x.prices))].slice(0,50);
+          const buyButtons=rootData.flatMap(x=>x.buttons).filter(x=>/comprar|billete|buy|select/i.test(x.text+' '+x.aria+' '+x.title)).slice(0,30);
+          const links=rootData.flatMap(x=>x.links).filter(x=>x.href).slice(0,50);
+
+          status.textContent='Shadow DOM abiertos: '+(roots.length-1)+
+            ' · Precios detectados: '+allPrices.length+
+            ' · Coincidencias: '+(providerHits.join(', ')||'ninguna')+'.';
+          out.textContent=JSON.stringify({
+            prices:allPrices,
+            providerHits,
+            buyButtons,
+            links,
+            roots:rootData
+          },null,2);
+        },450);
       }
 
-      new MutationObserver(inspect).observe(document.documentElement,{subtree:true,childList:true,attributes:true});
-      setInterval(inspect,2500);
+      new MutationObserver(inspect).observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+      setInterval(inspect,2000);
       inspect();
     })();
   </script>
