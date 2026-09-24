@@ -15,8 +15,7 @@
     .notice{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:22px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .notice h1{margin:0 0 6px;font-size:22px}
     .notice p{margin:0;line-height:1.5}
-    #tpwl-search{margin-bottom:24px}\n    #oneway-hint{display:none;position:absolute;z-index:30;font-size:11px;font-weight:700;color:#64748b;pointer-events:none;white-space:nowrap}
-    #tpwl-tickets{min-height:200px}
+    #tpwl-search{margin-bottom:24px}\n    #tpwl-tickets{min-height:200px}
     .notice{background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff;padding:24px 26px}
     .notice h1{font-size:28px;letter-spacing:-.02em}
     .notice p{color:rgba(255,255,255,.88)}
@@ -103,8 +102,7 @@
       <h1>Prueba técnica de vuelos</h1>
       <p>Página temporal para probar el nuevo White Label Widget de Travelpayouts. No modifica el buscador actual de Valijeando.</p>
     </section>
-    <div id="tpwl-search"></div>\n    <div id="oneway-hint">Opcional · podés buscar solo ida</div>
-    <div id="tpwl-tickets"></div>
+    <div id="tpwl-search"></div>\n    <div id="tpwl-tickets"></div>
     <div id="selected-fare-backdrop"></div>
     <section id="selected-fare" style="display:none">
       <button id="selected-fare-close" type="button" aria-label="Cerrar">×</button>
@@ -568,85 +566,41 @@
 
       // Ajuste visual del formulario embebido: etiquetas más claras para el usuario
       // y mayor contraste, incluso dentro de los Shadow DOM abiertos del widget.
-      const onewayHint=document.getElementById('oneway-hint');
-      function positionOneWayHint(){
-        let vueltaEl=null;
-        const roots=[];
-        const seen=new Set();
+      function polishSearchLabels(){
+        const roots=[]; const seen=new Set();
         const collect=root=>{
           if(!root||seen.has(root)) return;
           seen.add(root); roots.push(root);
-          try{root.querySelectorAll('*').forEach(el=>{if(el.shadowRoot) collect(el.shadowRoot);});}catch(_){}
+          try{root.querySelectorAll('*').forEach(el=>{if(el.shadowRoot) collect(el.shadowRoot);});}catch(e){}
         };
         collect(document);
-        for(const root of roots){
-          try{
-            for(const el of root.querySelectorAll('*')){
-              const txt=(el.textContent||'').trim();
-              const ph=el.getAttribute?.('placeholder')||'';
-              const aria=el.getAttribute?.('aria-label')||'';
-              if(txt==='Vuelta'||ph==='Vuelta'||aria==='Vuelta'){vueltaEl=el;break;}
-            }
-          }catch(_){}
-          if(vueltaEl) break;
-        }
-        if(!vueltaEl){onewayHint.style.display='none';return;}
-        const r=vueltaEl.getBoundingClientRect();
-        if(!r.width&&!r.height){onewayHint.style.display='none';return;}
-        onewayHint.style.left=(Math.max(8,r.left+window.scrollX))+'px';
-        onewayHint.style.top=(r.bottom+window.scrollY+2)+'px';
-        onewayHint.style.display='block';
-      }
-
-      function polishSearchLabels(){
-        const roots=[document];
-        const seen=new Set();
-        const collect=root=>{
-          if(!root||seen.has(root)) return;
-          seen.add(root); roots.push(root);
-          try{
-            root.querySelectorAll('*').forEach(el=>{
-              if(el.shadowRoot) collect(el.shadowRoot);
-            });
-          }catch(_){}
-        };
-        roots.length=0; collect(document);
-
-        const mapLabel=v=>{
-          const t=String(v||'').trim();
-          if(['Salida desde','Origen'].includes(t)) return 'Origen';
-          if(['Llegada','Destino'].includes(t)) return 'Destino';
-          if(['Salida','Ida'].includes(t)) return 'Ida';
-          if(['Vuelta','Regreso'].includes(t)) return 'Vuelta';
-          return null;
-        };
-
+        const rename={ 'Salida desde':'Origen', 'Llegada':'Destino', 'Salida':'Ida' };
         roots.forEach(root=>{
           try{
             root.querySelectorAll('*').forEach(el=>{
-              // Text rendered as ordinary DOM.
-              if(el.childNodes.length===1 && el.firstChild?.nodeType===Node.TEXT_NODE){
-                const mapped=mapLabel(el.textContent);
-                if(mapped){
-                  el.firstChild.nodeValue=mapped;
+              if(el.childElementCount===0){
+                const t=(el.textContent||'').trim();
+                if(rename[t]) el.textContent=rename[t];
+                if(t==='Vuelta' && !el.dataset.valijeandoOptional){
+                  el.textContent='Vuelta';
+                  const small=document.createElement('span');
+                  small.textContent='Opcional';
+                  small.style.cssText='display:block;font-size:10px;line-height:1.05;font-weight:600;color:#64748b;margin-top:1px';
+                  el.appendChild(small);
+                  el.dataset.valijeandoOptional='1';
+                }
+                if(rename[t]||t==='Vuelta'){
                   el.style.setProperty('color','#172033','important');
                   el.style.setProperty('opacity','1','important');
                   el.style.setProperty('font-weight','600','important');
                 }
               }
-              // Inputs often use placeholder/aria-label/title instead of a text node.
               ['placeholder','aria-label','title'].forEach(attr=>{
-                const current=el.getAttribute?.(attr);
-                const mapped=mapLabel(current);
-                if(mapped) el.setAttribute(attr,mapped);
+                const v=el.getAttribute&&el.getAttribute(attr);
+                if(v&&rename[v]) el.setAttribute(attr,rename[v]);
               });
-              if(el.matches?.('input')){
-                el.style.setProperty('color','#172033','important');
-                el.style.setProperty('opacity','1','important');
-                el.style.setProperty('font-weight','600','important');
-              }
             });
-          }catch(_){}
+          }catch(e){}
         });
       }
 
