@@ -49,19 +49,79 @@
       const host=document.getElementById('tpwl-tickets');
       const status=document.getElementById('diag-status');
       const out=document.getElementById('diag-output');
+      const messages=[];
       let timer;
+
+      window.addEventListener('message',e=>{
+        let data;
+        try{ data=typeof e.data==='string'?e.data:JSON.stringify(e.data); }catch(_){ data='[no serializable]'; }
+        messages.push({origin:e.origin,data:String(data).slice(0,500)});
+        if(messages.length>20) messages.shift();
+        inspect();
+      });
+
+      function shadowInfo(root=document){
+        const found=[];
+        const walk=node=>{
+          if(!node || !node.querySelectorAll) return;
+          node.querySelectorAll('*').forEach(el=>{
+            if(el.shadowRoot){
+              found.push({
+                tag:el.tagName.toLowerCase(),
+                id:el.id||'',
+                className:typeof el.className==='string'?el.className:'',
+                mode:'open',
+                text:(el.shadowRoot.innerText||el.shadowRoot.textContent||'').trim().slice(0,1200)
+              });
+              walk(el.shadowRoot);
+            }
+          });
+        };
+        walk(root);
+        return found.slice(0,20);
+      }
+
       function inspect(){
         clearTimeout(timer);
         timer=setTimeout(()=>{
           const text=(host.innerText||host.textContent||'').trim();
-          const links=[...host.querySelectorAll('a')].slice(0,20).map(a=>({text:(a.innerText||'').trim(),href:a.href}));
-          const buttons=[...host.querySelectorAll('button')].slice(0,20).map(b=>(b.innerText||b.textContent||'').trim()).filter(Boolean);
-          const prices=(text.match(/(?:USD|US\\$|\\$)\\s?[\\d.]+(?:,[\\d]{1,2})?/g)||[]).slice(0,20);
-          status.textContent=text ? 'Sí: Valijeando puede leer contenido insertado en #tpwl-tickets.' : 'Todavía no hay texto legible en #tpwl-tickets.';
-          out.textContent=JSON.stringify({textPreview:text.slice(0,2500),prices,links,buttons},null,2);
-        },700);
+          const frames=[...document.querySelectorAll('iframe')].map(f=>({
+            src:f.src||'',
+            title:f.title||'',
+            id:f.id||'',
+            name:f.name||'',
+            parentId:f.parentElement&&f.parentElement.id||''
+          })).slice(0,30);
+          const shadows=shadowInfo();
+          const hostHTML=host.innerHTML.slice(0,2500);
+          const hostChildren=[...host.children].map(el=>({
+            tag:el.tagName,
+            id:el.id||'',
+            className:typeof el.className==='string'?el.className:'',
+            html:el.outerHTML.slice(0,800)
+          })).slice(0,20);
+          const summary={
+            hostReadableText:text.slice(0,2000),
+            hostHTML,
+            hostChildren,
+            iframes:frames,
+            openShadowRoots:shadows,
+            postMessages:messages
+          };
+          const clues=[];
+          if(text) clues.push('texto DOM');
+          if(frames.length) clues.push(frames.length+' iframe(s)');
+          if(shadows.length) clues.push(shadows.length+' Shadow DOM abierto(s)');
+          if(messages.length) clues.push(messages.length+' mensaje(s) postMessage');
+          status.textContent=clues.length
+            ? 'Detectado: '+clues.join(', ')+'.'
+            : 'Sin acceso directo detectado: resultados visibles, pero encapsulados.';
+          out.textContent=JSON.stringify(summary,null,2);
+        },500);
       }
-      new MutationObserver(inspect).observe(host,{subtree:true,childList:true,characterData:true,attributes:true});
+
+      new MutationObserver(inspect).observe(document.documentElement,{subtree:true,childList:true,attributes:true});
+      setInterval(inspect,2500);
       inspect();
     })();
   </script>
