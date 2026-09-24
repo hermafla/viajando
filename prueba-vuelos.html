@@ -17,6 +17,22 @@
     .notice p{margin:0;line-height:1.5}
     #tpwl-search{margin-bottom:24px}
     #tpwl-tickets{min-height:200px}
+    .notice{background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff;padding:24px 26px}
+    .notice h1{font-size:28px;letter-spacing:-.02em}
+    .notice p{color:rgba(255,255,255,.88)}
+    #selected-fare{font-family:Arial,sans-serif}
+    #selected-fare-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.48);backdrop-filter:blur(3px);z-index:2147483645}
+    #selected-fare.is-open{display:block!important;position:fixed!important;left:50%!important;top:50%!important;bottom:auto!important;transform:translate(-50%,-50%);width:min(500px,calc(100vw - 32px));max-width:none!important;border:0!important;border-radius:22px!important;padding:0!important;overflow:hidden;box-shadow:0 28px 80px rgba(15,23,42,.35)!important}
+    .fare-head{padding:22px 24px 18px;background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff}
+    .fare-kicker{font-size:12px;font-weight:800;letter-spacing:.08em;opacity:.78}
+    #selected-fare-main{font-size:34px!important;color:#fff!important;margin-top:4px}
+    #selected-fare-sub{color:rgba(255,255,255,.88)!important;font-size:14px!important}
+    .fare-body{padding:22px 24px 24px}
+    #selected-fare-compare{border-top:0!important;margin:0!important;padding:0!important;font-size:15px!important;line-height:1.65!important}
+    #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24)}
+    #selected-fare-close{position:absolute;right:16px;top:14px;border:0;background:rgba(255,255,255,.16);color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer}
+    .fare-note{margin-top:12px;font-size:12px;color:#64748b;text-align:center}
+    @media(max-width:600px){main{width:94%;margin-top:18px}.notice h1{font-size:24px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
   </style>
   <script>
     // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
@@ -89,14 +105,21 @@
     </section>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
-    <section id="selected-fare" style="display:none;position:fixed;left:18px;bottom:18px;z-index:2147483646;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 18px;box-shadow:0 12px 36px rgba(0,0,0,.22);max-width:360px">
-      <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px">TARIFA SELECCIONADA</div>
-      <div id="selected-fare-main" style="font-size:20px;font-weight:800;color:#172033"></div>
-      <div id="selected-fare-sub" style="font-size:13px;color:#475569;margin-top:4px"></div>
-      <div id="selected-fare-compare" style="display:none;border-top:1px solid #e2e8f0;margin-top:10px;padding-top:10px;font-size:13px;line-height:1.45;color:#334155"></div>
-      <button id="selected-fare-continue" type="button" style="display:none;width:100%;margin-top:12px;border:0;border-radius:10px;background:#07558f;color:#fff;font-weight:800;padding:11px 14px;cursor:pointer">Continuar con el proveedor →</button>
+    <div id="selected-fare-backdrop"></div>
+    <section id="selected-fare" style="display:none">
+      <button id="selected-fare-close" type="button" aria-label="Cerrar">×</button>
+      <div class="fare-head">
+        <div class="fare-kicker">ANTES DE CONTINUAR</div>
+        <div id="selected-fare-main"></div>
+        <div id="selected-fare-sub"></div>
+      </div>
+      <div class="fare-body">
+        <div id="selected-fare-compare" style="display:none"></div>
+        <button id="selected-fare-continue" type="button" style="display:none">Continuar con el proveedor →</button>
+        <div class="fare-note">El precio final y las condiciones se confirman en el sitio del proveedor.</div>
+      </div>
     </section>
-    <section id="diag" style="position:fixed;right:12px;bottom:12px;z-index:2147483647;width:min(430px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28)">
+    <section id="diag" style="display:none;position:fixed;right:12px;bottom:12px;z-index:2147483647;width:min(430px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28)">
       <h2 style="margin:0 0 8px;font-size:18px">Diagnóstico técnico · EN VIVO</h2>
       <p id="diag-status" style="margin:0 0 10px">Esperando resultados de Travelpayouts…</p>
       <pre id="diag-output" style="white-space:pre-wrap;word-break:break-word;background:#f5f7fb;padding:12px;border-radius:10px;max-height:28vh;overflow:auto;font-size:11px"></pre>
@@ -115,9 +138,19 @@
       const selectedFareSub=document.getElementById('selected-fare-sub');
       const selectedFareCompare=document.getElementById('selected-fare-compare');
       const selectedFareContinue=document.getElementById('selected-fare-continue');
+      const selectedFareBackdrop=document.getElementById('selected-fare-backdrop');
+      const selectedFareClose=document.getElementById('selected-fare-close');
       let pendingProviderUrl='';
       let allowProviderNavigation=false;
       let timer;
+
+      function closeFareModal(){
+        selectedFareBox.classList.remove('is-open');
+        selectedFareBox.style.display='none';
+        selectedFareBackdrop.style.display='none';
+      }
+      selectedFareClose.addEventListener('click',closeFareModal);
+      selectedFareBackdrop.addEventListener('click',closeFareModal);
 
       selectedFareContinue.addEventListener('click',()=>{
         if(!pendingProviderUrl) return;
@@ -138,10 +171,10 @@
           const arsReferencia=Math.round(usd*Number(oficial.venta));
           const fmt=n=>'$ '+Number(n).toLocaleString('es-AR');
           selectedFareCompare.innerHTML=
-            '<strong>Compará cómo cancelar la tarjeta</strong><br>'+
-            '🇦🇷 Resumen cancelado en pesos: <strong>'+fmt(arsTarjeta)+'</strong><br>'+
-            '💵 Saldo en USD: <strong>USD '+usd.toLocaleString('es-AR')+'</strong><br>'+
-            '<span style="color:#64748b">Referencia oficial: '+fmt(oficial.venta)+'/USD · dólar tarjeta: '+fmt(tarjeta.venta)+'/USD. Valores orientativos; el importe final depende del resumen y del banco.</span>';
+            '<div style="font-size:18px;font-weight:800;color:#172033;margin-bottom:12px">Compará cómo cancelar la tarjeta</div>'+
+            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:9px">🇦🇷 <strong>Si cancelás el resumen en pesos</strong><br><span style="font-size:22px;font-weight:800;color:#172033">'+fmt(arsTarjeta)+'</span></div>'+
+            '<div style="padding:12px 14px;background:#f5f7fb;border-radius:12px;margin-bottom:10px">💵 <strong>Si cancelás el saldo en dólares</strong><br><span style="font-size:22px;font-weight:800;color:#172033">USD '+usd.toLocaleString('es-AR')+'</span></div>'+
+            '<span style="color:#64748b;font-size:12px">Referencia oficial: '+fmt(oficial.venta)+'/USD · dólar tarjeta: '+fmt(tarjeta.venta)+'/USD. Valores orientativos; el importe final depende del resumen y del banco.</span>';
         }catch(e){
           selectedFareCompare.textContent='No pudimos obtener la cotización de referencia en este momento.';
         }
@@ -182,8 +215,10 @@
           }
           if(!fare) return;
           selectedFareMain.textContent=(fare.currency||'USD')+' '+Number(fare.value).toLocaleString('es-AR');
-          selectedFareSub.textContent=provider+' · agent_id '+clickId;
+          selectedFareSub.textContent='Oferta seleccionada en '+provider;
           selectedFareBox.style.display='block';
+          selectedFareBox.classList.add('is-open');
+          selectedFareBackdrop.style.display='block';
           pendingProviderUrl=redirect;
           selectedFareContinue.textContent='Continuar con '+provider+' →';
           selectedFareContinue.style.display='block';
