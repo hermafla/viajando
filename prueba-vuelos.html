@@ -284,29 +284,33 @@
               if(Array.isArray(v)){ v.forEach(x=>walk(x,ctx)); return; }
               const next={...ctx};
               for(const [k,val] of Object.entries(v)){
-                if(/flight/i.test(k)&&val!=null) next.flight=typeof val==='object'?JSON.stringify(val).slice(0,500):String(val);
-                if(/airline|carrier/i.test(k)&&val!=null) next.airline=typeof val==='object'?JSON.stringify(val).slice(0,300):String(val);
-                if(/currency/i.test(k)&&typeof val!=='object') next.currency=String(val);
+                if(/fare_code/i.test(k)&&val!=null) next.fareCode=String(val);
+                if(/marketing_carrier|airline_id|carrier/i.test(k)&&val!=null) next.airline=String(val);
+                if(/^number$/i.test(k)&&val!=null) next.flightNumber=String(val);
+                if(/currency_code|currency/i.test(k)&&typeof val!=='object') next.currency=String(val);
               }
-              const hasPrice=Object.prototype.hasOwnProperty.call(v,'price') && (typeof v.price==='number'||typeof v.price==='string');
-              const looksProposal=hasPrice && (Object.prototype.hasOwnProperty.call(v,'id')||Object.keys(v).some(k=>/proposal|term|gate|fare/i.test(k)));
-              if(looksProposal){
+              const currency=v.currency_code??v.currency??next.currency??'';
+              const value=(typeof v.value==='number'||typeof v.value==='string')?v.value:null;
+              const ppp=(typeof v.price_per_person==='number'||typeof v.price_per_person==='string')?v.price_per_person:null;
+              if(value!==null && currency){
                 const row={
+                  value,
+                  currency,
+                  price_per_person:ppp??'',
                   id:v.id??v.proposal_id??v.term_id??'',
-                  price:v.price,
-                  currency:v.currency??next.currency??'',
-                  gate:v.gate_name??v.gate??v.agency??v.provider??'',
-                  airline:next.airline??v.airline??v.carrier??'',
-                  flight:next.flight??'',
-                  keys:Object.keys(v).slice(0,30)
+                  fare_code:v.fare_code??next.fareCode??'',
+                  airline:v.marketing_carrier??v.airline_id??v.carrier??next.airline??'',
+                  flight_number:v.number??next.flightNumber??'',
+                  available:v.available??'',
+                  keys:Object.keys(v).slice(0,25)
                 };
-                const key=JSON.stringify([row.id,row.price,row.gate,row.flight]);
+                const key=JSON.stringify([row.value,row.currency,row.id,row.fare_code,row.airline,row.flight_number]);
                 if(!seen.has(key)){seen.add(key);rows.push(row);}
               }
               Object.values(v).forEach(x=>{if(x&&typeof x==='object') walk(x,next)});
             }
             resultsPayload.forEach(x=>walk(x.parsed));
-            return rows.slice(0,80);
+            return rows.slice(0,120);
           }
           const proposalsSummary=proposalSummary();
           function extractTicketsPayload(){
