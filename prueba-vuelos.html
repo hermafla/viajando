@@ -246,6 +246,35 @@
             });
             return found;
           }
+          function extractResultsPayload(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const hits=[];
+            logs.forEach(x=>{
+              if(!/\/search\/wl\/results/i.test(x.url||'')) return;
+              const raw=String(x.preview||'');
+              let parsed=null;
+              try{ parsed=JSON.parse(raw); }catch(_){}
+              hits.push({url:x.url,status:x.status,parsed,raw:parsed?undefined:raw.slice(0,30000)});
+            });
+            return hits;
+          }
+          const resultsPayload=extractResultsPayload();
+
+          function compactResultData(value,depth=0){
+            if(depth>7||value==null) return value;
+            if(Array.isArray(value)) return value.slice(0,20).map(v=>compactResultData(v,depth+1));
+            if(typeof value!=='object') return value;
+            const keep=/price|amount|currency|fare|gate|agency|provider|airline|carrier|flight|number|term|ticket|id|segment|departure|arrival|origin|destination|url/i;
+            const out={};
+            for(const [k,v] of Object.entries(value)){
+              if(keep.test(k) || (typeof v==='object'&&v!==null)){
+                const cv=compactResultData(v,depth+1);
+                if(cv!==undefined && !(typeof cv==='object'&&cv!==null&&Object.keys(cv).length===0)) out[k]=cv;
+              }
+            }
+            return out;
+          }
+          const resultsCompact=resultsPayload.map(x=>({url:x.url,status:x.status,data:compactResultData(x.parsed||x.raw)}));
           function extractTicketsPayload(){
             const logs=window.__TPWL_NET_LOG||[];
             const hits=[];
@@ -338,7 +367,8 @@
             '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
             '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
-            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
+            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias')+'<br>'+
+            '<strong>RESULTADOS COMPACTOS /search/wl/results:</strong> '+(resultsCompact.length?JSON.stringify(resultsCompact.slice(-3),null,2):'no capturados');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -352,6 +382,8 @@
             pricesPayload,
             ticketsPayload,
             visibleFlightHits,
+            resultsPayload,
+            resultsCompact,
             networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
