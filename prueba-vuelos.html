@@ -283,10 +283,24 @@
         // el redirect afiliado. Así "Mostrar hoteles" y demás controles internos
         // del widget siguen funcionando normalmente.
         if(isBuy && redirectUrl){
-          e.preventDefault();
-          e.stopPropagation();
-          if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
-          showSelectedFareFromCapture(clickCaptures[clickCaptures.length-1]);
+          // Primero intentamos preparar el comparador. Sólo bloqueamos Travelpayouts
+          // si realmente pudimos identificar la tarifa seleccionada.
+          const wasOpen=selectedFareBox.classList.contains('is-open');
+          showSelectedFareFromCapture({
+            time:new Date().toISOString(),
+            type:e.type,
+            target:describeNode(e.target),
+            path:path.slice(0,14).map(describeNode).filter(Boolean),
+            clues:[redirectUrl]
+          });
+          const isOpen=selectedFareBox.classList.contains('is-open');
+          if(isOpen && (!wasOpen || pendingProviderUrl===redirectUrl)){
+            e.preventDefault();
+            e.stopPropagation();
+            if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
+          }
+          // Si no pudimos preparar la tarifa, no frenamos el clic:
+          // Travelpayouts continúa normalmente y el botón nunca queda muerto.
         }
       },true);
 
