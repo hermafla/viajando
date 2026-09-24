@@ -215,6 +215,25 @@
             const list=logs[i].fareMini||[];
             fare=list.find(x=>String(x.agent_id)===String(clickId))||null;
           }
+
+          // Segundo camino del widget: algunas ofertas muestran el redirect en el
+          // botón antes de que fareMini consiga asociar la propuesta. En ese caso
+          // usamos el precio visible dentro del mismo composedPath del clic.
+          if(!fare){
+            const pathText=(capture.path||[]).map(x=>x&&x.text||'').join(' ');
+            const currencyMatch=pathText.match(/\bUSD\s*([0-9][0-9.]*?(?:,[0-9]{1,2})?)(?=\s|$)/i);
+            const dollarMatch=pathText.match(/\$\s*([0-9][0-9.]*?(?:,[0-9]{1,2})?)(?=\s|$)/);
+            const raw=(currencyMatch&&currencyMatch[1])||(dollarMatch&&dollarMatch[1])||'';
+            if(raw){
+              const normalized=raw.includes(',')
+                ? raw.replace(/\./g,'').replace(',','.')
+                : raw.replace(/\./g,'');
+              const value=Number(normalized);
+              if(Number.isFinite(value)&&value>0){
+                fare={proposal_id:'visible-path',currency:'USD',value,agent_id:String(clickId)};
+              }
+            }
+          }
           if(!fare) return;
           selectedFareMain.textContent=(fare.currency||'USD')+' '+Number(fare.value).toLocaleString('es-AR');
           selectedFareSub.textContent='Oferta seleccionada en '+provider;
