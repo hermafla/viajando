@@ -221,13 +221,13 @@
           // usamos el precio visible dentro del mismo composedPath del clic.
           if(!fare){
             const pathText=(capture.path||[]).map(x=>x&&x.text||'').join(' ');
-            const currencyMatch=pathText.match(/\bUSD\s*([0-9][0-9.]*?(?:,[0-9]{1,2})?)(?=\s|$)/i);
-            const dollarMatch=pathText.match(/\$\s*([0-9][0-9.]*?(?:,[0-9]{1,2})?)(?=\s|$)/);
+            const currencyMatch=pathText.match(/\bUSD\s*([0-9]+(?:\.[0-9]{3})*(?:,[0-9]{1,2})?)/i);
+            const dollarMatch=pathText.match(/\$\s*([0-9]+(?:\.[0-9]{3})*(?:,[0-9]{1,2})?)/);
             const raw=(currencyMatch&&currencyMatch[1])||(dollarMatch&&dollarMatch[1])||'';
             if(raw){
-              const normalized=raw.includes(',')
-                ? raw.replace(/\./g,'').replace(',','.')
-                : raw.replace(/\./g,'');
+              // Travelpayouts muestra precios con formato es-AR: 1.158 = mil ciento cincuenta y ocho.
+              // Quitamos puntos de miles y sólo tratamos la coma como decimal.
+              const normalized=raw.replace(/\./g,'').replace(',','.');
               const value=Number(normalized);
               if(Number.isFinite(value)&&value>0){
                 fare={proposal_id:'visible-path',currency:'USD',value,agent_id:String(clickId)};
