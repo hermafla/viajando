@@ -246,6 +246,24 @@
             });
             return found;
           }
+          function extractPricesPayload(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const hits=[];
+            logs.forEach(x=>{
+              if(!/\/whitelabels\/web\/flights\/v1\/prices/i.test(x.url||'')) return;
+              const raw=String(x.preview||'');
+              let parsed=null;
+              try{ parsed=JSON.parse(raw); }catch(_){}
+              hits.push({
+                url:x.url,
+                status:x.status,
+                parsed:parsed,
+                raw:parsed?undefined:raw.slice(0,12000)
+              });
+            });
+            return hits;
+          }
+          const pricesPayload=extractPricesPayload();
           function summarizeNetwork(){
             const logs=window.__TPWL_NET_LOG||[];
             const out=[];
@@ -279,7 +297,8 @@
             '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado')+'<br>'+
             '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados')+'<br>'+
             '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length+'<br>'+
-            '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado');
+            '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
+            '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -290,6 +309,7 @@
             clickCaptures,
             redirectDecoded,
             networkSummary,
+            pricesPayload,
             networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
