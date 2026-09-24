@@ -26,8 +26,7 @@
       const keep=(kind,url,status,body)=>{
         const u=String(url||'');
         if(!/tpscr|tpwgts|apistp|aviasales|travelpayouts/i.test(u)) return;
-        const fullText=String(body||'');
-        const text=fullText.slice(0,200000);
+        const text=String(body||'').slice(0,200000);
         const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
         netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000)});
         if(netLog.length>80) netLog.splice(0,netLog.length-80);
@@ -247,88 +246,6 @@
             });
             return found;
           }
-          function extractResultsPayload(){
-            const logs=window.__TPWL_NET_LOG||[];
-            const hits=[];
-            logs.forEach(x=>{
-              if(!/\/search\/wl\/results/i.test(x.url||'')) return;
-              const raw=String(x.preview||'');
-              let parsed=null;
-              try{ parsed=JSON.parse(raw); }catch(_){} 
-              hits.push({url:x.url,status:x.status,parsed,raw:parsed?undefined:raw.slice(0,30000)});
-            });
-            return hits;
-          }
-          const resultsPayload=extractResultsPayload();
-
-          function compactResultData(value,depth=0){
-            if(depth>7||value==null) return value;
-            if(Array.isArray(value)) return value.slice(0,20).map(v=>compactResultData(v,depth+1));
-            if(typeof value!=='object') return value;
-            const keep=/price|amount|currency|fare|gate|agency|provider|airline|carrier|flight|number|term|ticket|id|segment|departure|arrival|origin|destination|url/i;
-            const out={};
-            for(const [k,v] of Object.entries(value)){
-              if(keep.test(k) || (typeof v==='object'&&v!==null)){
-                const cv=compactResultData(v,depth+1);
-                if(cv!==undefined && !(typeof cv==='object'&&cv!==null&&Object.keys(cv).length===0)) out[k]=cv;
-              }
-            }
-            return out;
-          }
-          const resultsCompact=resultsPayload.map(x=>({url:x.url,status:x.status,data:compactResultData(x.parsed||x.raw)}));
-
-          function proposalSummary(){
-            const rows=[];
-            const seen=new Set();
-            function walk(v,ctx={}){
-              if(!v||typeof v!=='object') return;
-              if(Array.isArray(v)){ v.forEach(x=>walk(x,ctx)); return; }
-              const next={...ctx};
-              for(const [k,val] of Object.entries(v)){
-                if(/fare_code/i.test(k)&&val!=null) next.fareCode=String(val);
-                if(/marketing_carrier|airline_id|carrier/i.test(k)&&val!=null) next.airline=String(val);
-                if(/^number$/i.test(k)&&val!=null) next.flightNumber=String(val);
-                if(/currency_code|currency/i.test(k)&&typeof val!=='object') next.currency=String(val);
-              }
-              const currency=v.currency_code??v.currency??next.currency??'';
-              const value=(typeof v.value==='number'||typeof v.value==='string')?v.value:null;
-              const ppp=(typeof v.price_per_person==='number'||typeof v.price_per_person==='string')?v.price_per_person:null;
-              if(value!==null && currency){
-                const row={
-                  value,
-                  currency,
-                  price_per_person:ppp??'',
-                  id:v.id??v.proposal_id??v.term_id??'',
-                  fare_code:v.fare_code??next.fareCode??'',
-                  airline:v.marketing_carrier??v.airline_id??v.carrier??next.airline??'',
-                  flight_number:v.number??next.flightNumber??'',
-                  available:v.available??'',
-                  keys:Object.keys(v).slice(0,25)
-                };
-                const key=JSON.stringify([row.value,row.currency,row.id,row.fare_code,row.airline,row.flight_number]);
-                if(!seen.has(key)){seen.add(key);rows.push(row);}
-              }
-              Object.values(v).forEach(x=>{if(x&&typeof x==='object') walk(x,next)});
-            }
-            resultsPayload.forEach(x=>{
-              if(x.parsed) walk(x.parsed);
-              if(!x.parsed && x.raw){
-                let p=null;
-                try{ p=JSON.parse(x.raw); }catch(_){
-                  try{ p=JSON.parse(JSON.parse('"'+String(x.raw).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"')); }catch(__){}
-                }
-                if(p) walk(p);
-                else{
-                  const raw=String(x.raw);
-                  const re=/"currency_code"\\s*:\\s*"([^"]+)"[\\s\\S]{0,220}?"value"\\s*:\\s*([0-9.]+)/g;
-                  let m;
-                  while((m=re.exec(raw))) rows.push({value:Number(m[2]),currency:m[1],price_per_person:'',id:'',fare_code:'',airline:'',flight_number:'',available:'',keys:['raw-fallback']});
-                }
-              }
-            });
-            return rows.slice(0,120);
-          }
-          const proposalsSummary=proposalSummary();
           function extractTicketsPayload(){
             const logs=window.__TPWL_NET_LOG||[];
             const hits=[];
@@ -421,9 +338,7 @@
             '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
             '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
-            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias')+'<br>'+
-            '<strong>RESULTADOS COMPACTOS /search/wl/results:</strong> '+(resultsCompact.length?JSON.stringify(resultsCompact.slice(-3),null,2):'no capturados')+'<br>'+
-            '<strong>PROPUESTAS EXTRAIDAS:</strong> '+(proposalsSummary.length?JSON.stringify(proposalsSummary,null,2):'ninguna');
+            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -437,9 +352,6 @@
             pricesPayload,
             ticketsPayload,
             visibleFlightHits,
-            resultsPayload,
-            resultsCompact,
-            proposalsSummary,
             networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
