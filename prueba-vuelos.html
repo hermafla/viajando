@@ -170,9 +170,17 @@
             }catch(_){}
           });
 
-          status.textContent='Shadow DOM abiertos: '+(roots.length-1)+
-            ' · Precios detectados: '+allPrices.length+
-            ' · Coincidencias: '+(providerHits.join(', ')||'ninguna')+'.';
+          const last=clickCaptures.length?clickCaptures[clickCaptures.length-1]:null;
+          const clickText=last ? (last.path||[]).map(x=>x.text).filter(Boolean).join(' | ') : '';
+          const clickClues=last ? (last.clues||[]) : [];
+          const priceNear=(clickText.match(/(?:\\$|USD|US\\$)\\s*[\\d.,]+/gi)||[]).slice(0,6);
+          const providerNear=['Farera','Wowtickets','Trip.com','Gotogate','Mytrip.com','Flightnetwork','City.Travel','Kiwi.com'].filter(x=>clickText.toLowerCase().includes(x.toLowerCase()));
+          const buttonNear=last ? ((last.path||[]).map(x=>x.text).find(x=>/comprar|seleccione billete|buy/i.test(x))||last.target?.text||'') : '';
+          status.innerHTML='Shadow DOM abiertos: '+(roots.length-1)+' · Precios detectados: '+allPrices.length+'.<br>'+
+            '<strong>ÚLTIMO CLIC:</strong> '+(buttonNear||'ninguno')+'<br>'+
+            '<strong>Proveedor:</strong> '+(providerNear.join(', ')||'no detectado')+
+            ' · <strong>Precio:</strong> '+(priceNear.join(', ')||'no detectado')+'<br>'+
+            '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
