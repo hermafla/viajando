@@ -38,7 +38,15 @@
           }
           if(p>=0) selectedResults=text.slice(Math.max(0,p-900),Math.min(text.length,p+2600));
         }
-        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000),selectedResults});
+        let fareMini=[];
+        if(selectedResults){
+          const re=/\"id\"\s*:\s*\"([^\"]+)\"[\s\S]{0,260}?\"currency_code\"\s*:\s*\"([^\"]+)\"[\s\S]{0,120}?\"value\"\s*:\s*([0-9]+(?:\.[0-9]+)?)[\s\S]{0,220}?\"agent_id\"\s*:\s*\"?([^\",}]+)\"?/gi;
+          let fm;
+          while((fm=re.exec(selectedResults)) && fareMini.length<12){
+            fareMini.push({proposal_id:fm[1],currency:fm[2],value:Number(fm[3]),agent_id:fm[4]});
+          }
+        }
+        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000),selectedResults,fareMini});
         if(netLog.length>80) netLog.splice(0,netLog.length-80);
       };
       const ofetch=window.fetch;
@@ -349,6 +357,7 @@
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
             '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
             '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias')+'<br>'+
+            '<strong>TARIFA AISLADA:</strong> '+(()=>{const h=(window.__TPWL_NET_LOG||[]).filter(x=>x.fareMini&&x.fareMini.length).slice(-1)[0];return h?JSON.stringify(h.fareMini,null,2):'no detectada';})()+'<br>'+
             '<strong>RECORTE TARIFA ACTUAL:</strong> '+(((window.__TPWL_NET_LOG||[]).filter(x=>x.selectedResults).slice(-1)[0]||{}).selectedResults||'no detectado');
           out.textContent=JSON.stringify({
             prices:allPrices,
