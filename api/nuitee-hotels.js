@@ -12,7 +12,7 @@ export default async function handler(req,res){
   try{
     const [catalogRes,ratesRes]=await Promise.all([
       fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({countryCode,cityName:city,limit:'200'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({countryCode,cityName:city,checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:1,timeout:8,limit:20})})
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({countryCode,cityName:city,checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:1,timeout:10,limit:100})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
@@ -26,6 +26,6 @@ export default async function handler(req,res){
       const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
       hotels.push({hotelId:item.hotelId,name:meta.name||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,retailRate:amount,currency,fees,dueAtProperty,estimatedTotal:amount+dueAtProperty,refundableTag:rate.refundableTag||room.refundableTag||''});
     }
-    return res.status(200).json({sandbox:true,hotels});
+    hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal); return res.status(200).json({sandbox:true,hotels});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
