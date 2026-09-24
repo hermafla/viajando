@@ -583,14 +583,7 @@
               if(el.childElementCount===0){
                 const t=(el.textContent||'').trim();
                 if(rename[t]) el.textContent=rename[t];
-                if(t==='Vuelta' && !el.dataset.valijeandoOptional){
-                  el.textContent='Vuelta';
-                  const small=document.createElement('span');
-                  small.textContent='Opcional';
-                  small.style.cssText='display:block;font-size:10px;line-height:1.05;font-weight:600;color:#64748b;margin-top:1px';
-                  el.appendChild(small);
-                  el.dataset.valijeandoOptional='1';
-                }
+                if(t==='Vuelta') el.textContent='Vuelta (opcional)';
                 if(rename[t]||t==='Vuelta'){
                   el.style.setProperty('color','#172033','important');
                   el.style.setProperty('opacity','1','important');
