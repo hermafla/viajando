@@ -246,6 +246,24 @@
             });
             return found;
           }
+          function summarizeNetwork(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const out=[];
+            logs.forEach(x=>{
+              const body=(x.preview||'')+' '+((x.money||[]).join(' '));
+              const nums=[];
+              const re=/(?:price|amount|value|total)[^0-9]{0,35}([0-9]{3,9}(?:[.,][0-9]{1,2})?)/gi;
+              let m;
+              while((m=re.exec(body))&&nums.length<15) nums.push(m[1]);
+              const currencies=[...new Set((body.match(/\b(?:ARS|USD|BRL|EUR|CLP|UYU)\b/gi)||[]).map(v=>v.toUpperCase()))];
+              const providers=['Farera','City.Travel','Wowtickets','Vayama','Wingie','Gotogate','Trip.com','Mytrip','Flightnetwork','Kiwi'].filter(p=>body.toLowerCase().includes(p.toLowerCase()));
+              if(nums.length||currencies.length||providers.length){
+                out.push({url:x.url,status:x.status,prices:[...new Set(nums)].slice(0,15),currencies,providers});
+              }
+            });
+            return out;
+          }
+          const networkSummary=summarizeNetwork();
           const redirectDecoded=decodeRedirectClues(clickCaptures);
           const last=clickCaptures.length?clickCaptures[clickCaptures.length-1]:null;
           const clickText=last ? (last.path||[]).map(x=>x.text).filter(Boolean).join(' | ') : '';
@@ -260,7 +278,8 @@
             '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado')+'<br>'+
             '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado')+'<br>'+
             '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados')+'<br>'+
-            '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length;
+            '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length+'<br>'+
+            '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -270,6 +289,7 @@
             rawTextNodes,
             clickCaptures,
             redirectDecoded,
+            networkSummary,
             networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
