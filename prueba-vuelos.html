@@ -28,7 +28,17 @@
         if(!/tpscr|tpwgts|apistp|aviasales|travelpayouts/i.test(u)) return;
         const text=String(body||'').slice(0,200000);
         const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
-        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000)});
+        let selectedResults='';
+        if(/\/search\/wl\/results/i.test(u)){
+          const wanted=['"price":425','"value":425','"price":391','"value":391','"price":364','"value":364'];
+          const low=text.toLowerCase();
+          const pos=wanted.map(v=>low.indexOf(v)).filter(v=>v>=0);
+          if(pos.length){
+            const p=Math.min(...pos);
+            selectedResults=text.slice(Math.max(0,p-900),Math.min(text.length,p+2600));
+          }
+        }
+        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000),selectedResults});
         if(netLog.length>80) netLog.splice(0,netLog.length-80);
       };
       const ofetch=window.fetch;
@@ -338,7 +348,8 @@
             '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
             '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
-            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
+            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias')+'<br>'+
+            '<strong>RECORTE TARIFA ACTUAL:</strong> '+(((window.__TPWL_NET_LOG||[]).filter(x=>x.selectedResults).slice(-1)[0]||{}).selectedResults||'no detectado');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
