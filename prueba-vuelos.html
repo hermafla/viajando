@@ -170,6 +170,36 @@
             }catch(_){}
           });
 
+          function decodeRedirectClues(captures){
+            const found=[];
+            (captures||[]).slice().reverse().forEach(cap=>{
+              (cap.clues||[]).forEach(raw=>{
+                if(typeof raw!=='string'||!raw.includes('tpscr.com/wl/redirect')) return;
+                try{
+                  const u=new URL(raw);
+                  const params={};
+                  u.searchParams.forEach((v,k)=>{
+                    let value=v;
+                    try{ value=decodeURIComponent(v); }catch(_){}
+                    params[k]=value;
+                  });
+                  const nested={};
+                  ['redirect_url','fallback_url','url'].forEach(k=>{
+                    if(!params[k]) return;
+                    try{
+                      const nu=new URL(params[k]);
+                      const np={};
+                      nu.searchParams.forEach((v,nk)=>np[nk]=v);
+                      nested[k]={url:params[k],host:nu.host,params:np};
+                    }catch(_){ nested[k]={url:params[k]}; }
+                  });
+                  found.push({raw,host:u.host,path:u.pathname,params,nested});
+                }catch(_){}
+              });
+            });
+            return found;
+          }
+          const redirectDecoded=decodeRedirectClues(clickCaptures);
           const last=clickCaptures.length?clickCaptures[clickCaptures.length-1]:null;
           const clickText=last ? (last.path||[]).map(x=>x.text).filter(Boolean).join(' | ') : '';
           const clickClues=last ? (last.clues||[]) : [];
@@ -180,7 +210,8 @@
             '<strong>ÚLTIMO CLIC:</strong> '+(buttonNear||'ninguno')+'<br>'+
             '<strong>Proveedor:</strong> '+(providerNear.join(', ')||'no detectado')+
             ' · <strong>Precio:</strong> '+(priceNear.join(', ')||'no detectado')+'<br>'+
-            '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado');
+            '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado')+'<br>'+
+            '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -189,6 +220,7 @@
             buyNeighborhoods,
             rawTextNodes,
             clickCaptures,
+            redirectDecoded,
             roots:rootData
           },null,2);
         },450);
