@@ -18,6 +18,40 @@
     #tpwl-search{margin-bottom:24px}
     #tpwl-tickets{min-height:200px}
   </style>
+  <script>
+    // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
+    (function(){
+      const netLog=[];
+      window.__TPWL_NET_LOG=netLog;
+      const keep=(kind,url,status,body)=>{
+        const u=String(url||'');
+        if(!/tpscr|tpwgts|apistp|aviasales|travelpayouts/i.test(u)) return;
+        const text=String(body||'').slice(0,200000);
+        const money=(text.match(/(?:price|amount|currency|gate|agency|terms)[^\n]{0,180}/gi)||[]).slice(0,40);
+        netLog.push({time:new Date().toISOString(),kind,url:u,status,money,preview:text.slice(0,3000)});
+        if(netLog.length>80) netLog.splice(0,netLog.length-80);
+      };
+      const ofetch=window.fetch;
+      window.fetch=async function(...args){
+        const res=await ofetch.apply(this,args);
+        try{
+          const clone=res.clone();
+          const text=await clone.text();
+          keep('fetch',args[0]&&args[0].url?args[0].url:args[0],res.status,text);
+        }catch(_){}
+        return res;
+      };
+      const XHR=window.XMLHttpRequest;
+      if(XHR){
+        const open=XHR.prototype.open, send=XHR.prototype.send;
+        XHR.prototype.open=function(method,url,...rest){this.__tpurl=url;return open.call(this,method,url,...rest)};
+        XHR.prototype.send=function(...args){
+          this.addEventListener('load',()=>{try{keep('xhr',this.__tpurl,this.status,typeof this.responseText==='string'?this.responseText:'')}catch(_){}});
+          return send.apply(this,args);
+        };
+      }
+    })();
+  </script>
   <script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1">
     (function () {
       var script = document.createElement("script");
@@ -37,6 +71,297 @@
     </section>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
+    <section id="diag" style="position:fixed;right:12px;bottom:12px;z-index:2147483647;width:min(430px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:#fff;border:2px solid #07558f;border-radius:14px;padding:14px 16px;box-shadow:0 12px 36px rgba(0,0,0,.28)">
+      <h2 style="margin:0 0 8px;font-size:18px">Diagnóstico técnico · EN VIVO</h2>
+      <p id="diag-status" style="margin:0 0 10px">Esperando resultados de Travelpayouts…</p>
+      <pre id="diag-output" style="white-space:pre-wrap;word-break:break-word;background:#f5f7fb;padding:12px;border-radius:10px;max-height:28vh;overflow:auto;font-size:11px"></pre>
+    </section>
+
   </main>
+  <script>
+    (function(){
+      const host=document.getElementById('tpwl-tickets');
+      const status=document.getElementById('diag-status');
+      const out=document.getElementById('diag-output');
+      const messages=[];
+      const clickCaptures=[];
+      let timer;
+
+      function describeNode(node){
+        if(!node) return null;
+        const attrs={};
+        try{ if(node.attributes) [...node.attributes].forEach(a=>attrs[a.name]=a.value); }catch(_){}
+        return {
+          tag:node.tagName||'',
+          text:(node.innerText||node.textContent||'').trim().slice(0,1000),
+          href:node.href||'',
+          attrs
+        };
+      }
+
+      function captureClick(e){
+        const path=typeof e.composedPath==='function'?e.composedPath():[];
+        const nodes=path.slice(0,14).map(describeNode).filter(Boolean);
+        const urls=[];
+        nodes.forEach(n=>{
+          if(n.href) urls.push(n.href);
+          Object.values(n.attrs||{}).forEach(v=>{
+            if(typeof v==='string' && /https?:|ticketId|ticket_id|deeplink|search/i.test(v)) urls.push(v);
+          });
+        });
+        clickCaptures.push({
+          time:new Date().toISOString(),
+          type:e.type,
+          target:describeNode(e.target),
+          path:nodes,
+          clues:[...new Set(urls)].slice(0,30)
+        });
+        if(clickCaptures.length>12) clickCaptures.shift();
+        inspect();
+      }
+
+      document.addEventListener('pointerdown',captureClick,true);
+      document.addEventListener('click',captureClick,true);
+
+      window.addEventListener('message',e=>{
+        let data;
+        try{ data=typeof e.data==='string'?e.data:JSON.stringify(e.data); }catch(_){ data='[no serializable]'; }
+        messages.push({origin:e.origin,data:String(data).slice(0,500)});
+        if(messages.length>20) messages.shift();
+        inspect();
+      });
+
+      function collectRoots(root=document, acc=[]){
+        acc.push(root);
+        if(root.querySelectorAll){
+          root.querySelectorAll('*').forEach(el=>{
+            if(el.shadowRoot) collectRoots(el.shadowRoot,acc);
+          });
+        }
+        return acc;
+      }
+
+      function inspect(){
+        clearTimeout(timer);
+        timer=setTimeout(()=>{
+          const roots=collectRoots();
+          const rootData=roots.map((root,i)=>{
+            const text=(root.innerText||root.textContent||'').trim();
+            const links=root.querySelectorAll ? [...root.querySelectorAll('a')].map(a=>({
+              text:(a.innerText||a.textContent||'').trim(),
+              href:a.href||''
+            })).filter(x=>x.text||x.href).slice(0,40) : [];
+            const buttons=root.querySelectorAll ? [...root.querySelectorAll('button')].map(b=>({
+              text:(b.innerText||b.textContent||'').trim(),
+              aria:b.getAttribute('aria-label')||'',
+              title:b.getAttribute('title')||''
+            })).filter(x=>x.text||x.aria||x.title).slice(0,40) : [];
+            const prices=(text.match(/(?:USD|US\\$|ARS|\\$)\\s?[\\d][\\d. ]*(?:,[\\d]{1,2})?/g)||[]).slice(0,50);
+            return {index:i,type:root===document?'document':'shadowRoot',textPreview:text.slice(0,5000),prices,links,buttons};
+          });
+
+          const allText=rootData.map(x=>x.textPreview).join('\n');
+          const providerHits=['Gotogate','Mytrip','Flightnetwork','JetSmart','Comprar','Seleccione billete']
+            .filter(x=>allText.toLowerCase().includes(x.toLowerCase()));
+          const allPrices=[...new Set(rootData.flatMap(x=>x.prices))].slice(0,50);
+          const buyButtons=rootData.flatMap(x=>x.buttons).filter(x=>/comprar|billete|buy|select/i.test(x.text+' '+x.aria+' '+x.title)).slice(0,30);
+          const links=rootData.flatMap(x=>x.links).filter(x=>x.href).slice(0,50);
+
+          const buyNeighborhoods=[];
+          roots.forEach((root,rootIndex)=>{
+            if(!root.querySelectorAll) return;
+            [...root.querySelectorAll('button')].forEach(btn=>{
+              const label=(btn.innerText||btn.textContent||btn.getAttribute('aria-label')||'').trim();
+              if(!/comprar|buy/i.test(label)) return;
+              let el=btn;
+              const ancestry=[];
+              for(let level=0; level<7 && el; level++,el=el.parentElement){
+                const attrs={};
+                if(el.attributes) [...el.attributes].forEach(a=>attrs[a.name]=a.value);
+                ancestry.push({
+                  level,
+                  tag:el.tagName||'',
+                  id:el.id||'',
+                  className:typeof el.className==='string'?el.className:'',
+                  text:(el.innerText||el.textContent||'').trim().slice(0,1500),
+                  attrs,
+                  html:(el.outerHTML||'').slice(0,2500)
+                });
+              }
+              buyNeighborhoods.push({rootIndex,label,ancestry});
+            });
+          });
+
+          const rawTextNodes=[];
+          roots.forEach((root,rootIndex)=>{
+            try{
+              const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+              let n;
+              while((n=walker.nextNode()) && rawTextNodes.length<300){
+                const v=(n.nodeValue||'').trim();
+                if(v) rawTextNodes.push({rootIndex,text:v.slice(0,300),parent:n.parentElement?n.parentElement.tagName:''});
+              }
+            }catch(_){}
+          });
+
+          function decodeRedirectClues(captures){
+            const found=[];
+            (captures||[]).slice().reverse().forEach(cap=>{
+              (cap.clues||[]).forEach(raw=>{
+                if(typeof raw!=='string'||!raw.includes('tpscr.com/wl/redirect')) return;
+                try{
+                  const u=new URL(raw);
+                  const params={};
+                  u.searchParams.forEach((v,k)=>{
+                    let value=v;
+                    try{ value=decodeURIComponent(v); }catch(_){}
+                    params[k]=value;
+                  });
+                  const nested={};
+                  ['redirect_url','fallback_url','url'].forEach(k=>{
+                    if(!params[k]) return;
+                    try{
+                      const nu=new URL(params[k]);
+                      const np={};
+                      nu.searchParams.forEach((v,nk)=>np[nk]=v);
+                      nested[k]={url:params[k],host:nu.host,params:np};
+                    }catch(_){ nested[k]={url:params[k]}; }
+                  });
+                  const internal={};
+                  Object.entries(nested).forEach(([key,obj])=>{
+                    try{
+                      const pu=new URL(obj.url);
+                      const m=pu.pathname.match(/\/searches\/([^/]+)\/clicks\/([^/?#]+)/i);
+                      if(m) internal[key]={
+                        searchId:m[1],
+                        clickId:m[2],
+                        host:pu.host,
+                        path:pu.pathname
+                      };
+                    }catch(_){}
+                  });
+                  found.push({raw,host:u.host,path:u.pathname,params,nested,internal});
+                }catch(_){}
+              });
+            });
+            return found;
+          }
+          function extractTicketsPayload(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const hits=[];
+            logs.forEach(x=>{
+              if(!/\/tickets\/search/i.test(x.url||'')) return;
+              const raw=String(x.preview||'');
+              let parsed=null;
+              try{ parsed=JSON.parse(raw); }catch(_){}
+              hits.push({
+                url:x.url,
+                status:x.status,
+                parsed:parsed,
+                raw:parsed?undefined:raw.slice(0,20000)
+              });
+            });
+            return hits;
+          }
+          const ticketsPayload=extractTicketsPayload();
+          function extractPricesPayload(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const hits=[];
+            logs.forEach(x=>{
+              if(!/\/whitelabels\/web\/flights\/v1\/prices/i.test(x.url||'')) return;
+              const raw=String(x.preview||'');
+              let parsed=null;
+              try{ parsed=JSON.parse(raw); }catch(_){}
+              hits.push({
+                url:x.url,
+                status:x.status,
+                parsed:parsed,
+                raw:parsed?undefined:raw.slice(0,12000)
+              });
+            });
+            return hits;
+          }
+          const pricesPayload=extractPricesPayload();
+          function huntVisibleFlightData(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const needles=['364','391','427','JetSmart','jetsmart'];
+            const hits=[];
+            logs.forEach(x=>{
+              const full=String(x.preview||'')+'\n'+((x.money||[]).join('\n'));
+              const lower=full.toLowerCase();
+              const matched=needles.filter(n=>lower.includes(n.toLowerCase()));
+              if(!matched.length) return;
+              let excerpt='';
+              const positions=matched.map(n=>lower.indexOf(n.toLowerCase())).filter(i=>i>=0);
+              if(positions.length){
+                const p=Math.min(...positions);
+                excerpt=full.slice(Math.max(0,p-1200),Math.min(full.length,p+4000));
+              }
+              hits.push({url:x.url,status:x.status,matched,excerpt});
+            });
+            return hits;
+          }
+          const visibleFlightHits=huntVisibleFlightData();
+          function summarizeNetwork(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const out=[];
+            logs.forEach(x=>{
+              const body=(x.preview||'')+' '+((x.money||[]).join(' '));
+              const nums=[];
+              const re=/(?:price|amount|value|total)[^0-9]{0,35}([0-9]{3,9}(?:[.,][0-9]{1,2})?)/gi;
+              let m;
+              while((m=re.exec(body))&&nums.length<15) nums.push(m[1]);
+              const currencies=[...new Set((body.match(/\b(?:ARS|USD|BRL|EUR|CLP|UYU)\b/gi)||[]).map(v=>v.toUpperCase()))];
+              const providers=['Farera','City.Travel','Wowtickets','Vayama','Wingie','Gotogate','Trip.com','Mytrip','Flightnetwork','Kiwi'].filter(p=>body.toLowerCase().includes(p.toLowerCase()));
+              if(nums.length||currencies.length||providers.length){
+                out.push({url:x.url,status:x.status,prices:[...new Set(nums)].slice(0,15),currencies,providers});
+              }
+            });
+            return out;
+          }
+          const networkSummary=summarizeNetwork();
+          const redirectDecoded=decodeRedirectClues(clickCaptures);
+          const last=clickCaptures.length?clickCaptures[clickCaptures.length-1]:null;
+          const clickText=last ? (last.path||[]).map(x=>x.text).filter(Boolean).join(' | ') : '';
+          const clickClues=last ? (last.clues||[]) : [];
+          const priceNear=(clickText.match(/(?:\\$|USD|US\\$)\\s*[\\d.,]+/gi)||[]).slice(0,6);
+          const providerNear=['Farera','Wowtickets','Trip.com','Gotogate','Mytrip.com','Flightnetwork','City.Travel','Kiwi.com'].filter(x=>clickText.toLowerCase().includes(x.toLowerCase()));
+          const buttonNear=last ? ((last.path||[]).map(x=>x.text).find(x=>/comprar|seleccione billete|buy/i.test(x))||last.target?.text||'') : '';
+          status.innerHTML='Shadow DOM abiertos: '+(roots.length-1)+' · Precios detectados: '+allPrices.length+'.<br>'+
+            '<strong>ÚLTIMO CLIC:</strong> '+(buttonNear||'ninguno')+'<br>'+
+            '<strong>Proveedor:</strong> '+(providerNear.join(', ')||'no detectado')+
+            ' · <strong>Precio:</strong> '+(priceNear.join(', ')||'no detectado')+'<br>'+
+            '<strong>URL / ticketId:</strong> '+(clickClues.length?clickClues.join(' | '):'no detectado')+'<br>'+
+            '<strong>REDIRECT DECODIFICADO:</strong> '+(redirectDecoded.length?JSON.stringify(redirectDecoded[0],null,2):'no detectado')+'<br>'+
+            '<strong>IDs INTERNOS:</strong> '+(redirectDecoded[0]?.internal&&Object.keys(redirectDecoded[0].internal).length?JSON.stringify(redirectDecoded[0].internal,null,2):'no detectados')+'<br>'+
+            '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length+'<br>'+
+            '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
+            '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
+            '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
+            '<strong>BUSQUEDA USD 364 / 391 / 427 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
+          out.textContent=JSON.stringify({
+            prices:allPrices,
+            providerHits,
+            buyButtons,
+            links,
+            buyNeighborhoods,
+            rawTextNodes,
+            clickCaptures,
+            redirectDecoded,
+            networkSummary,
+            pricesPayload,
+            ticketsPayload,
+            visibleFlightHits,
+            networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
+            roots:rootData
+          },null,2);
+        },450);
+      }
+
+      new MutationObserver(inspect).observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+      setInterval(inspect,2000);
+      inspect();
+    })();
+  </script>
 </body>
 </html>
