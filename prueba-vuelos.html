@@ -282,6 +282,26 @@
             return hits;
           }
           const pricesPayload=extractPricesPayload();
+          function huntVisibleFlightData(){
+            const logs=window.__TPWL_NET_LOG||[];
+            const needles=['562867','562.867','JetSmart','jetsmart'];
+            const hits=[];
+            logs.forEach(x=>{
+              const full=String(x.preview||'')+'\n'+((x.money||[]).join('\n'));
+              const lower=full.toLowerCase();
+              const matched=needles.filter(n=>lower.includes(n.toLowerCase()));
+              if(!matched.length) return;
+              let excerpt='';
+              const positions=matched.map(n=>lower.indexOf(n.toLowerCase())).filter(i=>i>=0);
+              if(positions.length){
+                const p=Math.min(...positions);
+                excerpt=full.slice(Math.max(0,p-1200),Math.min(full.length,p+4000));
+              }
+              hits.push({url:x.url,status:x.status,matched,excerpt});
+            });
+            return hits;
+          }
+          const visibleFlightHits=huntVisibleFlightData();
           function summarizeNetwork(){
             const logs=window.__TPWL_NET_LOG||[];
             const out=[];
@@ -317,7 +337,8 @@
             '<strong>RESPUESTAS DE RED:</strong> '+(window.__TPWL_NET_LOG||[]).length+'<br>'+
             '<strong>DATOS DE PRECIOS/AGENCIAS:</strong> '+(networkSummary.length?JSON.stringify(networkSummary.slice(0,8),null,2):'ninguno detectado')+'<br>'+
             '<strong>JSON /prices:</strong> '+(pricesPayload.length?JSON.stringify(pricesPayload.slice(-2),null,2):'no capturado')+'<br>'+
-            '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado');
+            '<strong>JSON /tickets/search:</strong> '+(ticketsPayload.length?JSON.stringify(ticketsPayload.slice(-3),null,2):'no capturado')+'<br>'+
+            '<strong>BUSQUEDA 562867 / JetSmart:</strong> '+(visibleFlightHits.length?JSON.stringify(visibleFlightHits,null,2):'sin coincidencias');
           out.textContent=JSON.stringify({
             prices:allPrices,
             providerHits,
@@ -330,6 +351,7 @@
             networkSummary,
             pricesPayload,
             ticketsPayload,
+            visibleFlightHits,
             networkResponses:(window.__TPWL_NET_LOG||[]).map(x=>({time:x.time,kind:x.kind,url:x.url,status:x.status,money:x.money,preview:x.preview})),
             roots:rootData
           },null,2);
