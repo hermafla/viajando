@@ -8,8 +8,8 @@ export default async function handler(req,res){
   const adults=Math.max(1,Number(req.query.adults||2)), currency=String(req.query.currency||'USD').toUpperCase(), guestNationality=String(req.query.guestNationality||'AR').toUpperCase();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)) return res.status(400).json({error:'Fechas inválidas'});
   let occupancies=[{rooms:1,adults}];
-  if(req.query.occupancies){try{const parsed=JSON.parse(String(req.query.occupancies));if(Array.isArray(parsed)&&parsed.length){occupancies=parsed.slice(0,5).map(o=>{const a=Math.max(1,Number(o.adults||1));const ages=Array.isArray(o.childAges)?o.childAges.map(x=>Math.max(0,Math.min(17,Number(x)||0))):[];return {rooms:1,adults:a,...(ages.length?{children:ages.length,childrenAges:ages}: {})}})}}catch{}}
-  const totalAdults=occupancies.reduce((s,o)=>s+o.adults,0),totalChildren=occupancies.reduce((s,o)=>s+(o.children||0),0);
+  if(req.query.occupancies){try{const parsed=JSON.parse(String(req.query.occupancies));if(Array.isArray(parsed)&&parsed.length){occupancies=parsed.slice(0,5).map(o=>{const a=Math.max(1,Number(o.adults||1));const ages=Array.isArray(o.childAges)?o.childAges.map(x=>Math.max(0,Math.min(17,Number(x)||0))):[];return {adults:a,...(ages.length?{children:ages}: {})}})}}catch{}}
+  const totalAdults=occupancies.reduce((s,o)=>s+o.adults,0),totalChildren=occupancies.reduce((s,o)=>s+(Array.isArray(o.children)?o.children.length:0),0);
   const headers={'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'};
   const num=v=>{if(v==null)return null;if(typeof v==='number')return v;if(typeof v==='string'&&!isNaN(Number(v)))return Number(v);if(typeof v==='object'){for(const k of ['amount','value','total']){const n=num(v[k]);if(n!=null)return n}}return null};
   try{
