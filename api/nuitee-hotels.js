@@ -5,7 +5,7 @@ export default async function handler(req,res){
   if(!key) return res.status(503).json({error:'Falta configurar NUITEE_API_KEY en Vercel para activar la prueba.'});
   const city=String(req.query.city||'Rio de Janeiro'), countryCode=String(req.query.countryCode||'BR').toUpperCase(), placeId=String(req.query.placeId||'').trim();
   const checkin=String(req.query.checkin||''), checkout=String(req.query.checkout||'');
-  const adults=Math.max(1,Number(req.query.adults||2)), currency=String(req.query.currency||'USD').toUpperCase(), guestNationality=String(req.query.guestNationality||'AR').toUpperCase(); const testMargin=req.query.testMargin==null?null:Number(req.query.testMargin);
+  const adults=Math.max(1,Number(req.query.adults||2)), currency=String(req.query.currency||'USD').toUpperCase(), guestNationality=String(req.query.guestNationality||'AR').toUpperCase(); const testMargin=req.query.testMargin==null?null:Number(req.query.testMargin), effectiveMargin=(Number.isFinite(testMargin)&&[0,5,10,15].includes(testMargin))?testMargin:10;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)) return res.status(400).json({error:'Fechas inválidas'});
   let occupancies=[{rooms:1,adults}];
   if(req.query.occupancies){try{const parsed=JSON.parse(String(req.query.occupancies));if(Array.isArray(parsed)&&parsed.length){occupancies=parsed.slice(0,5).map(o=>{const a=Math.max(1,Number(o.adults||1));const ages=Array.isArray(o.childAges)?o.childAges.map(x=>Math.max(0,Math.min(17,Number(x)||0))):[];return {adults:a,...(ages.length?{children:ages}: {})}})}}catch{}}
@@ -15,7 +15,7 @@ export default async function handler(req,res){
   try{
     const [catalogRes,ratesRes]=await Promise.all([
       fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams(placeId?{placeId,limit:'200',language:'es'}:{countryCode,cityName:city,limit:'200',language:'es'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...(placeId?{placeId}:{countryCode,cityName:city}),checkin,checkout,currency,guestNationality,occupancies,...(Number.isFinite(testMargin)&&[0,5,10,15].includes(testMargin)?{margin:testMargin}:{}),maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...(placeId?{placeId}:{countryCode,cityName:city}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
@@ -46,6 +46,6 @@ export default async function handler(req,res){
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const commissionDiagnostic=hotels.slice(0,5).map(h=>({hotelId:h.hotelId,name:h.name,currency:h.currency,retailRate:h.retailRate,commissionAmount:h.commissionAmount,commission:h.commission}));
-    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
+    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,effectiveMargin,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
