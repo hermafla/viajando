@@ -1,1 +1,11 @@
-export default async function handler(req,res){if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});try{const r=await fetch('https://open.er-api.com/v6/latest/USD');const d=await r.json();const rate=Number(d?.rates?.ARS);if(!r.ok||d?.result!=='success'||!rate)throw new Error('Cotización no disponible');res.setHeader('Cache-Control','s-maxage=21600, stale-while-revalidate=86400');return res.status(200).json({base:'USD',quote:'ARS',rate,updatedAt:d.time_last_update_utc||null,source:'ExchangeRate-API'});}catch(e){return res.status(502).json({error:'No se pudo obtener la conversión USD/ARS'});}}
+export default async function handler(req,res){
+if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
+try{
+const r=await fetch('https://dolarapi.com/v1/dolares/oficial');
+const d=await r.json();
+const compra=Number(d&&d.compra),venta=Number(d&&d.venta);
+if(!r.ok||!venta)throw new Error('Cotización no disponible');
+res.setHeader('Cache-Control','s-maxage=900, stale-while-revalidate=3600');
+return res.status(200).json({base:'USD',quote:'ARS',rate:venta,compra,venta,updatedAt:d.fechaActualizacion||null,source:'DolarAPI',reference:'Dólar oficial vendedor'});
+}catch(e){return res.status(502).json({error:'No se pudo obtener la cotización oficial'});}
+}
