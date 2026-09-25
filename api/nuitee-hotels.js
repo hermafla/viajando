@@ -28,7 +28,7 @@ export default async function handler(req,res){
           const fees=(Array.isArray(feeSource)?feeSource:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
           const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
           const ssp=num(rate.suggestedSellingPrice??room.suggestedSellingPrice??item.suggestedSellingPrice??rr.suggestedSellingPrice);
-          offers.push({offerId:rate.offerId||room.offerId||'',retailRate:amount,currency,fees,dueAtProperty,estimatedTotal:amount+dueAtProperty,roomName:rate.name||room.name||rate.roomName||room.roomName||'Habitación',boardName:rate.boardName||rate.boardType||room.boardName||'',mappedRoomId:rate.mappedRoomId||room.mappedRoomId||null,refundableTag:(rate.cancellationPolicies&&rate.cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||'',suggestedSellingPrice:ssp});
+          const cancellationPolicies=rate.cancellationPolicies||room.cancellationPolicies||null; const refundableTag=(cancellationPolicies&&cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||''; const includedFees=fees.filter(f=>f.included).reduce((s,f)=>s+f.amount,0); offers.push({offerId:rate.offerId||room.offerId||'',retailRate:amount,currency,fees,includedFees,dueAtProperty,estimatedTotal:amount+dueAtProperty,roomName:rate.name||room.name||rate.roomName||room.roomName||'Habitación',boardName:rate.boardName||rate.boardType||room.boardName||'',mappedRoomId:rate.mappedRoomId||room.mappedRoomId||null,refundableTag,cancellationPolicies,suggestedSellingPrice:ssp});
         }
       }
       offers.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
