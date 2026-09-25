@@ -9,7 +9,7 @@ export default async function handler(req,res){
   try{
     const r=await fetch('https://book.liteapi.travel/v3.0/rates/prebook?timeout=30',{method:'POST',headers:{'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({offerId,usePaymentSdk:false})});
     const j=await r.json();
-    if(!r.ok) return res.status(r.status).json({error:(typeof j.message==='string'?j.message:(typeof j.error==='string'?j.error:(j.error?.message||j.message?.message)))||'La tarifa cambió o ya no está disponible. Volvé a buscar.'});
+    if(!r.ok){const code=String(j.code??j.error?.code??j.data?.code??''),msg=(typeof j.message==='string'?j.message:(typeof j.error==='string'?j.error:(j.error?.message||j.message?.message)))||'';let reason='technical',error='No pudimos reconfirmar esta tarifa. Volvé a intentarlo.';if(code==='2001'||/no availability found/i.test(msg)){reason='refresh_offer';error='La tarifa seleccionada ya no puede confirmarse con ese precio o disponibilidad. Actualizá la búsqueda para obtener una oferta vigente.'}else if(code==='4016'||/timeout/i.test(msg)){reason='timeout';error='La reconfirmación demoró más de lo esperado. Intentá nuevamente.'}else if(code==='4002'||/offerId|offer id|invalid.*offer|required request field/i.test(msg)){reason='expired_offer';error='La oferta seleccionada venció. Actualizá la búsqueda para obtener una tarifa vigente.'}return res.status(r.status).json({error,reason,providerCode:code||null});}
     const d=j.data||j;
     const rr=d.retailRate||d.rate?.retailRate||d.room?.retailRate||d.roomType?.retailRate||{};
     const rawTotal=Array.isArray(rr.total)?rr.total[0]:rr.total;
