@@ -4,7 +4,8 @@
 const id=new URLSearchParams(location.search).get('hotelId'),app=document.getElementById('app');let imgs=[],idx=0;
 const strip=s=>{const d=document.createElement('div');d.innerHTML=s||'';return d.textContent||''};
 fetch('/api/nuitee-hotel-detail?hotelId='+encodeURIComponent(id||'')).then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.error);return j}).then(({hotel:h})=>{
- const images=Array.isArray(h.images)?h.images:[], facilities=Array.isArray(h.facilities)?h.facilities:[], rooms=Array.isArray(h.rooms)?h.rooms:[];\n imgs=images.map(x=>x&&x.url).filter(Boolean);document.title=(h.name||'Hotel')+' | Valijeando';
+ const images=Array.isArray(h.images)?h.images:[], facilities=Array.isArray(h.facilities)?h.facilities:[], rooms=Array.isArray(h.rooms)?h.rooms:[];
+ imgs=images.map(x=>x&&x.url).filter(Boolean);document.title=(h.name||'Hotel')+' | Valijeando';
  const gal=images.slice(0,5).map((x,i)=>'<img src="'+x.url+'" alt="'+(x.caption||h.name)+'" data-i="'+i+'">').join('');
  const fac=facilities.slice(0,30).map(x=>'<span class="chip">'+x+'</span>').join('');
  const roomCards=rooms.slice(0,12).map(r=>'<div class="room">'+(r.photos[0]?'<img src="'+r.photos[0]+'" alt="'+r.roomName+'">':'')+'<h3>'+r.roomName+'</h3>'+(r.description?'<p>'+strip(r.description)+'</p>':'')+(r.maxOccupancy?'<p class="muted">Hasta '+r.maxOccupancy+' huéspedes</p>':'')+'</div>').join('');
