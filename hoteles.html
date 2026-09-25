@@ -21,7 +21,7 @@ label{font-size:12px;font-weight:800;color:#64748b;display:block;margin-bottom:6
 <div class="destWrap"><label>Destino</label><input id="city" value="Rio de Janeiro" autocomplete="off" required><input id="placeId" type="hidden"><div class="suggestions" id="suggestions" hidden></div></div>
 <div><label>Entrada</label><input id="checkin" type="date" value="2027-01-15" required></div>
 <div><label>Salida</label><input id="checkout" type="date" value="2027-01-17" required></div>
-<div><label>Huéspedes</label><input id="adults" type="number" min="1" max="40" value="2" required readonly title="La composición se eligió en el buscador principal"></div>
+<div><label>Huéspedes</label><input id="adults" type="hidden" value="2"><div id="guestField" style="width:100%;border:1px solid #dbe3ee;border-radius:10px;padding:12px;font-size:14px;background:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">2 adultos · 1 habitación</div></div>
 <button type="submit">Buscar hoteles</button>
 </form>
 <div class="search-summary"><div class="status" id="status">Listo para buscar.</div><div class="guest-summary" id="guestSummary"></div></div><section class="grid" id="results"></section>
@@ -40,12 +40,12 @@ if(incoming.get('adults'))adults.value=incoming.get('adults');
 const incomingOccupancies=incoming.get('occupancies')||'';let occupancyData=[];try{occupancyData=JSON.parse(incomingOccupancies)||[]}catch{}
 const incomingChildren=Number(incoming.get('children')||0),incomingRooms=Number(incoming.get('rooms')||1);
 const guestText=()=>{const a=Number(adults.value||0),ch=incomingChildren,rm=incomingRooms;return a+' adulto'+(a===1?'':'s')+(ch?' · '+ch+' niño'+(ch===1?'':'s'):'')+' · '+rm+' habitación'+(rm===1?'':'es')};
-document.getElementById('guestSummary').textContent=guestText();
+document.getElementById('guestSummary').textContent=guestText();document.getElementById('guestField').textContent=guestText();
 const autoSearch=placeId.value&&checkin.value&&checkout.value;
 form.addEventListener('submit',async e=>{e.preventDefault();results.innerHTML='';status.textContent='Buscando disponibilidad y precios…';
 if(!placeId.value){status.textContent='Elegí un destino de la lista para buscar hoteles.';city.focus();return} const q=new URLSearchParams({city:city.value,placeId:placeId.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'USD',guestNationality:'AR'});if(incomingOccupancies)q.set('occupancies',incomingOccupancies);
 try{const r=await fetch('/api/nuitee-hotels?'+q);const data=await r.json();if(!r.ok)throw new Error(data.error||'No se pudo consultar Nuitee');
-status.textContent=data.hotels.length?data.hotels.length+' alojamientos disponibles':'No encontramos alojamientos con tarifa para esas fechas.';document.getElementById('guestSummary').textContent=guestText();
+status.textContent=data.hotels.length?data.hotels.length+' alojamientos disponibles':'No encontramos alojamientos con tarifa para esas fechas.';document.getElementById('guestSummary').textContent=guestText();document.getElementById('guestField').textContent=guestText();
 results.innerHTML=data.hotels.map(h=>{sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:incomingChildren,rooms:incomingRooms});if(incomingOccupancies)qp.set('occupancies',incomingOccupancies);const url='/hotel.html?'+qp;return `<article class="card" data-url="${url}" tabindex="0"><img src="${h.photo||''}" alt="${h.name}" loading="lazy"><div class="body"><div class="name">${h.name}</div><div class="meta">${h.stars?'★ '.repeat(Math.min(h.stars,5)):''}<span class="rating">${h.rating?h.rating+'/10':''}</span>${h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' reseñas':''}<br>${h.address||''}</div><div class="price"><span>Precio de la estadía</span><br><strong>${money(h.retailRate)}</strong><div class="small">${checkin.value} → ${checkout.value} · ${guestText()}</div>${h.dueAtProperty>0?`<div class="breakdown"><div>Pagás para reservar: <b>${money(h.retailRate)}</b></div><div>Pagás en el alojamiento: <b>${money(h.dueAtProperty)}</b></div><div class="total">Total estimado: ${money(h.estimatedTotal)}</div></div>`:''}<a class="detailBtn" href="${url}">Ver hotel, habitaciones y precio</a></div></div></article>`}).join('');
 }catch(err){status.innerHTML='<div class="error">'+err.message+'</div>';}});
 
