@@ -18,6 +18,6 @@ export default async function handler(req,res){
     const fs=rr.taxesAndFees||d.taxesAndFees||d.rate?.taxesAndFees||[];
     const fees=(Array.isArray(fs)?fs:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
     const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
-    return res.status(200).json({sandbox:true,prebookId:d.prebookId||'',price,currency,fees,dueAtProperty,estimatedTotal:price!=null?price+dueAtProperty:null,refundableTag:d.cancellationPolicies?.refundableTag||d.refundableTag||''});
+    return res.status(200).json({sandbox:true,prebookId:d.prebookId||'',price,currency,fees,dueAtProperty,estimatedTotal:price!=null?price+dueAtProperty:null,refundableTag:d.cancellationPolicies?.refundableTag||d.refundableTag||'',cancellationPolicies:d.cancellationPolicies||[]});
   }catch(e){return res.status(502).json({error:(typeof e?.message==='string'?e.message:'No se pudo reconfirmar la tarifa')});}
 }
