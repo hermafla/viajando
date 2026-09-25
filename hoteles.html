@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Hoteles | Valijeando</title>
+<link rel="icon" href="/valijeando-favicon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#172033}header{background:#07558f;padding:18px 24px}header img{width:210px;max-width:70vw;display:block}
+main{width:min(1180px,94%);margin:28px auto}.hero{background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff;padding:24px 26px;border-radius:18px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.hero h1{margin:0 0 7px;font-size:28px}.hero p{margin:0;color:rgba(255,255,255,.88);line-height:1.5}
+.search{display:grid;grid-template-columns:1.4fr 1fr 1fr .7fr auto;gap:10px;background:#fff;padding:16px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);margin-bottom:22px}
+label{font-size:12px;font-weight:800;color:#64748b;display:block;margin-bottom:6px}input{width:100%;border:1px solid #dbe3ee;border-radius:10px;padding:12px;font-size:15px}.destWrap{position:relative}.suggestions{position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #dbe3ee;border-radius:10px;box-shadow:0 10px 25px #0002;overflow:hidden;margin-top:4px}.suggestion{padding:10px 12px;cursor:pointer}.suggestion:hover{background:#eef6fb}.suggestion small{display:block;color:#64748b;margin-top:2px}button{border:0;border-radius:11px;background:#f58220;color:#fff;font-weight:800;padding:12px 22px;cursor:pointer;align-self:end;height:43px}
+.status{margin:16px 2px;color:#475569}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:#fff;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.07);display:flex;flex-direction:column}.card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.12)}.card img{width:100%;height:205px;object-fit:cover;background:#e9eef5}.body{padding:16px}.name{font-size:19px;font-weight:800;margin-bottom:6px}.meta{font-size:14px;color:#64748b;line-height:1.5}.rating{font-weight:800;color:#07558f}.price{margin-top:14px;border-top:1px solid #eef2f7;padding-top:13px}.price strong{font-size:24px}.small{font-size:12px;color:#64748b;margin-top:4px}.breakdown{margin-top:12px;padding:11px 12px;background:#f8fafc;border-radius:10px;font-size:13px;line-height:1.55}.breakdown b{color:#172033}.total{margin-top:7px;font-weight:800;color:#07558f}.detailBtn{display:block;text-align:center;text-decoration:none;background:#07558f;color:#fff;border-radius:11px;font-weight:800;padding:11px;margin-top:12px}.finalBtn{width:100%;margin-top:9px;height:auto;padding:11px}.finalBox{margin-top:10px;padding:12px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;font-size:13px;line-height:1.55}.finalBox strong{font-size:18px}.loading{opacity:.65;pointer-events:none}.badge{display:inline-block;background:#eaf4fb;color:#07558f;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;margin-bottom:8px}.error{background:#fff0f0;color:#9b1c1c;padding:14px;border-radius:12px}
+@media(max-width:900px){.search{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){main{width:94%;margin-top:18px}.search,.grid{grid-template-columns:1fr}.hero h1{font-size:24px}}
+</style></head>
+<body><header><a href="/"><img src="/valijeando-logo.svg" alt="Valijeando"></a></header>
+<main>
+<section class="hero"><h1>Prueba técnica de hoteles</h1><p>Buscador temporal conectado a Nuitee/LiteAPI. No modifica el buscador actual de Valijeando.</p></section>
+<form class="search" id="search">
+<div class="destWrap"><label>Destino</label><input id="city" value="Rio de Janeiro" autocomplete="off" required><input id="placeId" type="hidden"><div class="suggestions" id="suggestions" hidden></div></div>
+<div><label>Entrada</label><input id="checkin" type="date" value="2027-01-15" required></div>
+<div><label>Salida</label><input id="checkout" type="date" value="2027-01-17" required></div>
+<div><label>Adultos</label><input id="adults" type="number" min="1" max="8" value="2" required></div>
+<button type="submit">Buscar hoteles</button>
+</form>
+<div class="status" id="status">Listo para buscar.</div><section class="grid" id="results"></section>
+</main>
+<script>
+const form=document.getElementById('search'),status=document.getElementById('status'),results=document.getElementById('results'),suggestions=document.getElementById('suggestions'),placeId=document.getElementById('placeId');
+let destTimer; city.addEventListener('input',()=>{placeId.value='';clearTimeout(destTimer);const q=city.value.trim();if(q.length<2){suggestions.hidden=true;return}destTimer=setTimeout(async()=>{try{const r=await fetch('/api/nuitee-places?q='+encodeURIComponent(q));const d=await r.json();const ps=d.places||[];suggestions.innerHTML=ps.map((p,i)=>'<div class="suggestion" data-i="'+i+'"><b>'+esc(p.displayName)+'</b><small>'+esc(p.formattedAddress)+'</small></div>').join('');suggestions._places=ps;suggestions.hidden=!ps.length}catch{suggestions.hidden=true}},250)});suggestions.addEventListener('click',e=>{const el=e.target.closest('.suggestion');if(!el)return;const p=suggestions._places[+el.dataset.i];city.value=p.displayName+(p.formattedAddress?' · '+p.formattedAddress:'');placeId.value=p.placeId;suggestions.hidden=true});document.addEventListener('click',e=>{if(!e.target.closest('.destWrap'))suggestions.hidden=true});
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const money=n=>'USD '+Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const incoming=new URLSearchParams(location.search);
+if(incoming.get('city'))city.value=incoming.get('city');
+if(incoming.get('placeId'))placeId.value=incoming.get('placeId');
+if(incoming.get('checkin'))checkin.value=incoming.get('checkin');
+if(incoming.get('checkout'))checkout.value=incoming.get('checkout');
+if(incoming.get('adults'))adults.value=incoming.get('adults');
+const autoSearch=placeId.value&&checkin.value&&checkout.value;
+form.addEventListener('submit',async e=>{e.preventDefault();results.innerHTML='';status.textContent='Buscando disponibilidad y precios…';
+if(!placeId.value){status.textContent='Elegí un destino de la lista para buscar hoteles.';city.focus();return} const q=new URLSearchParams({city:city.value,placeId:placeId.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'USD',guestNationality:'AR'});
+try{const r=await fetch('/api/nuitee-hotels?'+q);const data=await r.json();if(!r.ok)throw new Error(data.error||'No se pudo consultar Nuitee');
+status.textContent=data.hotels.length?data.hotels.length+' hoteles con tarifa encontrados':'No encontramos hoteles con tarifa para esas fechas.';
+results.innerHTML=data.hotels.map(h=>{sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value});const url='/hotel.html?'+qp;return `<article class="card" data-url="${url}" tabindex="0"><img src="${h.photo||''}" alt="${h.name}" loading="lazy"><div class="body"><div class="name">${h.name}</div><div class="meta">${h.stars?'★ '.repeat(Math.min(h.stars,5)):''}<span class="rating">${h.rating?h.rating+'/10':''}</span>${h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' reseñas':''}<br>${h.address||''}</div><div class="price"><span>Precio de la estadía</span><br><strong>${money(h.retailRate)}</strong><div class="small">${checkin.value} → ${checkout.value} · ${adults.value} adulto(s)</div>${h.dueAtProperty>0?`<div class="breakdown"><div>Pagás para reservar: <b>${money(h.retailRate)}</b></div><div>Pagás en el alojamiento: <b>${money(h.dueAtProperty)}</b></div><div class="total">Total estimado: ${money(h.estimatedTotal)}</div></div>`:''}<a class="detailBtn" href="${url}">Ver hotel, habitaciones y precio</a></div></div></article>`}).join('');
+}catch(err){status.innerHTML='<div class="error">'+err.message+'</div>';}});
+
+if(autoSearch)form.requestSubmit();
+results.addEventListener('click',e=>{const card=e.target.closest('.card');if(card&&!e.target.closest('button,a'))location.href=card.dataset.url});
+results.addEventListener('keydown',e=>{const card=e.target.closest('.card');if(card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.href=card.dataset.url}});
+
+results.addEventListener('click',async e=>{
+ const btn=e.target.closest('.finalBtn'); if(!btn)return;
+ const box=btn.nextElementSibling,offerId=btn.dataset.offer;
+ if(!offerId){box.hidden=false;box.textContent='Esta tarifa no se puede reconfirmar. Volvé a buscar.';return}
+ btn.classList.add('loading');btn.textContent='Reconfirmando…';box.hidden=true;
+ try{
+  const r=await fetch('/api/nuitee-prebook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({offerId})});
+  const d=await r.json(); if(!r.ok)throw new Error(d.error||'No se pudo reconfirmar');
+  box.hidden=false;
+  const p=d.price!=null?money(d.price):'Precio confirmado por Nuitee';
+  box.innerHTML='<b>Precio reconfirmado</b><br><strong>'+p+'</strong>'+(d.dueAtProperty>0?'<br>Pagás en el alojamiento: <b>'+money(d.dueAtProperty)+'</b><br>Total estimado: <b>'+money(d.estimatedTotal)+'</b>':'<br><span class="small">No se informaron cargos separados en esta reconfirmación.</span>')+'<br><span class="small">Disponibilidad y precio reconfirmados antes de reservar.</span>';
+ }catch(err){box.hidden=false;box.innerHTML='<span style="color:#9b1c1c">'+err.message+'</span>'}
+ finally{btn.classList.remove('loading');btn.textContent='Volver a reconfirmar'}
+});
+</script></body></html>
