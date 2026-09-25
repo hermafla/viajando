@@ -33,7 +33,10 @@ export default async function handler(req,res){
           const fees=(Array.isArray(feeSource)?feeSource:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
           const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
           const ssp=num(rate.suggestedSellingPrice??room.suggestedSellingPrice??item.suggestedSellingPrice??rr.suggestedSellingPrice);
-          const cancellationPolicies=rate.cancellationPolicies||room.cancellationPolicies||null; const refundableTag=(cancellationPolicies&&cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||''; const includedFees=fees.filter(f=>f.included).reduce((s,f)=>s+f.amount,0); offers.push({offerId:rate.offerId||room.offerId||'',retailRate:amount,currency,fees,includedFees,dueAtProperty,estimatedTotal:amount+dueAtProperty,roomName:rate.name||room.name||rate.roomName||room.roomName||'Habitación',boardName:rate.boardName||rate.boardType||room.boardName||'',mappedRoomId:rate.mappedRoomId||room.mappedRoomId||null,refundableTag,cancellationPolicies,suggestedSellingPrice:ssp});
+          const commissionSource=rate.commission||room.commission||item.commission||[];
+          const commissionItems=(Array.isArray(commissionSource)?commissionSource:[commissionSource]).filter(Boolean).map(x=>({amount:num(x.amount??x.value??x.total)||0,currency:x.currency||currency,type:x.type||x.name||''}));
+          const commissionAmount=commissionItems.reduce((s,x)=>s+x.amount,0);
+          const cancellationPolicies=rate.cancellationPolicies||room.cancellationPolicies||null; const refundableTag=(cancellationPolicies&&cancellationPolicies.refundableTag)||rate.refundableTag||room.refundableTag||''; const includedFees=fees.filter(f=>f.included).reduce((s,f)=>s+f.amount,0); offers.push({offerId:rate.offerId||room.offerId||'',retailRate:amount,currency,fees,includedFees,dueAtProperty,estimatedTotal:amount+dueAtProperty,roomName:rate.name||room.name||rate.roomName||room.roomName||'Habitación',boardName:rate.boardName||rate.boardType||room.boardName||'',mappedRoomId:rate.mappedRoomId||room.mappedRoomId||null,refundableTag,cancellationPolicies,suggestedSellingPrice:ssp,commissionAmount,commission:commissionItems});
         }
       }
       offers.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
@@ -41,6 +44,8 @@ export default async function handler(req,res){
       const best=offers[0];
       hotels.push({hotelId:item.hotelId,name:meta.name||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...best,offers:offers.slice(0,8)});
     }
-    hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal); return res.status(200).json({sandbox:true,hotels,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
+    hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
+    const commissionDiagnostic=hotels.slice(0,5).map(h=>({hotelId:h.hotelId,name:h.name,currency:h.currency,retailRate:h.retailRate,commissionAmount:h.commissionAmount,commission:h.commission}));
+    return res.status(200).json({sandbox:true,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
