@@ -3,7 +3,7 @@ export default async function handler(req,res){
   if(req.method!=='GET') return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key) return res.status(503).json({error:'Falta configurar NUITEE_API_KEY en Vercel para activar la prueba.'});
-  const city=String(req.query.city||'Rio de Janeiro'), countryCode=String(req.query.countryCode||'BR').toUpperCase();
+  const city=String(req.query.city||'Rio de Janeiro'), countryCode=String(req.query.countryCode||'BR').toUpperCase(), placeId=String(req.query.placeId||'').trim();
   const checkin=String(req.query.checkin||''), checkout=String(req.query.checkout||'');
   const adults=Math.max(1,Number(req.query.adults||2)), currency=String(req.query.currency||'USD').toUpperCase(), guestNationality=String(req.query.guestNationality||'AR').toUpperCase();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)) return res.status(400).json({error:'Fechas inválidas'});
@@ -11,8 +11,8 @@ export default async function handler(req,res){
   const num=v=>{if(v==null)return null;if(typeof v==='number')return v;if(typeof v==='string'&&!isNaN(Number(v)))return Number(v);if(typeof v==='object'){for(const k of ['amount','value','total']){const n=num(v[k]);if(n!=null)return n}}return null};
   try{
     const [catalogRes,ratesRes]=await Promise.all([
-      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({countryCode,cityName:city,limit:'200',language:'es'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({countryCode,cityName:city,checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
+      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams(placeId?{placeId,limit:'200',language:'es'}:{countryCode,cityName:city,limit:'200',language:'es'}),{headers}),
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...(placeId?{placeId}:{countryCode,cityName:city}),checkin,checkout,currency,guestNationality,occupancies:[{rooms:1,adults}],maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
