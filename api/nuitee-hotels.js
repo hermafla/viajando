@@ -20,8 +20,10 @@ export default async function handler(req,res){
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
     if(!ratesRes.ok) throw new Error(rates.message||'Error al consultar tarifas');
-    const byId=new Map((catalog.data||[]).map(h=>[h.id,h])), hotels=[];
-    for(const item of (rates.data||[])){
+    const catalogHotels=Array.isArray(catalog.data)?catalog.data:(Array.isArray(catalog.data?.hotels)?catalog.data.hotels:[]);
+    const rateHotels=Array.isArray(rates.data)?rates.data:(Array.isArray(rates.data?.hotels)?rates.data.hotels:[]);
+    const byId=new Map(catalogHotels.map(h=>[h.id,h])), hotels=[];
+    for(const item of rateHotels){
       const meta=byId.get(item.hotelId)||{}, offers=[];
       for(const room of (item.roomTypes||[])){
         const rateList=(room.rates&&room.rates.length?room.rates:[room]);
@@ -39,6 +41,6 @@ export default async function handler(req,res){
       const best=offers[0];
       hotels.push({hotelId:item.hotelId,name:meta.name||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...best,offers:offers.slice(0,8)});
     }
-    hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal); return res.status(200).json({sandbox:true,hotels,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies}});
+    hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal); return res.status(200).json({sandbox:true,hotels,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
