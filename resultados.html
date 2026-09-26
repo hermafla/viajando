@@ -26,12 +26,18 @@ async function aplicarHotelesReales(opciones){
   const consultas=opciones.map(async v=>{
     const d=destinosHotel[v.destino]; if(!d)return v;
     try{
-      const pr=await fetch("/api/nuitee-places?q="+encodeURIComponent(v.destino)),pj=await pr.json();
-      const places=Array.isArray(pj.places)?pj.places:[],place=places.find(x=>String(x.displayName||"").toLowerCase().includes(v.destino.split(" ")[0].toLowerCase()))||places[0];
-      if(!pr.ok||!place?.placeId)return v;
-      const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,placeId:place.placeId,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(viajeros),currency:"USD",guestNationality:"AR"});
+      const consultasLugar=[v.destino,d.city].filter((x,i,a)=>x&&a.indexOf(x)===i);
+      let place=null;
+      for(const termino of consultasLugar){
+        const pr=await fetch("/api/nuitee-places?q="+encodeURIComponent(termino)),pj=await pr.json();
+        const places=Array.isArray(pj.places)?pj.places:[];
+        place=places.find(x=>String(x.displayName||"").toLowerCase().includes(d.city.split(" ")[0].toLowerCase()))||places[0]||null;
+        if(pr.ok&&place?.placeId)break;
+      }
+      const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(viajeros),currency:"USD",guestNationality:"AR"});
+      if(place?.placeId)q.set("placeId",place.placeId);
       const r=await fetch("/api/nuitee-hotels?"+q),j=await r.json();
-      if(!r.ok||!Array.isArray(j.hotels)||!j.hotels.length)return v;
+      if(!r.ok||!Array.isArray(j.hotels)||!j.hotels.length){console.warn("Hotel sin tarifa",v.destino,r.status,j.error||j.debug||"sin hoteles");return v;}
       const h=[...j.hotels].sort((a,b)=>Number(a.estimatedTotal||a.retailRate)-Number(b.estimatedTotal||b.retailRate))[0];
       const hotelTotal=Math.round(Number(h.estimatedTotal||h.retailRate)*100)/100;
       return {...v,hotelCalc:hotelTotal,hotelReal:true,hotelNombre:h.name||"",hotelId:h.hotelId||"",total:v.vueloReal?v.vueloCalc+hotelTotal+v.otrosCalc:null};
