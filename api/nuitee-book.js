@@ -22,6 +22,7 @@ export default async function handler(req,res){
     const bookingId=d.bookingId||d.id||'';
     const hotelConfirmationCode=d.hotelConfirmationCode||d.confirmationCode||'';
     const status=d.status||'confirmed';
+    const dbStatus=String(status).toLowerCase()==='cancelled'?'cancelada':'confirmada';
 
     let saved=false,saveError='';
     const supabaseUrl=process.env.SUPABASE_URL;
@@ -59,7 +60,7 @@ export default async function handler(req,res){
         cotizacion_fecha:bna?new Date().toISOString():null,
         pagado:false,
         cargos_alojamiento_usd:num(reservation.dueAtProperty)||0,
-        estado:clean(status)||'confirmed',
+        estado:dbStatus,
         datos_proveedor:d
       };
       try{
@@ -69,7 +70,7 @@ export default async function handler(req,res){
           body:JSON.stringify(row)
         });
         if(sr.ok) saved=true;
-        else saveError='Supabase '+sr.status+': '+await sr.text();
+        else {saveError='Supabase '+sr.status+': '+await sr.text(); console.error('Supabase reserva INSERT',sr.status,saveError);}
       }catch(se){saveError=se?.message||'No se pudo guardar en Supabase';}
     }else if(!supabaseUrl||!supabaseKey){
       saveError='Falta configurar Supabase en el servidor';
