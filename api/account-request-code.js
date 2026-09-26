@@ -7,6 +7,25 @@ const hash=(email,code,secret)=>crypto.createHmac('sha256',secret).update(email+
 
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
+  if(req.method==='GET'){
+    const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
+    const [body,sig]=token.split('.');
+    const supabaseUrl=process.env.SUPABASE_URL?.replace(/\/$/,'');
+    const supabaseKey=process.env.SUPABASE_SECRET_KEY;
+    const secret=process.env.MI_CUENTA_SECRET||supabaseKey;
+    if(!body||!sig||!supabaseUrl||!supabaseKey||!secret) return json(res,401,{error:'Volvé a ingresar a Mi cuenta.'});
+    const expected=crypto.createHmac('sha256',secret).update(body).digest('base64url');
+    const a=Buffer.from(sig),b=Buffer.from(expected);
+    if(a.length!==b.length||!crypto.timingSafeEqual(a,b)) return json(res,401,{error:'La sesión no es válida.'});
+    let session=null; try{session=JSON.parse(Buffer.from(body,'base64url').toString('utf8'))}catch{}
+    if(!session?.email||Number(session.exp)<Date.now()) return json(res,401,{error:'La sesión venció. Volvé a ingresar.'});
+    try{
+      const select='booking_id,confirmacion_hotel,hotel_nombre,checkin,checkout,noches,adultos,ninos,habitaciones,habitacion_nombre,regimen,reembolsable,moneda_base,total_usd,total_ars,cotizacion_bna,pagado,estado,creado_en';
+      const rr=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select='+encodeURIComponent(select)+'&email=eq.'+encodeURIComponent(session.email)+'&order=creado_en.desc',{headers:sbHeaders(supabaseKey)});
+      if(!rr.ok) return json(res,503,{error:'No pudimos cargar tus reservas.'});
+      return json(res,200,{email:session.email,reservations:await rr.json()});
+    }catch(e){return json(res,503,{error:'No pudimos cargar tus reservas.'});}
+  }
   if(req.method!=='POST') return json(res,405,{error:'Método no permitido'});
   const email=cleanEmail(req.body?.email);
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(res,400,{error:'Ingresá un email válido.'});
