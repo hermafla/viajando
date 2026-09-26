@@ -42,7 +42,7 @@ export default async function handler(req,res){
     const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
     const expires=new Date(Date.now()+10*60*1000).toISOString();
     const tokenHash=hash(email,code,secret);
-    const up=await fetch(supabaseUrl+'/rest/v1/codigos_acceso',{method:'POST',headers:{...sbHeaders(supabaseKey),'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({email,codigo_hash:tokenHash,vence_en:expires,usado:false})});
+    const up=await fetch(supabaseUrl+'/rest/v1/codigos_acceso?on_conflict=email',{method:'POST',headers:{...sbHeaders(supabaseKey),'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({email,codigo_hash:tokenHash,vence_en:expires,usado:false})});
     if(!up.ok){console.error('OTP Supabase',up.status,await up.text());return json(res,503,{error:'No pudimos generar el código. Intentá nuevamente en unos minutos.'});}
     const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+resendKey,'Content-Type':'application/json'},body:JSON.stringify({
       from:'Valijeando <reservas@valijeando.com.ar>',to:[email],subject:'Tu código para ingresar a Valijeando',
