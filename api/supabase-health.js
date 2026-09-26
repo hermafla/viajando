@@ -22,7 +22,7 @@ export default async function handler(req,res){
     total_usd:1,
     pagado:false,
     cargos_alojamiento_usd:0,
-    estado:'healthcheck',
+    estado:'confirmada',
     datos_proveedor:{healthcheck:true}
   };
   try{
