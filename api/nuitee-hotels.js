@@ -18,8 +18,17 @@ export default async function handler(req,res){
       fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...(placeId?{placeId}:{countryCode,cityName:city}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
-    if(!catalogRes.ok) throw new Error(catalog.message||'Error al consultar datos de hoteles');
-    if(!ratesRes.ok) throw new Error(rates.message||'Error al consultar tarifas');
+    if(!catalogRes.ok||!ratesRes.ok){
+      const diagnostic={
+        error:'La consulta de hoteles no pudo completarse',
+        stage:!catalogRes.ok?'catalog':'rates',
+        catalogStatus:catalogRes.status,
+        ratesStatus:ratesRes.status,
+        providerMessage:!catalogRes.ok?(catalog.message||catalog.error||catalog):(rates.message||rates.error||rates)
+      };
+      console.error('Nuitee hotels diagnostic',JSON.stringify(diagnostic));
+      return res.status(502).json(diagnostic);
+    }
     const catalogHotels=Array.isArray(catalog.data)?catalog.data:(Array.isArray(catalog.data?.hotels)?catalog.data.hotels:[]);
     const rateHotels=Array.isArray(rates.data)?rates.data:(Array.isArray(rates.data?.hotels)?rates.data.hotels:[]);
     const byId=new Map(catalogHotels.map(h=>[h.id,h])), hotels=[];
