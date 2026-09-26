@@ -26,7 +26,10 @@ async function aplicarHotelesReales(opciones){
   const consultas=opciones.map(async v=>{
     const d=destinosHotel[v.destino]; if(!d)return v;
     try{
-      const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(viajeros),currency:"USD",guestNationality:"AR"});
+      const pr=await fetch("/api/nuitee-places?q="+encodeURIComponent(v.destino)),pj=await pr.json();
+      const places=Array.isArray(pj.places)?pj.places:[],place=places.find(x=>String(x.displayName||"").toLowerCase().includes(v.destino.split(" ")[0].toLowerCase()))||places[0];
+      if(!pr.ok||!place?.placeId)return v;
+      const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,placeId:place.placeId,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(viajeros),currency:"USD",guestNationality:"AR"});
       const r=await fetch("/api/nuitee-hotels?"+q),j=await r.json();
       if(!r.ok||!Array.isArray(j.hotels)||!j.hotels.length)return v;
       const h=[...j.hotels].sort((a,b)=>Number(a.estimatedTotal||a.retailRate)-Number(b.estimatedTotal||b.retailRate))[0];
