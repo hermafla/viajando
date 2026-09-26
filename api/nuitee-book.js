@@ -76,6 +76,37 @@ export default async function handler(req,res){
       saveError='Falta configurar Supabase en el servidor';
     }
 
-    return res.status(200).json({sandbox:true,bookingId,hotelConfirmationCode,status,booking:d,saved,saveError});
+    // El correo es posterior a la confirmación de Nuitee: si falla, la reserva sigue confirmada y NO se reintenta el Book.
+    let emailSent=false,emailError='';
+    const resendKey=process.env.RESEND_API_KEY;
+    if(resendKey){
+      try{
+        const hotelName=clean(reservation?.hotelName)||'tu alojamiento';
+        const checkin=clean(reservation?.checkin),checkout=clean(reservation?.checkout);
+        const totalUsd=num(reservation?.estimatedTotal??reservation?.price);
+        const subject='Reserva confirmada - '+hotelName+' | Valijeando';
+        const html='<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#172033">'
+          +'<h2 style="margin-bottom:8px">¡Tu reserva está confirmada!</h2>'
+          +'<p>Hola '+clean(firstName)+', recibimos la confirmación de tu reserva en <strong>'+hotelName+'</strong>.</p>'
+          +'<div style="background:#f6f8fb;padding:16px;border-radius:12px;margin:18px 0">'
+          +(bookingId?'<p><strong>Código de reserva:</strong> '+clean(bookingId)+'</p>':'')
+          +(hotelConfirmationCode?'<p><strong>Confirmación del hotel:</strong> '+clean(hotelConfirmationCode)+'</p>':'')
+          +(checkin?'<p><strong>Entrada:</strong> '+checkin+'</p>':'')
+          +(checkout?'<p><strong>Salida:</strong> '+checkout+'</p>':'')
+          +(reservation?.roomName?'<p><strong>Habitación:</strong> '+clean(reservation.roomName)+'</p>':'')
+          +(totalUsd!=null?'<p><strong>Importe base:</strong> USD '+totalUsd.toFixed(2)+'</p>':'')
+          +'</div><p>Guardá este correo junto con tu código de reserva.</p>'
+          +'<p style="color:#657085;font-size:13px">Valijeando · valijeando.com.ar</p></div>';
+        const er=await fetch('https://api.resend.com/emails',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+resendKey,'Content-Type':'application/json'},
+          body:JSON.stringify({from:'Valijeando <reservas@valijeando.com.ar>',to:[clean(email).toLowerCase()],subject,html})
+        });
+        if(er.ok) emailSent=true;
+        else {emailError='Resend '+er.status+': '+await er.text();console.error('Resend confirmación',er.status,emailError);}
+      }catch(ee){emailError=ee?.message||'No se pudo enviar el correo';console.error('Resend confirmación',emailError);}
+    }else emailError='Falta configurar RESEND_API_KEY';
+
+    return res.status(200).json({sandbox:true,bookingId,hotelConfirmationCode,status,booking:d,saved,saveError,emailSent,emailError});
   }catch(e){return res.status(502).json({error:e?.message||'No se pudo conectar con Nuitee para confirmar la reserva.'});}
 }
