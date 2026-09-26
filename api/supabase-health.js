@@ -11,9 +11,19 @@ export default async function handler(req,res){
     apellido:'Healthcheck',
     booking_id:bookingId,
     proveedor:'Valijeando',
+    hotel_nombre:'Prueba técnica',
+    checkin:'2026-10-01',
+    checkout:'2026-10-02',
+    noches:1,
+    adultos:1,
+    ninos:0,
+    habitaciones:1,
     moneda_base:'USD',
+    total_usd:1,
     pagado:false,
-    estado:'healthcheck'
+    cargos_alojamiento_usd:0,
+    estado:'healthcheck',
+    datos_proveedor:{healthcheck:true}
   };
   try{
     const base=url.replace(/\/$/,'')+'/rest/v1/reservas_hoteles';
