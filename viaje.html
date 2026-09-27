@@ -68,7 +68,7 @@ const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destin
 if(vueloSeleccionado){
   const pv=document.getElementById("pendienteVuelo");pv.innerHTML="";
   if(completo){
-    vv.textContent="Revisar mi viaje →";
+    vv.textContent="Continuar con mi viaje →";
     vv.onclick=e=>{e.preventDefault();location.href="revisar-viaje.html?"+p.toString()};
   }else{
     vv.textContent="✈️ Cambiar vuelo →";
