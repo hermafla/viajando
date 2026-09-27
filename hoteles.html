@@ -70,7 +70,23 @@ window._hotels=data.hotels;renderHotelResults(data.hotels);
 function renderHotelResults(list){results.innerHTML=list.map(h=>{sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:incomingChildren,rooms:incomingRooms,currency:displayCurrency});if(incomingOccupancies)qp.set('occupancies',incomingOccupancies);if(incoming.get('returnTrip'))qp.set('returnTrip',incoming.get('returnTrip'));const url='/hotel.html?'+qp;return `<article class="card" data-url="${url}" tabindex="0"><img src="${h.photo||''}" alt="${h.name}" loading="lazy"><div class="body"><div class="name">${h.name}</div><div class="meta">${h.stars?'★ '.repeat(Math.min(h.stars,5)):''}<span class="rating">${h.rating?h.rating+'/10':''}</span>${h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' reseñas':''}<br>${h.address||''}</div><div class="price"><span>Precio de la estadía</span><br><strong>${money(h.retailRate)}</strong><div class="small">${checkin.value} → ${checkout.value} · ${guestText()}</div>${h.dueAtProperty>0?`<div class="breakdown"><div>Pagás para reservar: <b>${money(h.retailRate)}</b></div><div>Pagás en el alojamiento: <b>${money(h.dueAtProperty)}</b></div><div class="total">Total estimado: ${money(h.estimatedTotal)}</div></div>`:''}<a class="detailBtn" href="${url}">Ver hotel, habitaciones y precio</a></div></div></article>`}).join('');}
 }catch(err){status.innerHTML='<div class="error">'+err.message+'</div>';}});
 
-(async()=>{if(displayCurrency==='ARS')await loadBnaRate();if(autoSearch)form.requestSubmit()})();
+(async()=>{
+ if(displayCurrency==='ARS')await loadBnaRate();
+ if(!placeId.value&&incoming.get('city')&&checkin.value&&checkout.value){
+   status.textContent='Preparando la búsqueda en '+incoming.get('city')+'…';
+   try{
+     const r=await fetch('/api/nuitee-places?q='+encodeURIComponent(incoming.get('city')));
+     const d=await r.json(),ps=d.places||[];
+     if(ps.length){
+       const wanted=incoming.get('city').trim().toLowerCase();
+       const chosen=ps.find(x=>String(x.displayName||'').trim().toLowerCase()===wanted)||ps[0];
+       city.value=chosen.displayName||incoming.get('city');
+       placeId.value=chosen.placeId||'';
+     }
+   }catch{}
+ }
+ if(placeId.value&&checkin.value&&checkout.value)form.requestSubmit();
+})();
 results.addEventListener('click',e=>{const card=e.target.closest('.card');if(card&&!e.target.closest('button,a'))location.href=card.dataset.url});
 results.addEventListener('keydown',e=>{const card=e.target.closest('.card');if(card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();location.href=card.dataset.url}});
 
