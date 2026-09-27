@@ -35,7 +35,6 @@ main{max-width:1040px;margin:auto;padding:36px 20px 70px}.intro{margin-bottom:22
 <div class="panel">
  <div class="bloque"><div class="fila"><div><div class="titulo-item">✈️ Vuelos ida y vuelta</div><div class="detalle" id="vueloDetalle">Estimación total para todos los viajeros.</div><div id="datoVuelo"></div><span class="pill">Compararemos horarios, escalas y equipaje</span></div><div class="precio" id="vuelo"></div></div></div>
  <div class="bloque"><div class="fila"><div><div class="titulo-item">🏨 Alojamiento</div><div class="detalle" id="hotelDetalle">Estimación para la duración elegida.</div><span class="pill">Compararemos precio, ubicación y condiciones</span></div><div class="precio" id="hotel"></div></div></div>
- <div class="bloque"><div class="fila"><div><div class="titulo-item">🚕 Traslados y extras</div><div class="detalle">Se cotizarán cuando tengamos una opción disponible para este viaje.</div></div><div class="precio">A confirmar</div></div></div>
 </div>
 <div class="reserva"><h3>Completá tu viaje</h3><p>Cuando vuelo y alojamiento estén elegidos, vas a poder revisar todo junto antes de continuar.</p>
  <div class="opcion"><div class="ico">📅</div><div><strong>Fechas cercanas más económicas</strong><p>Buscaremos si mover la salida o el regreso algunos días reduce el costo total.</p></div></div>
@@ -68,9 +67,13 @@ const back=new URLSearchParams(p);["destino","etiqueta","vuelo","hotel","otros",
 const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destino")){vv.style.display="block";vv.textContent="✈️ Buscar vuelos para tus fechas →"}else{vv.style.display="none"};document.getElementById("verVuelo").onclick=e=>{e.preventDefault();const origin=aeropuertoOrigen||((p.get("origen")||"").includes("Buenos Aires")?"BUE":""),destination=aeropuertoDestino||{"Río de Janeiro":"RIO","Florianópolis":"FLN","Maceió":"MCZ","Salvador de Bahía":"SSA","Recife":"REC","Foz do Iguaçu":"IGU","Santiago de Chile":"SCL","Montevideo":"MVD","Lima":"LIM","Madrid":"MAD","Córdoba":"COR","Mendoza":"MDZ","Bariloche":"BRC","Ushuaia":"USH","Salta":"SLA","Puerto Iguazú":"IGR","Mar del Plata":"MDQ","El Calafate":"FTE"}[destino]||"";if(!origin||!destination){alert("Todavía no tenemos identificado el aeropuerto de "+destino+".");return}const fmt=x=>{const [y,m,d]=x.split("-");return d+m};if(fechaIdaExacta&&fechaVueltaExacta){const retorno=location.pathname+location.search;location.href="prueba-vuelos.html?flightSearch="+encodeURIComponent(origin+fmt(fechaIdaExacta)+destination+fmt(fechaVueltaExacta)+Math.max(1,viajeros))+"&returnTrip="+encodeURIComponent(retorno);return}location.href="prueba-vuelos.html"};
 if(vueloSeleccionado){
   const pv=document.getElementById("pendienteVuelo");pv.innerHTML="";
-  vv.textContent=vueloRedirect?"✈️ Continuar con este vuelo →":"✈️ Cambiar vuelo →";
-  vv.onclick=e=>{e.preventDefault();if(vueloRedirect){window.open(vueloRedirect,"_blank","noopener");return}location.href="prueba-vuelos.html"};
-  const ayuda=document.getElementById("ayudaReserva");ayuda.textContent="El vuelo y el alojamiento ya están seleccionados. El proveedor confirma el importe final del vuelo antes del pago.";
+  if(completo){
+    vv.textContent="Revisar mi viaje →";
+    vv.onclick=e=>{e.preventDefault();location.href="revisar-viaje.html?"+p.toString()};
+  }else{
+    vv.textContent="✈️ Cambiar vuelo →";
+  }
+  const ayuda=document.getElementById("ayudaReserva");ayuda.textContent=completo?"Ya elegiste vuelo y alojamiento. Revisá todo junto antes de continuar.":"El vuelo está seleccionado. Completá el alojamiento para revisar el viaje.";
 }
 document.getElementById("resumenTitulo").textContent="Tu viaje a "+destino;
 document.getElementById("resHotel").textContent=hotelNombre|| (hotel>0?"Alojamiento seleccionado":"Por elegir");
