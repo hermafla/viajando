@@ -52,7 +52,7 @@ export default async function handler(req,res){
       const data=nj?.data||nj||{}; const status=String(data.status||'CANCELLED').toUpperCase();
       if(!status.startsWith('CANCELLED')) return json(res,502,{error:'El proveedor no confirmó la cancelación. No se modificó tu reserva.'});
       const up=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?booking_id=eq.'+encodeURIComponent(bookingId)+'&email=eq.'+encodeURIComponent(session.email),{method:'PATCH',headers:{...sbHeaders(supabaseKey),'Prefer':'return=minimal'},body:JSON.stringify({estado:'cancelada',actualizado_en:new Date().toISOString()})});
-      if(!up.ok){console.error('Supabase cancel sync',up.status,await up.text());return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null,syncWarning:true});}
+      let syncWarning=false;if(!up.ok){syncWarning=true;console.error('Supabase cancel sync',up.status,await up.text());}
       let emailSent=false,emailError='';
       const resendKey=process.env.RESEND_API_KEY,booking=rows[0];
       if(resendKey){
@@ -66,7 +66,7 @@ export default async function handler(req,res){
           if(!er.ok)throw Error(await er.text()); emailSent=true;
         }catch(e){emailError='La reserva se canceló, pero no pudimos enviar el email de constancia.';console.error('Cancel email',e);}
       }else emailError='La reserva se canceló, pero el servicio de email no está configurado.';
-      return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null,emailSent,emailError});
+      return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null,syncWarning,emailSent,emailError});
     }catch(e){console.error('Cancel booking',e);return json(res,503,{error:'No pudimos completar la cancelación en este momento.'});}
   }
   if(req.method!=='POST') return json(res,405,{error:'Método no permitido'});
