@@ -32,7 +32,7 @@
     #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24);cursor:pointer!important}
     #selected-fare-close{position:absolute!important;right:16px!important;top:14px!important;z-index:10!important;border:0!important;background:rgba(255,255,255,.16)!important;color:#fff!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;padding:0!important;border-radius:50%!important;font-size:20px!important;line-height:38px!important;text-align:center!important;cursor:pointer!important;pointer-events:auto!important}
     .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
-    @media(max-width:600px){main{width:94%;margin-top:18px}.notice h1{font-size:24px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
+    @media(max-width:700px){header{height:68px}.logo img{width:185px}.menu a:not(.account){display:none}main{width:94%;margin-top:16px}.notice h1{font-size:22px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
   </style>
   <script>
     // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
@@ -97,7 +97,7 @@
   </script>
 </head>
 <body>
-  <header><a href="/"><img src="/valijeando-logo.svg" alt="Valijeando"></a></header>
+  <header><div class="nav"><a class="logo" href="/"><img src="/valijeando-logo.svg" alt="Valijeando"></a><nav class="menu"><a href="/hoteles.html">Hoteles</a><a class="active" href="/prueba-vuelos.html">Vuelos</a><a href="/guias.html">Guías para viajar</a><a href="/consejos.html">Consejos</a><a class="account" href="/#buscar">Buscar</a></nav></div></header>
   <main>
     <section class="notice">
       <h1>Prueba técnica de vuelos</h1>
