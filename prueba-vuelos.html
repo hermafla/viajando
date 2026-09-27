@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Prueba White Label Widget | Valijeando</title>
+  <meta name="description" content="Buscá y compará vuelos para tu próximo viaje con Valijeando.">
+  <title>Vuelos | Valijeando</title>
   <link rel="icon" type="image/svg+xml" href="/valijeando-favicon.svg">
   <style>
     *{box-sizing:border-box}
@@ -37,8 +37,8 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
     #selected-fare-compare{border-top:0!important;margin:0!important;padding:0!important;font-size:15px!important;line-height:1.65!important}
     #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24);cursor:pointer!important}.fare-actions{display:grid;gap:10px;margin-top:14px}.fare-add-trip{display:none;width:100%;border:0;border-radius:12px;padding:14px 16px;background:#1677ff;color:#fff;font-size:15px;font-weight:800;cursor:pointer}.fare-add-trip:hover{background:#0b68e8}
     #selected-fare-close{position:absolute!important;right:16px!important;top:14px!important;z-index:10!important;border:0!important;background:rgba(255,255,255,.16)!important;color:#fff!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;padding:0!important;border-radius:50%!important;font-size:20px!important;line-height:38px!important;text-align:center!important;cursor:pointer!important;pointer-events:auto!important}
-    .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
-    @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
+    #selected-fare-continue{width:100%;border:0;color:#172033;font-weight:800}\n    .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
+    @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}#selected-fare.is-open{width:calc(100vw - 20px)!important;max-height:calc(100vh - 20px)!important;overflow:auto!important}.fare-head{padding:18px 20px 15px}.fare-body{padding:17px 20px 19px}#selected-fare-main{font-size:29px!important}.fare-actions{gap:8px;margin-top:11px}.fare-add-trip,#selected-fare-continue{padding:13px 12px!important}.fare-note{font-size:12px}}
   </style>
   <script>
     // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
@@ -107,7 +107,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
   <main>
     <section class="notice">
       <h1>Encontrá tu próximo vuelo</h1>
-      <p>Compará opciones disponibles y elegí la que mejor se adapte a tu viaje.</p>
+      <p>Compará opciones disponibles y elegí la que mejor se adapte a tu viaje. Antes de continuar te mostramos una referencia de pago en pesos y dólares.</p>
     </section>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
