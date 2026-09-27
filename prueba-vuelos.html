@@ -273,7 +273,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
           selectedFareContinue.style.display=returnTripUrl?'none':'block';
           selectedFareAddTrip.style.display=returnTripUrl?'block':'none';
           window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value),redirect_url:redirect};
-          if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
+          selectedFareCompare.style.display='none';
         }catch(_){}
       }
 
