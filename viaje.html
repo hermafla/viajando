@@ -81,6 +81,8 @@ if(hotel>0){document.getElementById("resHotelEstado").textContent="✓ Seleccion
 document.getElementById("resVuelo").textContent=vueloSeleccionado?(vueloProveedor?"Vuelo · "+vueloProveedor:"Vuelo seleccionado"):"Por elegir";
 if(vueloReal){document.getElementById("resVueloEstado").textContent="✓ Seleccionado · USD "+vuelo.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById("resVueloEstado").className="estado-ok"}
 document.getElementById("resTotal").textContent=completo?"USD "+conocido.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}):"A confirmar";
+document.getElementById("cambiarVuelo").textContent=vueloReal?"Cambiar vuelo":"Seleccionar vuelo";
+document.getElementById("cambiarHotel").textContent=hotel>0?"Cambiar alojamiento":"Seleccionar alojamiento";
 document.getElementById("cambiarVuelo").onclick=e=>{e.preventDefault();document.getElementById("verVuelo").click()};
 document.getElementById("cambiarHotel").onclick=e=>{e.preventDefault();document.getElementById("verHotel").click()};
 const vh=document.getElementById("verHotel");vh.textContent=hotelId?"🏨 Ver hotel y habitaciones →":"🏨 Buscar hoteles para tus fechas →";vh.onclick=e=>{e.preventDefault();if(!fechaIdaExacta||!fechaVueltaExacta)return;if(hotelId){const q=new URLSearchParams({hotelId,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(Math.max(1,viajeros)),currency:"USD"});location.href="/hotel.html?"+q.toString();return}const q=new URLSearchParams({destino,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(Math.max(1,viajeros)),rooms:"1",currency:"USD"});location.href="/hoteles.html?"+q.toString()};
