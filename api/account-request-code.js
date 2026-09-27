@@ -42,7 +42,7 @@ export default async function handler(req,res){
     const bookingId=String(req.body?.bookingId||'').trim();
     if(!bookingId) return json(res,400,{error:'Falta identificar la reserva.'});
     try{
-      const own=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select=booking_id,estado&booking_id=eq.'+encodeURIComponent(bookingId)+'&email=eq.'+encodeURIComponent(session.email)+'&limit=1',{headers:sbHeaders(supabaseKey)});
+      const own=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select=booking_id,estado,email,nombre,hotel_nombre,checkin,checkout,habitacion_nombre,total_usd,total_ars&booking_id=eq.'+encodeURIComponent(bookingId)+'&email=eq.'+encodeURIComponent(session.email)+'&limit=1',{headers:sbHeaders(supabaseKey)});
       const rows=own.ok?await own.json():[];
       if(!Array.isArray(rows)||!rows.length) return json(res,404,{error:'No encontramos esta reserva en tu cuenta.'});
       if(String(rows[0].estado||'').toLowerCase()==='cancelada') return json(res,200,{ok:true,status:'CANCELLED',alreadyCancelled:true});
@@ -53,7 +53,20 @@ export default async function handler(req,res){
       if(!status.startsWith('CANCELLED')) return json(res,502,{error:'El proveedor no confirmó la cancelación. No se modificó tu reserva.'});
       const up=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?booking_id=eq.'+encodeURIComponent(bookingId)+'&email=eq.'+encodeURIComponent(session.email),{method:'PATCH',headers:{...sbHeaders(supabaseKey),'Prefer':'return=minimal'},body:JSON.stringify({estado:'cancelada',actualizado_en:new Date().toISOString()})});
       if(!up.ok){console.error('Supabase cancel sync',up.status,await up.text());return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null,syncWarning:true});}
-      return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null});
+      let emailSent=false,emailError='';
+      const resendKey=process.env.RESEND_API_KEY,booking=rows[0];
+      if(resendKey){
+        try{
+          const fee=data.cancellation_fee??null,refund=data.refund_amount??null,currency=data.currency||'USD';
+          const money=v=>v==null?'No informado':currency+' '+Number(v).toFixed(2);
+          const er=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer '+resendKey,'Content-Type':'application/json'},body:JSON.stringify({
+            from:'Valijeando <reservas@valijeando.com.ar>',to:[booking.email],subject:'Reserva cancelada - '+(booking.hotel_nombre||'Alojamiento')+' | Valijeando',
+            html:'<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#172033"><h2 style="color:#b42318">Tu reserva fue cancelada</h2><p>Hola '+String(booking.nombre||'').replace(/[<>&]/g,'')+',</p><p>La cancelación fue confirmada por el proveedor.</p><div style="background:#f6f8fb;border-radius:14px;padding:18px"><strong>'+(booking.hotel_nombre||'Alojamiento')+'</strong><p>Código de reserva: <b>'+bookingId+'</b><br>Entrada: '+(booking.checkin||'—')+'<br>Salida: '+(booking.checkout||'—')+'<br>Habitación: '+(booking.habitacion_nombre||'—')+'</p><p><b>Cargo por cancelación: '+money(fee)+'</b><br><b>Reintegro: '+money(refund)+'</b></p></div><p style="color:#667085;font-size:13px">Guardá este correo como constancia de la cancelación.</p><p>Valijeando</p></div>'
+          })});
+          if(!er.ok)throw Error(await er.text()); emailSent=true;
+        }catch(e){emailError='La reserva se canceló, pero no pudimos enviar el email de constancia.';console.error('Cancel email',e);}
+      }else emailError='La reserva se canceló, pero el servicio de email no está configurado.';
+      return json(res,200,{ok:true,status,cancellationFee:data.cancellation_fee??null,refundAmount:data.refund_amount??null,currency:data.currency||null,emailSent,emailError});
     }catch(e){console.error('Cancel booking',e);return json(res,503,{error:'No pudimos completar la cancelación en este momento.'});}
   }
   if(req.method!=='POST') return json(res,405,{error:'Método no permitido'});
