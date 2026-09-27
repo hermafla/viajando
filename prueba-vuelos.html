@@ -9,17 +9,23 @@
   <style>
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#172033}
-    header{background:#07558f;padding:18px 24px}
-    header img{width:210px;max-width:70vw;display:block}
-    main{width:min(1180px,94%);margin:28px auto}
+    header{background:#fff;border-bottom:1px solid #eef2f7;padding:0 24px}
+header .nav{max-width:1160px;min-height:92px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:30px}
+header img{width:180px;max-width:70vw;display:block}
+.menu{display:flex;align-items:center;gap:30px;font-size:15px;font-weight:700}
+.menu a{color:#111827;text-decoration:none}
+.menu a.active{color:#0b74ff}
+.menu a.account{border:1px solid #cbd5e1;border-radius:999px;padding:10px 20px}
+main{width:min(1160px,calc(100% - 32px));margin:26px auto}
     .notice{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:22px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .notice h1{margin:0 0 6px;font-size:22px}
     .notice p{margin:0;line-height:1.5}
     #tpwl-search{margin-bottom:24px}
     #tpwl-tickets{min-height:200px}
-    .notice{background:linear-gradient(135deg,#07558f,#0b6da8);color:#fff;padding:24px 26px}
-    .notice h1{font-size:28px;letter-spacing:-.02em}
-    .notice p{color:rgba(255,255,255,.88)}
+    .notice{background:#fff!important;color:#0f172a!important;border:1px solid #edf0f5;border-radius:17px;padding:24px 18px;box-shadow:0 1px 2px rgba(15,23,42,.02),0 8px 28px rgba(15,23,42,.03)}
+.notice:before{content:"VUELOS EN VALIJEANDO";display:block;color:#0b74ff;font-size:12px;font-weight:800;letter-spacing:1.6px;margin-bottom:5px}
+.notice h1{font-size:27px;letter-spacing:-.4px;margin:0 0 5px}
+.notice p{color:#64748b!important;font-size:14px}
     #selected-fare{font-family:Arial,sans-serif}
     #selected-fare-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.48);backdrop-filter:blur(3px);z-index:2147483646}
     #selected-fare.is-open{display:block!important;position:fixed!important;left:50%!important;top:50%!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(500px,calc(100vw - 32px))!important;max-width:none!important;border:0!important;border-radius:22px!important;padding:0!important;overflow:hidden!important;box-shadow:0 28px 80px rgba(15,23,42,.35)!important;z-index:2147483647!important;opacity:1!important;visibility:visible!important;filter:none!important}
@@ -32,7 +38,7 @@
     #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24);cursor:pointer!important}
     #selected-fare-close{position:absolute!important;right:16px!important;top:14px!important;z-index:10!important;border:0!important;background:rgba(255,255,255,.16)!important;color:#fff!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;padding:0!important;border-radius:50%!important;font-size:20px!important;line-height:38px!important;text-align:center!important;cursor:pointer!important;pointer-events:auto!important}
     .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
-    @media(max-width:700px){header{height:68px}.logo img{width:185px}.menu a:not(.account){display:none}main{width:94%;margin-top:16px}.notice h1{font-size:22px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
+    @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
   </style>
   <script>
     // Diagnóstico temporal: registra respuestas de red del White Label antes de que cargue main.js.
@@ -100,8 +106,8 @@
   <header><div class="nav"><a class="logo" href="/"><img src="/valijeando-logo.svg" alt="Valijeando"></a><nav class="menu"><a href="/hoteles.html">Hoteles</a><a class="active" href="/prueba-vuelos.html">Vuelos</a><a href="/guias.html">Guías para viajar</a><a href="/consejos.html">Consejos</a><a class="account" href="/#buscar">Buscar</a></nav></div></header>
   <main>
     <section class="notice">
-      <h1>Prueba técnica de vuelos</h1>
-      <p>Página temporal para probar el nuevo White Label Widget de Travelpayouts. No modifica el buscador actual de Valijeando.</p>
+      <h1>Encontrá tu próximo vuelo</h1>
+      <p>Compará opciones disponibles y elegí la que mejor se adapte a tu viaje.</p>
     </section>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
