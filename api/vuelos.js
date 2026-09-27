@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     if(!response.ok)return res.status(response.status).json({ok:false,error:"Aviasales devolvió un error",details:raw});
     const all=Array.isArray(raw.data)?raw.data:[];
     const normalize=x=>({price:Number(x.price),currency:(raw.currency||currency).toUpperCase(),airline:x.airline||null,departure_at:x.departure_at||null,return_at:x.return_at||null,transfers:x.transfers??null,return_transfers:x.return_transfers??null,found_at:x.found_at||null,origin_airport:x.origin_airport||origin,destination_airport:x.destination_airport||destination,link:x.link||null,exact_dates:(!fechaIda||String(x.departure_at||"").slice(0,10)===fechaIda)&&(!fechaVuelta||String(x.return_at||"").slice(0,10)===fechaVuelta)});
-    const offers=all.map(normalize).filter(x=>x.exact_dates&&Number.isFinite(x.price)).sort((a,b)=>a.price-b.price);
-    return res.status(200).json({ok:true,source:"Travelpayouts / Aviasales Data API",cached:true,origin,destination,requested:{fechaIda,fechaVuelta},offers,note:"Precios encontrados por usuarios de Aviasales en las últimas 48 horas; no garantizan disponibilidad hasta abrir la búsqueda."});
+    const normalized=all.map(normalize).filter(x=>Number.isFinite(x.price));const exact=normalized.filter(x=>x.exact_dates).sort((a,b)=>a.price-b.price);const sameDeparture=fechaIda?normalized.filter(x=>String(x.departure_at||"").slice(0,10)===fechaIda).sort((a,b)=>a.price-b.price):[];const offers=exact.length?exact:sameDeparture;
+    return res.status(200).json({ok:true,source:"Travelpayouts / Aviasales Data API",cached:true,origin,destination,requested:{fechaIda,fechaVuelta},matchType:exact.length?"exact_dates":(sameDeparture.length?"departure_date":"none"),offers,note:"Precios encontrados por usuarios de Aviasales en las últimas 48 horas; no garantizan disponibilidad hasta abrir la búsqueda."});
   }catch(e){return res.status(500).json({ok:false,error:"No se pudo consultar Aviasales"});}
 }
