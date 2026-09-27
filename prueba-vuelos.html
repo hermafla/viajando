@@ -35,7 +35,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
     #selected-fare-sub{color:rgba(255,255,255,.88)!important;font-size:14px!important}
     .fare-body{padding:22px 24px 24px}
     #selected-fare-compare{border-top:0!important;margin:0!important;padding:0!important;font-size:15px!important;line-height:1.65!important}
-    #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24);cursor:pointer!important}
+    #selected-fare-continue{background:#f58220!important;border-radius:12px!important;padding:14px 16px!important;font-size:15px!important;box-shadow:0 8px 20px rgba(245,130,32,.24);cursor:pointer!important}.fare-actions{display:grid;gap:10px;margin-top:14px}.fare-add-trip{display:none;width:100%;border:0;border-radius:12px;padding:14px 16px;background:#1677ff;color:#fff;font-size:15px;font-weight:800;cursor:pointer}.fare-add-trip:hover{background:#0b68e8}
     #selected-fare-close{position:absolute!important;right:16px!important;top:14px!important;z-index:10!important;border:0!important;background:rgba(255,255,255,.16)!important;color:#fff!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;padding:0!important;border-radius:50%!important;font-size:20px!important;line-height:38px!important;text-align:center!important;cursor:pointer!important;pointer-events:auto!important}
     .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
     @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}.fare-head,.fare-body{padding-left:20px;padding-right:20px}}
@@ -121,7 +121,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       </div>
       <div class="fare-body">
         <div id="selected-fare-compare" style="display:none"></div>
-        <button id="selected-fare-continue" type="button" style="display:none">Continuar con el proveedor →</button>
+        <div class="fare-actions"><button id="selected-fare-add-trip" class="fare-add-trip" type="button">Agregar este vuelo a mi viaje →</button><button id="selected-fare-continue" type="button" style="display:none">Continuar con el proveedor →</button></div>
         <div class="fare-note">El precio final y las condiciones se confirman en el sitio del proveedor.</div>
       </div>
     </section>
@@ -146,6 +146,8 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       const selectedFareContinue=document.getElementById('selected-fare-continue');
       const selectedFareBackdrop=document.getElementById('selected-fare-backdrop');
       const selectedFareClose=document.getElementById('selected-fare-close');
+      const selectedFareAddTrip=document.getElementById('selected-fare-add-trip');
+      const returnTripUrl=new URLSearchParams(location.search).get('returnTrip')||'';
       document.body.appendChild(selectedFareBackdrop);
       document.body.appendChild(selectedFareBox);
       let pendingProviderUrl='';
@@ -159,6 +161,19 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       }
       selectedFareClose.addEventListener('click',closeFareModal);
       selectedFareBackdrop.addEventListener('click',closeFareModal);
+      selectedFareAddTrip.addEventListener('click',()=>{
+        const fare=window.__VALIJEANDO_SELECTED_FARE;
+        if(!fare||!returnTripUrl) return;
+        try{
+          const target=new URL(returnTripUrl,location.origin);
+          target.searchParams.set('vuelo',String(Number(fare.value)));
+          target.searchParams.set('vueloReal','1');
+          target.searchParams.set('vueloSeleccionado','1');
+          target.searchParams.set('vueloProveedor',fare.provider||'Proveedor');
+          target.searchParams.set('vueloRedirect',fare.redirect_url||'');
+          location.href=target.pathname+target.search;
+        }catch(_){}
+      });
 
       selectedFareContinue.addEventListener('click',()=>{
         if(!pendingProviderUrl) return;
@@ -255,6 +270,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
           pendingProviderUrl=redirect;
           selectedFareContinue.textContent='Continuar con el pago →';
           selectedFareContinue.style.display='block';
+          selectedFareAddTrip.style.display=returnTripUrl?'block':'none';
           window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value),redirect_url:redirect};
           if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
         }catch(_){}
