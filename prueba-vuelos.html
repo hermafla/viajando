@@ -269,7 +269,8 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
           selectedFareBackdrop.style.display='block';
           pendingProviderUrl=redirect;
           selectedFareContinue.textContent='Continuar con el pago →';
-          selectedFareContinue.style.display='block';
+          // En Viaje completo el pasajero debe volver al armado del viaje, no pagar el vuelo por separado.
+          selectedFareContinue.style.display=returnTripUrl?'none':'block';
           selectedFareAddTrip.style.display=returnTripUrl?'block':'none';
           window.__VALIJEANDO_SELECTED_FARE={provider,agent_id:String(clickId),proposal_id:fare.proposal_id,currency:fare.currency,value:Number(fare.value),redirect_url:redirect};
           if(String(fare.currency).toUpperCase()==='USD') renderPaymentComparison(Number(fare.value));
