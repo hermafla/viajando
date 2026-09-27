@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Revisá tu viaje | Valijeando</title>
+<link rel="icon" type="image/svg+xml" href="/valijeando-favicon.svg?v=3">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;background:#f6f8fc;color:#172033;line-height:1.5}header{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}.nav{max-width:1040px;margin:auto;padding:17px 22px;display:flex;justify-content:space-between;align-items:center}.logo img{display:block;width:190px;max-height:52px}.volver{color:#344054;text-decoration:none;font-weight:700;font-size:14px}main{max-width:1040px;margin:auto;padding:36px 20px 70px}.pasos{display:flex;align-items:center;gap:8px;margin-bottom:25px;font-size:13px;font-weight:800;color:#98a2b3}.paso{display:flex;align-items:center;gap:7px}.paso b{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#eaf2ff;color:#1677ff}.paso.ok{color:#067647}.paso.ok b{background:#ecfdf3;color:#067647}.paso.activo{color:#172033}.paso.activo b{background:#1677ff;color:#fff}.linea{height:2px;flex:1;max-width:54px;background:#dfe7f1}.intro{margin-bottom:24px}.intro h1{font-size:32px}.intro p{color:#667085;margin-top:5px}.layout{display:grid;grid-template-columns:1.45fr .75fr;gap:24px;align-items:start}.card{background:#fff;border:1px solid #e5eaf1;border-radius:18px;box-shadow:0 7px 22px rgba(16,24,40,.06);overflow:hidden}.item{padding:22px;border-bottom:1px solid #edf0f3}.item:last-child{border-bottom:0}.head{display:flex;justify-content:space-between;gap:18px;align-items:start}.tipo{font-size:13px;color:#667085;font-weight:800;margin-bottom:4px}.nombre{font-size:19px;font-weight:800}.detalle{color:#667085;font-size:14px;margin-top:6px}.precio{font-size:19px;font-weight:800;white-space:nowrap}.ok{color:#067647;font-weight:800;font-size:13px;margin-top:8px}.cambiar{display:inline-block;margin-top:10px;color:#1677ff;text-decoration:none;font-size:13px;font-weight:800}.resumen{padding:22px;position:sticky;top:92px}.resumen h2{font-size:20px;margin-bottom:18px}.fila{display:flex;justify-content:space-between;gap:15px;margin:11px 0;color:#475467;font-size:14px}.fila strong{color:#172033}.divider{height:1px;background:#e5e7eb;margin:17px 0}.total-label{font-size:14px;color:#667085}.total{font-size:31px;font-weight:900;color:#1677ff}.presu{margin-top:14px;background:#ecfdf3;color:#067647;border-radius:11px;padding:12px;font-size:13px;font-weight:800}.presu.fuera{background:#fff4ed;color:#b54708}.btn{display:block;text-decoration:none;text-align:center;background:#ff7a00;color:#fff;padding:14px 16px;border-radius:11px;font-weight:900;margin-top:18px}.btn:hover{background:#e96f00}.nota{font-size:12px;color:#667085;margin-top:11px}.datos{margin-top:24px;background:#eef6ff;border:1px solid #cfe4ff;border-radius:14px;padding:16px;color:#475467;font-size:13px}.viaje-info{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.chip{background:#f2f4f7;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;color:#475467}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.resumen{position:static}.pasos{font-size:11px}.nav{padding:15px 18px}.volver{font-size:12px}.head{gap:10px}.precio{font-size:16px}}
+</style></head>
+<body>
+<header><div class="nav"><a class="logo" href="index.html"><img src="valijeando-logo.svg" alt="Valijeando"></a><a class="volver" id="volver" href="#">← Volver a armar</a></div></header>
+<main>
+<div class="pasos"><span class="paso ok"><b>✓</b> Armá tu viaje</span><span class="linea"></span><span class="paso activo"><b>2</b> Revisá</span><span class="linea"></span><span class="paso"><b>3</b> Datos</span><span class="linea"></span><span class="paso"><b>4</b> Reservá</span></div>
+<div class="intro"><h1>Revisá tu viaje</h1><p>Comprobá que el alojamiento, el vuelo y las fechas sean los que elegiste antes de continuar.</p><div class="viaje-info" id="chips"></div></div>
+<div class="layout">
+<section class="card">
+ <div class="item"><div class="head"><div><div class="tipo">🏨 ALOJAMIENTO</div><div class="nombre" id="hotelNombre"></div><div class="detalle" id="hotelDetalle"></div><div class="ok">✓ Seleccionado</div><a href="#" class="cambiar" id="cambiarHotel">Cambiar alojamiento</a></div><div class="precio" id="hotelPrecio"></div></div></div>
+ <div class="item"><div class="head"><div><div class="tipo">✈️ VUELO IDA Y VUELTA</div><div class="nombre" id="vueloNombre"></div><div class="detalle" id="vueloDetalle"></div><div class="ok">✓ Seleccionado</div><a href="#" class="cambiar" id="cambiarVuelo">Cambiar vuelo</a></div><div class="precio" id="vueloPrecio"></div></div></div>
+</section>
+<aside class="card resumen">
+ <h2>Resumen del viaje</h2>
+ <div class="fila"><span>Alojamiento</span><strong id="rh"></strong></div>
+ <div class="fila"><span>Vuelo</span><strong id="rv"></strong></div>
+ <div class="divider"></div>
+ <div class="total-label">Total seleccionado</div><div class="total" id="total"></div>
+ <div class="presu" id="presupuesto"></div>
+ <a class="btn" id="continuar" href="#">Continuar con mis datos →</a>
+ <div class="nota">Todavía no se realiza ningún pago. En el próximo paso completás los datos de los viajeros.</div>
+</aside>
+</div>
+<div class="datos"><strong>Antes de continuar:</strong> los precios y condiciones definitivas se confirman con cada proveedor antes de realizar la reserva o el pago.</div>
+</main>
+<script>
+const p=new URLSearchParams(location.search);
+const destino=p.get("destino")||"tu destino",origen=p.get("origen")||"Buenos Aires",hotel=Number(p.get("hotel")||0),vuelo=Number(p.get("vuelo")||0),presupuesto=Number(p.get("presupuesto")||0),viajeros=Number(p.get("viajeros")||2),hotelNombre=p.get("hotelNombre")||"Alojamiento seleccionado",proveedor=p.get("vueloProveedor")||"Vuelo seleccionado",ida=p.get("fechaIda")||"",vuelta=p.get("fechaVuelta")||"",total=hotel+vuelo;
+const usd=n=>"USD "+n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+function fecha(v){if(!v)return "";const d=new Date(v+"T00:00:00Z");return new Intl.DateTimeFormat("es-AR",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}).format(d)}
+document.title="Revisá tu viaje a "+destino+" | Valijeando";
+document.getElementById("hotelNombre").textContent=hotelNombre;document.getElementById("hotelPrecio").textContent=usd(hotel);document.getElementById("rh").textContent=usd(hotel);
+document.getElementById("hotelDetalle").textContent=ida&&vuelta?fecha(ida)+" → "+fecha(vuelta):"Fechas seleccionadas";
+document.getElementById("vueloNombre").textContent="Vuelo · "+proveedor;document.getElementById("vueloPrecio").textContent=usd(vuelo);document.getElementById("rv").textContent=usd(vuelo);
+document.getElementById("vueloDetalle").textContent=origen+" ⇄ "+destino+(ida&&vuelta?" · "+fecha(ida)+" → "+fecha(vuelta):"");
+document.getElementById("total").textContent=usd(total);
+const saldo=presupuesto-total,pr=document.getElementById("presupuesto");if(presupuesto>0){pr.textContent=saldo>=0?"Dentro de tu presupuesto · te quedan aprox. "+usd(saldo):"Supera tu presupuesto por aprox. "+usd(Math.abs(saldo));if(saldo<0)pr.classList.add("fuera")}else pr.style.display="none";
+document.getElementById("chips").innerHTML=[origen+" → "+destino,ida&&vuelta?fecha(ida)+" → "+fecha(vuelta):"",viajeros+(viajeros===1?" viajero":" viajeros")].filter(Boolean).map(x=>'<span class="chip">'+x+'</span>').join("");
+document.getElementById("volver").href="viaje.html?"+p.toString();
+document.getElementById("cambiarHotel").onclick=e=>{e.preventDefault();location.href="viaje.html?"+p.toString()+"#alojamiento"};
+document.getElementById("cambiarVuelo").onclick=e=>{e.preventDefault();location.href="viaje.html?"+p.toString()+"#vuelo"};
+document.getElementById("continuar").onclick=e=>{e.preventDefault();alert("El paso 3 · Datos es el próximo que vamos a construir. Tu viaje quedó conservado.")};
+</script>
+</body></html>
