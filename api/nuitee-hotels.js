@@ -29,25 +29,26 @@ export default async function handler(req,res){
         }
       }catch{}
     }
-    const [catalogRes,ratesRes]=await Promise.all([
-      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'500',language:'es'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:500,roomMapping:true})})
+    // Consultamos hasta 1000 propiedades. LiteAPI documenta un máximo de 5000 y
+    // offset/limit para paginar. Esta prueba permite saber si el primer bloque de
+    // 500 estaba ocultando alojamientos con tarifa, sin crear otra función Vercel.
+    const [catalogRes,ratesRes,ratesRes2]=await Promise.all([
+      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1000',language:'es'}),{headers}),
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:500,offset:0,roomMapping:true})}),
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:500,offset:500,roomMapping:true})})
     ]);
-    const catalog=await catalogRes.json(), rates=await ratesRes.json();
-    if(!catalogRes.ok||!ratesRes.ok){
-      const diagnostic={
-        error:'La consulta de hoteles no pudo completarse',
-        stage:!catalogRes.ok?'catalog':'rates',
-        catalogStatus:catalogRes.status,
-        ratesStatus:ratesRes.status,
-        providerMessage:!catalogRes.ok?(catalog.message||catalog.error||catalog):(rates.message||rates.error||rates)
-      };
+    const catalog=await catalogRes.json(), rates=await ratesRes.json(), rates2=await ratesRes2.json();
+    if(!catalogRes.ok||!ratesRes.ok||!ratesRes2.ok){
+      const failed=!catalogRes.ok?['catalog',catalogRes,catalog]:(!ratesRes.ok?['rates-0-499',ratesRes,rates]:['rates-500-999',ratesRes2,rates2]);
+      const diagnostic={error:'La consulta de hoteles no pudo completarse',stage:failed[0],catalogStatus:catalogRes.status,ratesStatus:ratesRes.status,rates2Status:ratesRes2.status,providerMessage:failed[2].message||failed[2].error||failed[2]};
       console.error('Nuitee hotels diagnostic',JSON.stringify(diagnostic));
       return res.status(502).json(diagnostic);
     }
     const catalogHotels=Array.isArray(catalog.data)?catalog.data:(Array.isArray(catalog.data?.hotels)?catalog.data.hotels:[]);
     const typeCounts=catalogHotels.reduce((acc,h)=>{const id=String(h.hotelTypeId??'unknown');acc[id]=(acc[id]||0)+1;return acc;},{});
-    const rateHotels=Array.isArray(rates.data)?rates.data:(Array.isArray(rates.data?.hotels)?rates.data.hotels:[]);
+    const rateHotels1=Array.isArray(rates.data)?rates.data:(Array.isArray(rates.data?.hotels)?rates.data.hotels:[]);
+    const rateHotels2=Array.isArray(rates2.data)?rates2.data:(Array.isArray(rates2.data?.hotels)?rates2.data.hotels:[]);
+    const rateHotels=[...new Map([...rateHotels1,...rateHotels2].map(h=>[h.hotelId,h])).values()];
     const byId=new Map(catalogHotels.map(h=>[h.id,h])), hotels=[];
     for(const item of rateHotels){
       const meta=byId.get(item.hotelId)||{}, offers=[];
@@ -72,6 +73,6 @@ export default async function handler(req,res){
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const commissionDiagnostic=hotels.slice(0,20).map(h=>({hotelId:h.hotelId,name:h.name,currency:h.currency,retailRate:h.retailRate,commissionAmount:h.commissionAmount,commission:h.commission,paymentTypes:h.paymentTypes,providerCommission:h.providerCommission,providerCommissionAmount:h.providerCommissionAmount,propertyPay:h.paymentTypes.some(x=>String(x).toUpperCase()==='PROPERTY_PAY')}));
-    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,effectiveMargin,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,typeCounts,rateHotelIds:rateHotels.map(h=>h.hotelId).filter(Boolean),rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
+    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,effectiveMargin,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,ratePage1Count:rateHotels1.length,ratePage2Count:rateHotels2.length,typeCounts,rateHotelIds:rateHotels.map(h=>h.hotelId).filter(Boolean),rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
