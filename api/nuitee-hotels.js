@@ -13,9 +13,25 @@ export default async function handler(req,res){
   const headers={'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'};
   const num=v=>{if(v==null)return null;if(typeof v==='number')return v;if(typeof v==='string'&&!isNaN(Number(v)))return Number(v);if(typeof v==='object'){for(const k of ['amount','value','total']){const n=num(v[k]);if(n!=null)return n}}return null};
   try{
+    // Para ciudades seleccionadas con Google Place ID, LiteAPI limita el catálogo a ~1 km.
+    // Obtenemos el centro del lugar y ampliamos la búsqueda a 15 km. Si no podemos
+    // resolver las coordenadas, conservamos el comportamiento anterior con placeId.
+    let locationQuery=placeId?{placeId}:{countryCode,cityName:city};
+    if(placeId){
+      try{
+        const placeRes=await fetch('https://api.liteapi.travel/v3.0/data/places/'+encodeURIComponent(placeId),{headers});
+        const place=await placeRes.json();
+        const location=place?.data?.location||place?.location;
+        const latitude=Number(location?.latitude??location?.lat);
+        const longitude=Number(location?.longitude??location?.lng);
+        if(placeRes.ok&&Number.isFinite(latitude)&&Number.isFinite(longitude)){
+          locationQuery={latitude,longitude,radius:15000};
+        }
+      }catch{}
+    }
     const [catalogRes,ratesRes]=await Promise.all([
-      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams(placeId?{placeId,limit:'200',language:'es'}:{countryCode,cityName:city,limit:'200',language:'es'}),{headers}),
-      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...(placeId?{placeId}:{countryCode,cityName:city}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:100,roomMapping:true})})
+      fetch('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'500',language:'es'}),{headers}),
+      fetch('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',headers,body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:500,roomMapping:true})})
     ]);
     const catalog=await catalogRes.json(), rates=await ratesRes.json();
     if(!catalogRes.ok||!ratesRes.ok){
