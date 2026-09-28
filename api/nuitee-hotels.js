@@ -46,6 +46,7 @@ export default async function handler(req,res){
       return res.status(502).json(diagnostic);
     }
     const catalogHotels=Array.isArray(catalog.data)?catalog.data:(Array.isArray(catalog.data?.hotels)?catalog.data.hotels:[]);
+    const typeCounts=catalogHotels.reduce((acc,h)=>{const id=String(h.hotelTypeId??'unknown');acc[id]=(acc[id]||0)+1;return acc;},{});
     const rateHotels=Array.isArray(rates.data)?rates.data:(Array.isArray(rates.data?.hotels)?rates.data.hotels:[]);
     const byId=new Map(catalogHotels.map(h=>[h.id,h])), hotels=[];
     for(const item of rateHotels){
@@ -71,6 +72,6 @@ export default async function handler(req,res){
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const commissionDiagnostic=hotels.slice(0,20).map(h=>({hotelId:h.hotelId,name:h.name,currency:h.currency,retailRate:h.retailRate,commissionAmount:h.commissionAmount,commission:h.commission,paymentTypes:h.paymentTypes,providerCommission:h.providerCommission,providerCommissionAmount:h.providerCommissionAmount,propertyPay:h.paymentTypes.some(x=>String(x).toUpperCase()==='PROPERTY_PAY')}));
-    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,effectiveMargin,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
+    return res.status(200).json({sandbox:true,testMargin:Number.isFinite(testMargin)?testMargin:null,effectiveMargin,hotels,commissionDiagnostic,search:{adults:totalAdults,children:totalChildren,rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,typeCounts,rateShape:Array.isArray(rates.data)?'array':(rates.data&&typeof rates.data==='object'?'object':'other')}});
   }catch(e){return res.status(502).json({error:e.message||'Error consultando Nuitee'});}
 }
