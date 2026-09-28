@@ -70,6 +70,7 @@ function card(v){
   detalle.set("vueloReferencia","0");
   if(v.hotelId)detalle.set("hotelId",v.hotelId);
   if(v.hotelNombre)detalle.set("hotelNombre",v.hotelNombre);
+  if(codigosDestino[v.destino])detalle.set("aeropuertoDestino",codigosDestino[v.destino]);
   return `<article class="card"><div class="foto ${v.clase}"><span>${v.destino}</span></div><div class="contenido"><div class="topline"><span class="tag">${v.etiqueta}</span></div><div class="linea"><span>✈️ Vuelo</span><b>Buscar tarifa</b></div><div class="vuelo-real alt">✓ Búsqueda preparada para tus mismas fechas</div><div class="linea"><span>🏨 Hotel</span><b>USD ${Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})}</b></div><div class="hotel-real">✓ ${v.hotelNombre} · tarifa disponible para tus fechas</div><div class="linea"><span>🚕 Traslados y extras</span><b>A confirmar</b></div><div class="total"><span>Total confirmado hasta ahora</span><strong>USD ${Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})}</strong></div><div class="estado">Elegí este destino y comprobá el vuelo real antes de calcular el total del viaje.</div><a href="viaje.html?${detalle.toString()}" class="btn">Ver hotel y buscar vuelo</a></div></article>`;
 }
 let opciones=base.map(calcular).sort((a,b)=>{
