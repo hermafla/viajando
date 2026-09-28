@@ -14,7 +14,7 @@ export default async function handler(req,res){
   const num=v=>{if(v==null)return null;if(typeof v==='number')return v;if(typeof v==='string'&&!isNaN(Number(v)))return Number(v);if(typeof v==='object'){for(const k of ['amount','value','total']){const n=num(v[k]);if(n!=null)return n}}return null};
   try{
     // Para ciudades seleccionadas con Google Place ID, LiteAPI limita el catálogo a ~1 km.
-    // Obtenemos el centro del lugar y ampliamos la búsqueda a 15 km. Si no podemos
+    // Obtenemos el centro del lugar y ampliamos la búsqueda a 25 km. Si no podemos
     // resolver las coordenadas, conservamos el comportamiento anterior con placeId.
     let locationQuery=placeId?{placeId}:{countryCode,cityName:city};
     if(placeId){
@@ -25,7 +25,7 @@ export default async function handler(req,res){
         const latitude=Number(location?.latitude??location?.lat);
         const longitude=Number(location?.longitude??location?.lng);
         if(placeRes.ok&&Number.isFinite(latitude)&&Number.isFinite(longitude)){
-          locationQuery={latitude,longitude,radius:15000};
+          locationQuery={latitude,longitude,radius:25000};
         }
       }catch{}
     }
