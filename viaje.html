@@ -64,7 +64,45 @@ function fechaBonita(valor){if(!valor)return "";const d=new Date(valor);if(Numbe
 const s=document.getElementById("saldo");if(completo){const saldo=presupuesto-conocido;s.textContent=saldo>=0?"✓ Te quedarían aprox. USD "+saldo.toLocaleString("es-AR",{maximumFractionDigits:2}):"Supera tu presupuesto por aprox. USD "+Math.abs(saldo).toLocaleString("es-AR",{maximumFractionDigits:2});if(saldo<0)s.classList.add("fuera");const uso=presupuesto>0?Math.round(conocido/presupuesto*100):0;document.getElementById("barra").style.width=Math.min(uso,100)+"%";document.getElementById("porcentaje").textContent="Vuelo + hotel usarían aprox. "+uso+"% de tu presupuesto."}else{s.textContent="El saldo se calculará cuando confirmemos el vuelo.";document.getElementById("barra").style.width="0";document.getElementById("porcentaje").textContent="No sumamos importes estimados."}
 const rangoViaje=fechaIdaExacta&&fechaVueltaExacta?fechaBonita(fechaIdaExacta)+" → "+fechaBonita(fechaVueltaExacta):(p.get("cuando")||"Cualquier fecha");const chips=[p.get("origen")||"Buenos Aires",rangoViaje,p.get("flexibilidad")||"Fechas flexibles",viajeros+(viajeros===1?" viajero":" viajeros"),duracion];document.getElementById("chips").innerHTML=chips.map(x=>'<span class="chip">'+x+'</span>').join("");
 const back=new URLSearchParams(p);["destino","etiqueta","vuelo","hotel","otros","total","hotelId","hotelNombre"].forEach(k=>back.delete(k));document.getElementById("volver").href="resultados.html?"+back.toString();
-const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destino")){vv.style.display="block";vv.textContent="✈️ Buscar vuelos para tus fechas →"}else{vv.style.display="none"};document.getElementById("verVuelo").onclick=e=>{e.preventDefault();const origenTexto=(p.get("origen")||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(),origin=aeropuertoOrigen||(origenTexto.includes("buenos aires")?"BUE":""),destination=aeropuertoDestino||(()=>{const normalizar=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();const mapa={"rio de janeiro":"RIO","florianopolis":"FLN","maceio":"MCZ","salvador de bahia":"SSA","recife":"REC","foz do iguacu":"IGU","santiago de chile":"SCL","santiago":"SCL","montevideo":"MVD","lima":"LIM","lima, peru":"LIM","madrid":"MAD","cordoba":"COR","mendoza":"MDZ","bariloche":"BRC","ushuaia":"USH","salta":"SLA","puerto iguazu":"IGR","mar del plata":"MDQ","el calafate":"FTE"};const clave=normalizar(destino);return mapa[clave]||(clave.startsWith("lima")?"LIM":"")})();if(!origin||!destination){alert("Todavía no tenemos identificado el aeropuerto de "+destino+".");return}const fmt=x=>{const [y,m,d]=x.split("-");return d+m};if(fechaIdaExacta&&fechaVueltaExacta){const retorno=location.pathname+location.search;const qVuelo=new URLSearchParams({flightSearch:origin+fmt(fechaIdaExacta)+destination+fmt(fechaVueltaExacta)+Math.max(1,viajeros),returnTrip:retorno});location.href="prueba-vuelos.html?"+qVuelo.toString();return}location.href="prueba-vuelos.html"};
+const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destino")){vv.style.display="block";vv.textContent="✈️ Buscar vuelos para tus fechas →"}else{vv.style.display="none"};async function resolverIata(texto,codigoGuardado){
+  if(codigoGuardado&&/^[A-Za-z]{3}$/.test(codigoGuardado))return codigoGuardado.toUpperCase();
+  const normalizar=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+  const q=(texto||"").trim();
+  if(/^[A-Za-z]{3}$/.test(q))return q.toUpperCase();
+  try{
+    const r=await fetch("/api/destinos?q="+encodeURIComponent(q));
+    const data=await r.json();
+    if(!r.ok||!Array.isArray(data)||!data.length)return "";
+    const nq=normalizar(q.split(",")[0]);
+    const exacta=data.find(d=>normalizar(d.name)===nq&&d.iata);
+    const empieza=data.find(d=>normalizar(d.name).startsWith(nq)&&d.iata);
+    const conCodigo=data.find(d=>d.iata);
+    return String((exacta||empieza||conCodigo)?.iata||"").toUpperCase();
+  }catch(_){return ""}
+}
+document.getElementById("verVuelo").onclick=async e=>{
+  e.preventDefault();
+  const boton=e.currentTarget;
+  const textoOriginal=boton.textContent;
+  boton.textContent="✈️ Identificando aeropuertos…";
+  boton.style.pointerEvents="none";
+  const origin=await resolverIata(p.get("origen")||"",aeropuertoOrigen);
+  const destination=await resolverIata(destino,aeropuertoDestino);
+  boton.textContent=textoOriginal;
+  boton.style.pointerEvents="";
+  if(!origin||!destination){
+    alert("No pudimos identificar automáticamente el aeropuerto de "+(!origin?(p.get("origen")||"origen"):destino)+". Volvé a la búsqueda y elegí la ciudad de la lista.");
+    return;
+  }
+  const fmt=x=>{const [y,m,d]=x.split("-");return d+m};
+  if(fechaIdaExacta&&fechaVueltaExacta){
+    const retorno=location.pathname+location.search;
+    const qVuelo=new URLSearchParams({flightSearch:origin+fmt(fechaIdaExacta)+destination+fmt(fechaVueltaExacta)+Math.max(1,viajeros),returnTrip:retorno});
+    location.href="prueba-vuelos.html?"+qVuelo.toString();
+    return;
+  }
+  location.href="prueba-vuelos.html";
+};
 if(vueloSeleccionado){
   const pv=document.getElementById("pendienteVuelo");pv.innerHTML="";
   if(completo){
