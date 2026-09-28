@@ -71,6 +71,7 @@ const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destin
   if(/^[A-Za-z]{3}$/.test(q))return q.toUpperCase();
   const nqCompleto=normalizar(q);
   if(nqCompleto.includes("buenos aires")||nqCompleto.includes("caba")||nqCompleto.includes("ezeiza")||nqCompleto.includes("aeroparque"))return "BUE";
+  if(nqCompleto.includes("mar del plata"))return "MDQ";
   try{
     const r=await fetch("/api/destinos?q="+encodeURIComponent(q));
     const data=await r.json();
