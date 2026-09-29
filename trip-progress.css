@@ -1,0 +1,7 @@
+:root{--trip-header-height:78px;--trip-progress-height:25px}
+header{position:sticky;top:0;z-index:10}
+.pasos{position:sticky;top:calc(var(--trip-header-height) + 14px);z-index:9;isolation:isolate;min-width:0}
+.pasos::before{content:"";position:absolute;inset:-14px -16px;background:#f6f8fc;border-bottom:1px solid #e5eaf1;box-shadow:0 5px 12px rgba(16,24,40,.05);z-index:-1;pointer-events:none}
+.paso{flex-shrink:0;white-space:nowrap}
+.resumen{top:calc(var(--trip-header-height) + var(--trip-progress-height) + 42px)}
+@media(max-width:460px){.pasos{gap:4px}.paso{gap:4px;font-size:clamp(9px,2.7vw,11px)}.paso b{width:21px;height:21px;flex-shrink:0}.pasos .linea{min-width:4px;max-width:30px}}
