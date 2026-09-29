@@ -7,8 +7,9 @@
 <section class="hero"><div class="hero-inner"><h1>¿Hasta dónde puede llevarte tu presupuesto?</h1><p id="subtitulo"></p><div class="resumen" id="resumen"></div></div></section>
 <main><div class="encabezado"><div><h2>Opciones pensadas para tu presupuesto</h2><p>Primero te mostramos las opciones que mejor encajan con tu búsqueda y presupuesto.</p></div><div class="nota" id="notaPrecios">Buscando alojamientos para tus fechas…</div></div><div class="grid" id="grid"></div><div class="aviso" id="avisoResultados"><strong>Cómo leer estos resultados:</strong> buscamos coincidencias de vuelo y hotel para tus fechas. El vuelo mostrado sirve como referencia encontrada recientemente; la tarifa disponible se confirma al abrir el motor de vuelos. El alojamiento corresponde a disponibilidad consultada para tus fechas.</div></main>
 <footer>© 2026 Valijeando · Plataforma independiente de búsqueda, comparación y planificación de viajes.</footer>
-<script>
-const p=new URLSearchParams(location.search),origen=p.get("origen")||"Buenos Aires",aeropuertoOrigen=p.get("aeropuertoOrigen")||"",cuando=p.get("cuando")||"Cualquier fecha",flexibilidad=p.get("flexibilidad")||"Fechas flexibles",viajeros=Number(p.get("viajeros")||2),duracion=p.get("duracion")||"Cualquier duración",presupuesto=Number(p.get("presupuesto")||2000),tipo=p.get("tipo")||"Sorprendeme",fechaIdaExacta=p.get("fechaIda")||"",fechaVueltaExacta=p.get("fechaVuelta")||"";
+<script src="/travel-party.js"></script><script>
+const p=new URLSearchParams(location.search),origen=p.get("origen")||"Buenos Aires",aeropuertoOrigen=p.get("aeropuertoOrigen")||"",cuando=p.get("cuando")||"Cualquier fecha",flexibilidad=p.get("flexibilidad")||"Fechas flexibles",party=ValijeandoParty.fromParams(p),partyTotals=ValijeandoParty.totals(party),viajeros=partyTotals.adults+partyTotals.children,duracion=p.get("duracion")||"Cualquier duración",presupuesto=Number(p.get("presupuesto")||2000),tipo=p.get("tipo")||"Sorprendeme",fechaIdaExacta=p.get("fechaIda")||"",fechaVueltaExacta=p.get("fechaVuelta")||"";
+ValijeandoParty.apply(p,party);
 document.getElementById("subtitulo").textContent="Con USD "+presupuesto+" para "+viajeros+(viajeros===1?" persona":" personas")+", estas ideas podrían acercarse a lo que buscás.";
 const rangoExacto=fechaIdaExacta&&fechaVueltaExacta?fechaBonita(fechaIdaExacta)+" → "+fechaBonita(fechaVueltaExacta):cuando;const chips=["Desde "+origen,rangoExacto,flexibilidad,viajeros+(viajeros===1?" viajero":" viajeros"),duracion,tipo];document.getElementById("resumen").innerHTML=chips.map(x=>'<span class="chip">'+x+'</span>').join("");
 const base=[{destino:"Río de Janeiro",clase:"rio",etiqueta:"Playa + ciudad",tipos:["Playa","Ciudad","Relax"],meses:["Diciembre","Enero","Febrero","Marzo"],vuelo:520,hotel:720,otros:260},{destino:"Florianópolis",clase:"floripa",etiqueta:"Playa + relax",tipos:["Playa","Relax","Familiar"],meses:["Diciembre","Enero","Febrero","Marzo"],vuelo:430,hotel:650,otros:230},{destino:"Maceió",clase:"maceio",etiqueta:"Playa",tipos:["Playa","Relax","Romántico"],meses:["Enero","Febrero","Marzo","Abril","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:690,hotel:760,otros:280},{destino:"Salvador de Bahía",clase:"salvador",etiqueta:"Playa + cultura",tipos:["Playa","Ciudad","Romántico"],meses:["Enero","Febrero","Marzo","Abril","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:650,hotel:690,otros:260},{destino:"Recife",clase:"recife",etiqueta:"Playa + ciudad",tipos:["Playa","Ciudad","Familiar"],meses:["Enero","Febrero","Marzo","Abril","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:680,hotel:700,otros:270},{destino:"Foz do Iguaçu",clase:"foz",etiqueta:"Naturaleza",tipos:["Aventura","Familiar","Relax"],meses:["Marzo","Abril","Mayo","Junio","Agosto","Septiembre","Octubre","Noviembre"],vuelo:390,hotel:480,otros:240},{destino:"Santiago de Chile",clase:"santiago",etiqueta:"Ciudad + montaña",tipos:["Ciudad","Aventura","Romántico"],meses:["Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre"],vuelo:320,hotel:610,otros:250},{destino:"Montevideo",clase:"montevideo",etiqueta:"Escapada cercana",tipos:["Ciudad","Relax","Romántico"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:260,hotel:580,otros:220},{destino:"Lima",clase:"lima",etiqueta:"Gastronomía + ciudad",tipos:["Ciudad","Romántico"],meses:["Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre"],vuelo:520,hotel:600,otros:260},{destino:"Madrid",clase:"madrid",etiqueta:"Europa + ciudad",tipos:["Ciudad","Romántico"],meses:["Marzo","Abril","Mayo","Septiembre","Octubre","Noviembre"],vuelo:1100,hotel:1100,otros:450},{destino:"São Paulo",clase:"santiago",etiqueta:"Ciudad + gastronomía",tipos:["Ciudad"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:400,hotel:550,otros:220},{destino:"Porto Alegre",clase:"montevideo",etiqueta:"Escapada + ciudad",tipos:["Ciudad","Relax"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:350,hotel:480,otros:200},{destino:"Asunción",clase:"montevideo",etiqueta:"Escapada cercana",tipos:["Ciudad","Relax"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:300,hotel:420,otros:180},{destino:"Córdoba",clase:"foz",etiqueta:"Escapada nacional",tipos:["Ciudad","Aventura","Familiar"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:220,hotel:450,otros:180},{destino:"Mendoza",clase:"santiago",etiqueta:"Vino + montaña",tipos:["Ciudad","Romántico","Aventura"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:240,hotel:520,otros:200},{destino:"Bariloche",clase:"foz",etiqueta:"Naturaleza + montaña",tipos:["Aventura","Familiar","Romántico"],meses:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],vuelo:300,hotel:650,otros:240}];
@@ -22,29 +23,29 @@ function elegirVuelo(data){if(!data||!Array.isArray(data.data)||!data.data.lengt
 function fechaBonita(valor){if(!valor)return "";const d=new Date(valor);if(Number.isNaN(d.getTime()))return "";return new Intl.DateTimeFormat("es-AR",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}).format(d)}
 async function aplicarVuelosReales(opciones){const originCode=aeropuertoOrigen||origenes[origen]||(/^[A-Za-z]{3}$/.test(origen)?origen.toUpperCase():"BUE");const consultas=opciones.map(async v=>{try{let url="/api/vuelos?origin="+encodeURIComponent(originCode)+"&destination="+codigosDestino[v.destino]+"&currency=usd";if(fechaIdaExacta)url+="&fechaIda="+encodeURIComponent(fechaIdaExacta);if(fechaVueltaExacta)url+="&fechaVuelta="+encodeURIComponent(fechaVueltaExacta);const r=await fetch(url),d=await r.json(),ofertas=Array.isArray(d.offers)?d.offers:[];if(!r.ok||!d.ok||!ofertas.length)return {...v,vueloReal:false,vueloDisponible:false,total:null};const vuelo=ofertas[0],precioPersona=Math.round(Number(vuelo.price)),vueloTotal=precioPersona*viajeros;return {...v,vueloCalc:vueloTotal,total:vueloTotal+v.hotelCalc+v.otrosCalc,vueloReal:true,vueloDisponible:true,coincideMes:true,precioPersona,fechaVuelo:vuelo.departure_at,aerolinea:vuelo.airline||"",aeropuertoOrigen:vuelo.origin_airport||originCode,aeropuertoDestino:vuelo.destination_airport||codigosDestino[v.destino]}}catch(e){return {...v,vueloReal:false,vueloDisponible:false}}});return Promise.all(consultas)}
 async function aplicarHotelesReales(opciones){
-  if(!fechaIdaExacta||!fechaVueltaExacta)return opciones;
-  const consultas=opciones.map(async v=>{
-    const d=destinosHotel[v.destino]; if(!d)return v;
-    try{
-      const consultasLugar=[v.destino,d.city].filter((x,i,a)=>x&&a.indexOf(x)===i);
-      let place=null;
-      for(const termino of consultasLugar){
-        const pr=await fetch("/api/nuitee-places?q="+encodeURIComponent(termino)),pj=await pr.json();
-        const places=Array.isArray(pj.places)?pj.places:[];
-        place=places.find(x=>String(x.displayName||"").toLowerCase().includes(d.city.split(" ")[0].toLowerCase()))||places[0]||null;
-        if(pr.ok&&place?.placeId)break;
-      }
-      const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(viajeros),currency:"USD",guestNationality:"AR"});
-      if(place?.placeId)q.set("placeId",place.placeId);
-      const r=await fetch("/api/nuitee-hotels?"+q),j=await r.json();
-      if(!r.ok||!Array.isArray(j.hotels)||!j.hotels.length){console.warn("Hotel sin tarifa",v.destino,r.status,j.error||j.debug||"sin hoteles");return v;}
-      const h=[...j.hotels].sort((a,b)=>Number(a.estimatedTotal||a.retailRate)-Number(b.estimatedTotal||b.retailRate))[0];
-      const hotelTotal=Math.round(Number(h.estimatedTotal||h.retailRate)*100)/100;
-      return {...v,hotelCalc:hotelTotal,hotelReal:true,hotelNombre:h.name||"",hotelId:h.hotelId||"",total:v.vueloReal?v.vueloCalc+hotelTotal+v.otrosCalc:null};
-    }catch(e){return v}
-  });
-  return Promise.all(consultas);
+  if(!fechaIdaExacta||!fechaVueltaExacta)return opciones.map(v=>({...v,hotelError:true}));
+  const output=new Array(opciones.length);let next=0,completed=0;
+  async function worker(){
+    while(next<opciones.length){
+      const i=next++,v=opciones[i],d=destinosHotel[v.destino];if(v.hotelReal||v.hotelError===false){output[i]=v;completed++;continue}
+      try{
+        const q=new URLSearchParams({city:d.city,countryCode:d.countryCode,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,currency:"USD",guestNationality:"AR"});
+        ValijeandoParty.apply(q,party);
+        const r=await fetch("/api/nuitee-hotels?"+q),j=await r.json();
+        if(!r.ok||!Array.isArray(j.hotels))throw Error(j.error||"Consulta no disponible");
+        const h=j.hotels[0];
+        if(!h){output[i]={...v,hotelError:false};continue}
+        sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));
+        sessionStorage.setItem('hotelSearch:'+h.hotelId,JSON.stringify({checkin:fechaIdaExacta,checkout:fechaVueltaExacta,occupancies:party}));
+        output[i]={...v,hotelCalc:Number(h.estimatedTotal??h.retailRate),hotelReal:true,hotelNombre:h.name||"",hotelId:h.hotelId||"",hotelCity:d.city,hotelCountryCode:d.countryCode,hotelError:false};
+      }catch(e){output[i]={...v,hotelError:true}}
+      finally{completed++;document.getElementById("notaPrecios").textContent="Destinos consultados: "+completed+" de "+opciones.length}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(3,opciones.length)},worker));
+  return output;
 }
+
 function totalConocido(v){return Number(v.hotelCalc||0)+(v.vueloReal?Number(v.vueloCalc||0):0)}
 function asignarDestacados(lista){
   lista.forEach(v=>v.destacado="");
@@ -68,7 +69,7 @@ function card(v){
   detalle.delete("total");
   detalle.set("vueloReal","0");
   detalle.set("vueloReferencia","0");
-  if(v.hotelId)detalle.set("hotelId",v.hotelId);
+  if(v.hotelId)detalle.set("hotelId",v.hotelId);if(v.hotelCity)detalle.set("hotelCity",v.hotelCity);if(v.hotelCountryCode)detalle.set("hotelCountryCode",v.hotelCountryCode);
   if(v.hotelNombre)detalle.set("hotelNombre",v.hotelNombre);
   if(codigosDestino[v.destino])detalle.set("aeropuertoDestino",codigosDestino[v.destino]);
   return `<article class="card"><div class="foto ${v.clase}"><span>${v.destino}</span></div><div class="contenido"><div class="topline"><span class="tag">${v.etiqueta}</span></div><div class="linea"><span>✈️ Vuelo</span><b>Buscar tarifa</b></div><div class="vuelo-real alt">✓ Búsqueda preparada para tus mismas fechas</div><div class="linea"><span>🏨 Hotel</span><b>USD ${Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})}</b></div><div class="hotel-real">✓ ${v.hotelNombre} · tarifa disponible para tus fechas</div><div class="linea"><span>🚕 Traslados y extras</span><b>A confirmar</b></div><div class="total"><span>Total confirmado hasta ahora</span><strong>USD ${Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})}</strong></div><div class="estado">Elegí este destino y comprobá el vuelo real antes de calcular el total del viaje.</div><a href="viaje.html?${detalle.toString()}" class="btn">Ver hotel y buscar vuelo</a></div></article>`;
@@ -81,17 +82,18 @@ let opciones=base.map(calcular).sort((a,b)=>{
   return Number(a.hotelCalc||0)-Number(b.hotelCalc||0);
 });
 document.getElementById("grid").innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:34px;text-align:center"><h3 style="font-size:22px;margin-bottom:8px">Buscando alojamientos disponibles…</h3><p style="color:#667085">Estamos comprobando hoteles reales para tus fechas. El vuelo se confirma después en nuestro motor de vuelos.</p></div>';
-aplicarHotelesReales(opciones).then(actualizadas=>{
-  opciones=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>Number(a.hotelCalc||Infinity)-Number(b.hotelCalc||Infinity));
+async function buscarDestinos(){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios");
-  if(opciones.length){
-    grid.innerHTML=opciones.slice(0,6).map(card).join("");
-    nota.textContent=opciones.length+" destinos con hotel disponible";
-    nota.classList.add("real");
-  }else{
-    grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3 style="font-size:22px;margin-bottom:8px">No encontramos alojamiento disponible para estas fechas</h3><p style="color:#667085">Probá cambiando las fechas para buscar otras opciones.</p></div>';
-    nota.textContent="No encontramos hoteles disponibles para estas fechas";
-  }
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> primero te mostramos destinos donde encontramos alojamiento disponible para tus fechas. Después abrís el motor de vuelos con el mismo origen, destino y fechas para elegir una tarifa real. El total del viaje se completa cuando el vuelo queda seleccionado; no inventamos ni estimamos una tarifa aérea.";
-});
+  if(!Number.isFinite(presupuesto)||presupuesto<=0){grid.innerHTML='<p>Indicá un presupuesto mayor que cero en el buscador.</p>';nota.textContent="Presupuesto inválido";return}
+  const actualizadas=await aplicarHotelesReales(opciones);
+  const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError);
+  if(disponibles.length){grid.innerHTML=disponibles.slice(0,6).map(card).join("");nota.textContent=disponibles.length+" destinos con hotel disponible"+(fallidas.length?" · "+fallidas.length+" consultas pendientes":"");nota.classList.add("real")}
+  else if(fallidas.length){grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No pudimos completar la consulta de disponibilidad</h3><p>Podés volver a intentar con las mismas fechas y viajeros.</p></div>';nota.textContent="Consulta incompleta"}
+  else{grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No encontramos alojamiento disponible para estas fechas</h3><p>Probá cambiando las fechas para buscar otras opciones.</p></div>';nota.textContent="Sin hoteles disponibles para estas fechas"}
+  if(fallidas.length){const button=document.createElement('button');button.className='btn';button.textContent='Reintentar consultas pendientes';button.onclick=async()=>{button.disabled=true;await buscarDestinos()};grid.appendChild(button)}
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> primero te mostramos destinos donde encontramos alojamiento disponible para tus fechas y la distribución de habitaciones elegida. Después abrís el motor de vuelos con los mismos pasajeros y fechas. El total se completa al elegir el vuelo.";
+  // Conservamos resultados correctos si sólo se reintenta una parte.
+  opciones=actualizadas;
+}
+buscarDestinos();
 </script></body></html>

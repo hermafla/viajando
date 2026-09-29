@@ -54,8 +54,9 @@ main{max-width:1040px;margin:auto;padding:36px 20px 70px}.intro{margin-bottom:22
 </div>
 <div class="aviso" id="aviso"><strong>Cómo leer estos valores:</strong> Valijeando muestra importes sólo cuando encontró una tarifa para tus fechas. Los componentes pendientes quedan separados y no se suman al total hasta confirmarlos.</div>
 </main>
-<script>
-const p=new URLSearchParams(location.search),destino=p.get("destino")||"Tu viaje",etiqueta=p.get("etiqueta")||"Idea de viaje",vuelo=Number(p.get("vuelo")||0),hotel=Number(p.get("hotel")||0),presupuesto=Number(p.get("presupuesto")||2000),viajeros=Number(p.get("viajeros")||2),duracion=p.get("duracion")||"Cualquier duración",vueloReal=p.get("vueloReal")==="1",precioPersona=Number(p.get("precioPersona")||0),fechaVuelo=p.get("fechaVuelo")||"",aeropuertoOrigen=p.get("aeropuertoOrigen")||"",aeropuertoDestino=p.get("aeropuertoDestino")||"",fechaIdaExacta=p.get("fechaIda")||"",fechaVueltaExacta=p.get("fechaVuelta")||"",hotelId=p.get("hotelId")||"",hotelNombre=p.get("hotelNombre")||"";
+<script src="/travel-party.js"></script><script>
+const p=new URLSearchParams(location.search),destino=p.get("destino")||"Tu viaje",etiqueta=p.get("etiqueta")||"Idea de viaje",vuelo=Number(p.get("vuelo")||0),hotel=Number(p.get("hotel")||0),presupuesto=Number(p.get("presupuesto")||2000),party=ValijeandoParty.fromParams(p),partyTotals=ValijeandoParty.totals(party),viajeros=partyTotals.adults+partyTotals.children,duracion=p.get("duracion")||"Cualquier duración",vueloReal=p.get("vueloReal")==="1",precioPersona=Number(p.get("precioPersona")||0),fechaVuelo=p.get("fechaVuelo")||"",aeropuertoOrigen=p.get("aeropuertoOrigen")||"",aeropuertoDestino=p.get("aeropuertoDestino")||"",fechaIdaExacta=p.get("fechaIda")||"",fechaVueltaExacta=p.get("fechaVuelta")||"",hotelId=p.get("hotelId")||"",hotelNombre=p.get("hotelNombre")||"";
+ValijeandoParty.apply(p,party);
 const vueloSeleccionado=p.get("vueloSeleccionado")==="1",vueloProveedor=p.get("vueloProveedor")||"",vueloRedirect=p.get("vueloRedirect")||"";const conocido=hotel+(vueloReal?vuelo:0),completo=hotel>0&&vueloReal;if(vueloSeleccionado)document.getElementById("totalLabel").textContent="Vuelo + alojamiento seleccionados";
 document.title=destino+" | Valijeando";document.getElementById("destino").textContent=destino;document.getElementById("etiqueta").textContent=etiqueta;document.getElementById("vuelo").textContent=vueloReal?"USD "+vuelo.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}):"A confirmar";document.getElementById("hotel").textContent=hotel>0?"USD "+hotel.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}):"A confirmar";document.getElementById("total").textContent=completo?"USD "+conocido.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}):"A confirmar";document.getElementById("presupuesto").textContent="USD "+presupuesto.toLocaleString("es-AR");
 const datoVuelo=document.getElementById("datoVuelo");if(vueloReal){document.getElementById("vueloDetalle").textContent=vueloSeleccionado?"Tarifa seleccionada en el motor de vuelos para este viaje.":"Precio encontrado para "+viajeros+(viajeros===1?" viajero.":" viajeros.");datoVuelo.className="dato-real";datoVuelo.textContent=vueloSeleccionado?"✓ Vuelo seleccionado"+(vueloProveedor?" · "+vueloProveedor:""):"✓ Precio encontrado"+(precioPersona?" · USD "+precioPersona+" por persona":"")+(fechaVuelo?" · salida "+fechaBonita(fechaVuelo):"")+(aeropuertoOrigen&&aeropuertoDestino?" · "+aeropuertoOrigen+" → "+aeropuertoDestino:"")}else{document.getElementById("vueloDetalle").textContent="Precio pendiente para tus fechas.";const pv=document.getElementById("pendienteVuelo");pv.className="pendiente";pv.textContent="Falta confirmar el vuelo para calcular el total completo del viaje."}
@@ -83,7 +84,7 @@ const vv=document.getElementById("verVuelo");if(aeropuertoDestino||p.get("destin
     return String((exacta||empieza||conCodigo)?.iata||"").toUpperCase();
   }catch(_){return ""}
 }
-document.getElementById("verVuelo").onclick=async e=>{
+async function buscarVuelo(e){
   e.preventDefault();
   const boton=e.currentTarget;
   const textoOriginal=boton.textContent;
@@ -100,12 +101,13 @@ document.getElementById("verVuelo").onclick=async e=>{
   const fmt=x=>{const [y,m,d]=x.split("-");return d+m};
   if(fechaIdaExacta&&fechaVueltaExacta){
     const retorno=location.pathname+location.search;
-    const qVuelo=new URLSearchParams({flightSearch:origin+fmt(fechaIdaExacta)+destination+fmt(fechaVueltaExacta)+Math.max(1,viajeros),returnTrip:retorno});
+    let qVuelo;try{qVuelo=new URLSearchParams({flightSearch:ValijeandoParty.flightSearch(origin,destination,fechaIdaExacta,fechaVueltaExacta,party),returnTrip:retorno})}catch(err){alert(err.message);return}
     location.href="prueba-vuelos.html?"+qVuelo.toString();
     return;
   }
   location.href="prueba-vuelos.html";
-};
+}
+document.getElementById("verVuelo").onclick=buscarVuelo;
 if(vueloSeleccionado){
   const pv=document.getElementById("pendienteVuelo");pv.innerHTML="";
   if(completo){
@@ -124,7 +126,13 @@ if(vueloReal){document.getElementById("resVueloEstado").textContent="✓ Selecci
 document.getElementById("resTotal").textContent=completo?"USD "+conocido.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}):"A confirmar";
 document.getElementById("cambiarVuelo").textContent=vueloReal?"Cambiar vuelo":"Seleccionar vuelo";
 document.getElementById("cambiarHotel").textContent=hotel>0?"Cambiar alojamiento":"Seleccionar alojamiento";
-document.getElementById("cambiarVuelo").onclick=e=>{e.preventDefault();document.getElementById("verVuelo").click()};
+document.getElementById("cambiarVuelo").onclick=buscarVuelo;
 document.getElementById("cambiarHotel").onclick=e=>{e.preventDefault();document.getElementById("verHotel").click()};
-const vh=document.getElementById("verHotel");vh.textContent=hotelId?"🏨 Ver hotel y habitaciones →":"🏨 Buscar hoteles para tus fechas →";vh.onclick=e=>{e.preventDefault();if(!fechaIdaExacta||!fechaVueltaExacta)return;if(hotelId){const q=new URLSearchParams({hotelId,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(Math.max(1,viajeros)),currency:"USD"});location.href="/hotel.html?"+q.toString();return}const q=new URLSearchParams({destino,checkin:fechaIdaExacta,checkout:fechaVueltaExacta,adults:String(Math.max(1,viajeros)),rooms:"1",currency:"USD"});location.href="/hoteles.html?"+q.toString()};
+const vh=document.getElementById("verHotel");vh.textContent=hotelId?"🏨 Ver hotel y habitaciones →":"🏨 Buscar hoteles para tus fechas →";vh.onclick=e=>{
+ e.preventDefault();if(!fechaIdaExacta||!fechaVueltaExacta)return;
+ const q=new URLSearchParams({city:p.get("hotelCity")||destino,countryCode:p.get("hotelCountryCode")||"",checkin:fechaIdaExacta,checkout:fechaVueltaExacta,currency:"USD",returnTrip:location.pathname+"?"+p.toString()});
+ ValijeandoParty.apply(q,party);
+ if(hotelId&&sessionStorage.getItem('hotelSearch:'+hotelId)){q.set('hotelId',hotelId);q.set('backSearch','/hoteles.html?'+new URLSearchParams(q).toString());location.href="/hotel.html?"+q.toString()}
+ else location.href="/hoteles.html?"+q.toString();
+};
 </script></body></html>

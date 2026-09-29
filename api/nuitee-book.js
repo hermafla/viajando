@@ -1,32 +1,50 @@
+import crypto from 'crypto';
+import { bookingEnvironment, occupanciesFromQuery } from '../lib/nuitee.js';
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST') return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key) return res.status(503).json({error:'Falta configurar NUITEE_API_KEY.'});
-  const {prebookId,firstName,lastName,email,phone,reservation}=req.body||{};
+  const {prebookId,firstName,lastName,email,phone,reservation,roomGuests}=req.body||{};
   if(!prebookId||!firstName||!lastName||!email) return res.status(400).json({error:'Completá nombre, apellido y email.'});
   const clean=s=>String(s||'').trim();
-  const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+  const mode=bookingEnvironment(key);
+  if(mode!=='sandbox')return res.status(503).json({error:'Las reservas no están habilitadas en este entorno. Podés seguir consultando alojamientos.'});
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(email)))return res.status(400).json({error:'Ingresá un email válido.'});
+  let rooms;try{rooms=occupanciesFromQuery({occupancies:JSON.stringify(reservation?.occupancies),adults:reservation?.adults})}catch{return res.status(400).json({error:'Revisá la distribución de habitaciones.'})}
+  const guests=rooms.map((r,i)=>({occupancyNumber:i+1,firstName:clean(i===0?firstName:roomGuests?.[i-1]?.firstName),lastName:clean(i===0?lastName:roomGuests?.[i-1]?.lastName),email:clean(email)}));
+  if(guests.some(g=>!g.firstName||!g.lastName))return res.status(400).json({error:'Indicá un huésped adulto por habitación.'});
+  const clientReference='VAL-'+crypto.createHash('sha256').update(clean(prebookId)).digest('hex').slice(0,32);
+  const supabaseUrl=process.env.SUPABASE_URL,supabaseKey=process.env.SUPABASE_SECRET_KEY;
+  const sbHeaders={'apikey':supabaseKey,'Authorization':'Bearer '+supabaseKey,'Content-Type':'application/json'};
+  if(!supabaseUrl||!supabaseKey||!reservation)return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'});
+  // Verificar el registro antes de Book evita volver a reservar al repetir la solicitud.
+  try{
+    const prior=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles?select=booking_id,confirmacion_hotel,estado&datos_proveedor->>valijeandoClientReference=eq.'+encodeURIComponent(clientReference)+'&limit=1',{headers:sbHeaders});
+    if(!prior.ok)return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'});
+    const rows=await prior.json();if(rows?.[0]?.estado==='cancelada')return res.status(409).json({error:'Esta reserva ya fue cancelada. Realizá una búsqueda nueva.',reason:'provider_rejected'});if(rows?.[0])return res.status(200).json({sandbox:true,bookingEnvironment:mode,bookingId:rows[0].booking_id,hotelConfirmationCode:rows[0].confirmacion_hotel,status:rows[0].estado,saved:true,emailSent:false,emailStatus:'already_confirmed',alreadyConfirmed:true});
+  }catch{return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'})}
+
+  const num=v=>{if(v==null||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null};
   const payload={
     prebookId:clean(prebookId),
-    clientReference:'VAL-SBX-'+Date.now(),
+    clientReference,
     holder:{firstName:clean(firstName),lastName:clean(lastName),email:clean(email),...(phone?{phone:clean(phone)}:{})},
-    guests:[{occupancyNumber:1,firstName:clean(firstName),lastName:clean(lastName),email:clean(email)}],
+    guests,
     payment:{method:'ACC_CREDIT_CARD'}
   };
   try{
     const r=await fetch('https://book.liteapi.travel/v3.0/rates/book?timeout=30',{method:'POST',headers:{'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});
     const j=await r.json().catch(()=>({}));
-    if(!r.ok) return res.status(r.status).json({error:(typeof j.message==='string'?j.message:(typeof j.error==='string'?j.error:(j.error?.message||j.message?.message)))||'No se pudo confirmar la reserva SANDBOX.',details:j});
+    if(!r.ok) return res.status(r.status).json({error:(typeof j.message==='string'?j.message:(typeof j.error==='string'?j.error:(j.error?.message||j.message?.message)))||'No se pudo confirmar la reserva.',reason:'provider_rejected'});
     const d=j.data||j;
     const bookingId=d.bookingId||d.id||'';
     const hotelConfirmationCode=d.hotelConfirmationCode||d.confirmationCode||'';
-    const status=d.status||'confirmed';
+    const status=String(d.status||'').toLowerCase();
+    if(!bookingId||!['confirmed','ok'].includes(status))return res.status(502).json({error:'El proveedor no confirmó la reserva. Consultá Mi cuenta antes de volver a intentar.',reason:'booking_uncertain'});
     const dbStatus=String(status).toLowerCase()==='cancelled'?'cancelada':'confirmada';
 
     let saved=false,saveError='';
-    const supabaseUrl=process.env.SUPABASE_URL;
-    const supabaseKey=process.env.SUPABASE_SECRET_KEY;
     if(supabaseUrl&&supabaseKey&&reservation){
       const checkin=clean(reservation.checkin),checkout=clean(reservation.checkout);
       const nights=(checkin&&checkout)?Math.max(0,Math.round((new Date(checkout+'T00:00:00Z')-new Date(checkin+'T00:00:00Z'))/86400000)):0;
@@ -46,9 +64,9 @@ export default async function handler(req,res){
         checkin:checkin||null,
         checkout:checkout||null,
         noches:nights||null,
-        adultos:num(reservation.adults)||1,
-        ninos:num(reservation.children)||0,
-        habitaciones:num(reservation.rooms)||1,
+        adultos:rooms.reduce((n,r)=>n+r.adults,0),
+        ninos:rooms.reduce((n,r)=>n+(r.children||[]).length,0),
+        habitaciones:rooms.length,
         habitacion_nombre:clean(reservation.roomName)||null,
         regimen:clean(reservation.boardName)||null,
         reembolsable:refundable,
@@ -61,12 +79,12 @@ export default async function handler(req,res){
         pagado:false,
         cargos_alojamiento_usd:num(reservation.dueAtProperty)||0,
         estado:dbStatus,
-        datos_proveedor:d
+        datos_proveedor:{...d,valijeandoClientReference:clientReference}
       };
       try{
         const sr=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles',{
           method:'POST',
-          headers:{'apikey':supabaseKey,'Content-Type':'application/json','Prefer':'return=minimal'},
+          headers:{...sbHeaders,'Prefer':'return=minimal'},
           body:JSON.stringify(row)
         });
         if(sr.ok) saved=true;
@@ -81,19 +99,20 @@ export default async function handler(req,res){
     const resendKey=process.env.RESEND_API_KEY;
     if(resendKey){
       try{
-        const hotelName=clean(reservation?.hotelName)||'tu alojamiento';
-        const checkin=clean(reservation?.checkin),checkout=clean(reservation?.checkout);
+        const htmlEscape=v=>clean(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+        const hotelName=htmlEscape(reservation?.hotelName)||'tu alojamiento';
+        const checkin=htmlEscape(reservation?.checkin),checkout=htmlEscape(reservation?.checkout);
         const totalUsd=num(reservation?.estimatedTotal??reservation?.price);
         const subject='Reserva confirmada - '+hotelName+' | Valijeando';
         const html='<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#172033">'
           +'<h2 style="margin-bottom:8px">¡Tu reserva está confirmada!</h2>'
-          +'<p>Hola '+clean(firstName)+', recibimos la confirmación de tu reserva en <strong>'+hotelName+'</strong>.</p>'
+          +'<p>Hola '+htmlEscape(firstName)+', recibimos la confirmación de tu reserva en <strong>'+hotelName+'</strong>.</p>'
           +'<div style="background:#f6f8fb;padding:16px;border-radius:12px;margin:18px 0">'
-          +(bookingId?'<p><strong>Código de reserva:</strong> '+clean(bookingId)+'</p>':'')
-          +(hotelConfirmationCode?'<p><strong>Confirmación del hotel:</strong> '+clean(hotelConfirmationCode)+'</p>':'')
+          +(bookingId?'<p><strong>Código de reserva:</strong> '+htmlEscape(bookingId)+'</p>':'')
+          +(hotelConfirmationCode?'<p><strong>Confirmación del hotel:</strong> '+htmlEscape(hotelConfirmationCode)+'</p>':'')
           +(checkin?'<p><strong>Entrada:</strong> '+checkin+'</p>':'')
           +(checkout?'<p><strong>Salida:</strong> '+checkout+'</p>':'')
-          +(reservation?.roomName?'<p><strong>Habitación:</strong> '+clean(reservation.roomName)+'</p>':'')
+          +(reservation?.roomName?'<p><strong>Habitación:</strong> '+htmlEscape(reservation.roomName)+'</p>':'')
           +(totalUsd!=null?'<p><strong>Importe base:</strong> USD '+totalUsd.toFixed(2)+'</p>':'')
           +'</div><p>Guardá este correo junto con tu código de reserva.</p>'
           +'<p style="color:#657085;font-size:13px">Valijeando · valijeando.com.ar</p></div>';
@@ -107,6 +126,6 @@ export default async function handler(req,res){
       }catch(ee){emailError=ee?.message||'No se pudo enviar el correo';console.error('Resend confirmación',emailError);}
     }else emailError='Falta configurar RESEND_API_KEY';
 
-    return res.status(200).json({sandbox:true,bookingId,hotelConfirmationCode,status,booking:d,saved,saveError,emailSent,emailError});
-  }catch(e){return res.status(502).json({error:e?.message||'No se pudo conectar con Nuitee para confirmar la reserva.'});}
+    return res.status(200).json({sandbox:true,bookingEnvironment:mode,bookingId,hotelConfirmationCode,status,saved,saveError:saved?'':'La reserva se confirmó, pero no pudimos guardarla en Mi cuenta. Conservá el código.',emailSent,emailError:emailSent?'':'No pudimos enviar el correo de confirmación. Conservá el código.'});
+  }catch(e){return res.status(502).json({error:'No pudimos verificar la confirmación. Consultá Mi cuenta antes de repetir la reserva.',reason:'booking_uncertain'});}
 }
