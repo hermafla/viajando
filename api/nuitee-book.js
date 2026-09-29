@@ -79,7 +79,7 @@ export default async function handler(req,res){
         pagado:false,
         cargos_alojamiento_usd:num(reservation.dueAtProperty)||0,
         estado:dbStatus,
-        datos_proveedor:{...d,valijeandoClientReference:clientReference}
+        datos_proveedor:{...d,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms}
       };
       try{
         const sr=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles',{

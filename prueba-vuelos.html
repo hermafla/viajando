@@ -41,6 +41,17 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
     .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
     @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}#selected-fare.is-open{width:calc(100vw - 20px)!important;max-height:calc(100vh - 20px)!important;overflow:auto!important}.fare-head{padding:18px 20px 15px}.fare-body{padding:17px 20px 19px}#selected-fare-main{font-size:29px!important}.fare-actions{gap:8px;margin-top:11px}.fare-add-trip,#selected-fare-continue{padding:13px 12px!important}.fare-note{font-size:12px}}
   </style>
+  <script>
+    // El motor puede reemplazar la URL al cargar. Guardar el regreso antes de iniciarlo.
+    (function(){
+      const p=new URLSearchParams(location.search),search=p.get('flightSearch')||'',incoming=p.get('returnTrip')||'',key='valijeandoFlightReturn:'+search;
+      const navigation=performance.getEntriesByType?.('navigation')[0]?.type||'navigate';
+      const saved=(navigation==='reload'||navigation==='back_forward')?sessionStorage.getItem(key)||'':'';
+      window.__VALIJEANDO_FLIGHT_CONTEXT={search,returnTrip:incoming||saved};
+      if(incoming)sessionStorage.setItem(key,incoming);
+      else if(navigation==='navigate')sessionStorage.removeItem(key);
+    })();
+  </script>
   <script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1">
     (function () {
       var script = document.createElement("script");
@@ -80,7 +91,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
   <script>
   (function(){
     const box=document.getElementById('selected-fare'),backdrop=document.getElementById('selected-fare-backdrop'),main=document.getElementById('selected-fare-main'),sub=document.getElementById('selected-fare-sub'),close=document.getElementById('selected-fare-close'),proceed=document.getElementById('selected-fare-continue'),add=document.getElementById('selected-fare-add-trip');
-    const returnValue=new URLSearchParams(location.search).get('returnTrip')||'',returnTrip=ValijeandoParty.internalUrl(returnValue,'/viaje.html')||ValijeandoParty.internalUrl(returnValue,'/revisar-viaje.html');
+    const returnValue=window.__VALIJEANDO_FLIGHT_CONTEXT?.returnTrip||'',returnTrip=ValijeandoParty.internalUrl(returnValue,'/viaje.html')||ValijeandoParty.internalUrl(returnValue,'/revisar-viaje.html');
     let fare=null,returnFocus=null;
     document.body.appendChild(backdrop);document.body.appendChild(box);
     box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Tarifa del vuelo seleccionado');
@@ -92,7 +103,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       if(e.key==='Tab'){const f=[...box.querySelectorAll('button')].filter(x=>x.style.display!=='none'),first=f[0],last=f[f.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
     });
     proceed.onclick=()=>{if(fare)window.open(fare.redirect_url,'_blank','noopener')};
-    add.onclick=()=>{if(!fare||!returnTrip||fare.currency!=='USD')return;const target=new URL(returnTrip,location.origin);target.searchParams.set('vuelo',String(fare.value));target.searchParams.set('vueloReal','1');target.searchParams.set('vueloSeleccionado','1');target.searchParams.set('vueloProveedor',fare.provider);target.searchParams.set('vueloRedirect',fare.redirect_url);location.href=target.pathname+target.search};
+    add.onclick=()=>{if(!fare||!returnTrip||fare.currency!=='USD'||new URLSearchParams(location.search).get('flightSearch')!==window.__VALIJEANDO_FLIGHT_CONTEXT.search)return;const target=new URL(returnTrip,location.origin);target.searchParams.set('vuelo',String(fare.value));target.searchParams.set('vueloReal','1');target.searchParams.set('vueloSeleccionado','1');target.searchParams.set('vueloProveedor',fare.provider);target.searchParams.set('vueloRedirect',fare.redirect_url);location.href=target.pathname+target.search};
     document.addEventListener('click',e=>{
       const anchor=e.composedPath().find(n=>n?.tagName==='A'&&String(n.href).includes('tpscr.com/wl/redirect'));
       const selected=ValijeandoFare.selectedOffer(anchor);
@@ -103,9 +114,10 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       main.textContent=fare.currency+' '+fare.value.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
       sub.textContent='Oferta seleccionada · '+fare.provider;
       box.style.display='block';box.classList.add('is-open');backdrop.style.display='block';
-      proceed.style.display=returnTrip&&fare.currency==='USD'?'none':'block';
+      const sameSearch=new URLSearchParams(location.search).get('flightSearch')===window.__VALIJEANDO_FLIGHT_CONTEXT.search;
+      proceed.style.display=returnTrip&&sameSearch&&fare.currency==='USD'?'none':'block';
       proceed.textContent='Continuar con el proveedor →';
-      add.style.display=returnTrip&&fare.currency==='USD'?'block':'none';
+      add.style.display=returnTrip&&sameSearch&&fare.currency==='USD'?'block':'none';
       close.focus();
     },true);
   })();

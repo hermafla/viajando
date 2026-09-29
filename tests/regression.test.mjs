@@ -63,7 +63,7 @@ test('booking sends one named adult per room and reports failed email separately
  env();let bookCalls=0;
  await withFetch(async(url,options)=>{
   if(url.includes('/rates/book')){bookCalls++;const p=JSON.parse(options.body);assert.equal(p.guests.length,2);assert.equal(p.guests[1].firstName,'Segundo');return response({data:{bookingId:'booking-test',status:'CONFIRMED'}})}
-  if(url.startsWith('https://database.test')){assert.equal(options.headers.Authorization,'Bearer test-only');if(options.method==='POST'){const row=JSON.parse(options.body);assert.equal(row.adultos,4);assert.equal(row.ninos,1);assert.equal(row.habitaciones,2);return response({})}return response([])}
+  if(url.startsWith('https://database.test')){assert.equal(options.headers.Authorization,'Bearer test-only');if(options.method==='POST'){const row=JSON.parse(options.body);assert.equal(row.adultos,4);assert.equal(row.ninos,1);assert.equal(row.habitaciones,2);assert.deepEqual(row.datos_proveedor.valijeandoOccupancies,[{adults:2,children:[9]},{adults:2}]);return response({})}return response([])}
   if(url.includes('resend.com'))return response({error:'email unavailable'},503);
   throw Error('Unexpected request');
  },async()=>{const r=await call(book,{method:'POST',body:bookingBody});assert.equal(r.code,200);assert.equal(r.data.saved,true);assert.equal(r.data.emailSent,false);assert.equal(r.data.bookingId,'booking-test');assert.equal(bookCalls,1)});
