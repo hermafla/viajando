@@ -1,16 +1,16 @@
-header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:sticky;top:0;z-index:80;background:#07558f;border:0;border-bottom:1px solid #ffffff24;color:#fff;font-family:Arial,Helvetica,sans-serif;line-height:1.2}
+header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:sticky;top:0;z-index:80;background:#fff;border:0;border-bottom:1px solid #e4eaf1;color:#172b4d;font-family:Arial,Helvetica,sans-serif;line-height:1.2}
 .vh-header *{box-sizing:border-box}
 .vh-inner{width:min(1240px,94%);min-height:78px;margin:auto;display:flex;align-items:center;gap:24px}
-.vh-header .vh-brand{display:flex;align-items:center;gap:9px;flex-shrink:0;text-decoration:none;color:#fff}
+.vh-header .vh-brand{display:flex;align-items:center;gap:9px;flex-shrink:0;text-decoration:none;color:#172b4d}
 .vh-logo-frame{display:block;width:64px;height:64px;padding:3px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #00284633}
 .vh-header .vh-brand img{display:block;width:58px;height:58px;max-height:none;border-radius:50%;clip-path:circle(49%);object-fit:contain}
 .vh-brand-copy{display:block}
 .vh-wordmark{display:block;font-size:24px;font-weight:900;letter-spacing:-1.3px;color:#082f49;-webkit-text-stroke:2.5px #fff;paint-order:stroke fill;text-shadow:none}
 .vh-wordmark span{color:#009fac}
-.vh-tagline{display:block;margin-top:4px;color:#fff;font-size:7px;font-weight:700;letter-spacing:1px;text-align:center}
+.vh-tagline{display:block;margin-top:4px;color:#172b4d;font-size:7px;font-weight:700;letter-spacing:1px;text-align:center}
 .vh-links{display:flex;align-items:center;justify-content:flex-end;gap:18px;flex:1;min-width:0}
-.vh-header .vh-link,.vh-header .vh-more summary{position:relative;display:block;padding:28px 0;color:#fff;text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
-.vh-header .vh-link:hover,.vh-header .vh-more summary:hover{color:#e3f9ff}
+.vh-header .vh-link,.vh-header .vh-more summary{position:relative;display:block;padding:28px 0;color:#172b4d;text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.vh-header .vh-link:hover,.vh-header .vh-more summary:hover{color:#07558f}
 .vh-header .vh-link[aria-current="page"]::after{content:"";position:absolute;bottom:14px;left:0;right:0;height:3px;background:#ffb12c;border-radius:3px}
 .vh-more{position:relative}
 .vh-more summary{list-style:none}
@@ -19,15 +19,15 @@ header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:st
 .vh-more-panel{position:absolute;right:0;top:calc(100% - 4px);min-width:200px;padding:7px;background:#fff;color:#172033;border:1px solid #dbe5ef;border-radius:12px;box-shadow:0 10px 28px #00284626}
 .vh-header .vh-more-panel a{display:block;padding:11px 13px;color:#172033;text-decoration:none;font-size:14px;border-radius:7px;font-weight:500}
 .vh-header .vh-more-panel a:hover{background:#eff7ff;color:#07558f}
-.vh-header .vh-account{display:flex;align-items:center;gap:8px;padding-left:20px;border-left:1px solid #ffffff70;color:#fff;text-decoration:none;font-size:15px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.vh-header .vh-account{display:flex;align-items:center;gap:8px;padding-left:20px;border-left:1px solid #d8e1ec;color:#172b4d;text-decoration:none;font-size:15px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .vh-account svg{width:23px;height:23px;flex-shrink:0}
-.vh-menu-button{display:none;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:1px solid #ffffff70;background:transparent;border-radius:8px;color:#fff;cursor:pointer}
+.vh-menu-button{display:none;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:1px solid #d8e1ec;background:transparent;border-radius:8px;color:#172b4d;cursor:pointer}
 .vh-menu-button svg{width:22px;height:22px}
-.vh-header a:focus-visible,.vh-header button:focus-visible,.vh-header summary:focus-visible{outline:2px solid #ffcf75;outline-offset:4px}
+.vh-header a:focus-visible,.vh-header button:focus-visible,.vh-header summary:focus-visible{outline:2px solid #1677ff;outline-offset:4px}
 .vh-return{width:min(1160px,94%);margin:16px auto 0;font-family:Arial,Helvetica,sans-serif}
 .vh-return>a{display:inline-block;margin:0;color:#07558f;text-decoration:none;font-size:14px;font-weight:700;line-height:1.4}
 .vh-header~.modal,.vh-header~.roomDetail{z-index:200}
 .vh-header~main .booking{top:96px}
 @media(max-width:1180px){.vh-inner{gap:16px}.vh-links{gap:13px}.vh-header .vh-link,.vh-header .vh-more summary{font-size:13px}.vh-wordmark{font-size:22px}.vh-header .vh-account{padding-left:14px;font-size:14px}}
-@media(max-width:1020px){.vh-inner{min-height:74px}.vh-menu-button{display:flex;margin-left:0;order:4}.vh-header .vh-account{margin-left:auto;border-left:0;padding-left:0}.vh-links{display:none;position:absolute;top:100%;left:0;right:0;padding:12px 4%;background:#07558f;border-top:1px solid #ffffff30;box-shadow:0 12px 20px #00284626;max-height:calc(100dvh - 74px);overflow-y:auto}.vh-links.is-open{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px}.vh-header .vh-link,.vh-header .vh-more summary{padding:13px 8px;font-size:14px;white-space:normal}.vh-header .vh-link[aria-current="page"]::after{bottom:4px;left:8px;right:auto;width:36px}.vh-more-panel{position:static;min-width:0;box-shadow:none;margin-top:4px}.vh-logo-frame{width:60px;height:60px}.vh-header .vh-brand img{width:54px;height:54px}}
+@media(max-width:1020px){.vh-inner{min-height:74px}.vh-menu-button{display:flex;margin-left:0;order:4}.vh-header .vh-account{margin-left:auto;border-left:0;padding-left:0}.vh-links{display:none;position:absolute;top:100%;left:0;right:0;padding:12px 4%;background:#fff;border-top:1px solid #e4eaf1;box-shadow:0 12px 20px #00284626;max-height:calc(100dvh - 74px);overflow-y:auto}.vh-links.is-open{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px}.vh-header .vh-link,.vh-header .vh-more summary{padding:13px 8px;font-size:14px;white-space:normal}.vh-header .vh-link[aria-current="page"]::after{bottom:4px;left:8px;right:auto;width:36px}.vh-more-panel{position:static;min-width:0;box-shadow:none;margin-top:4px}.vh-logo-frame{width:60px;height:60px}.vh-header .vh-brand img{width:54px;height:54px}}
 @media(max-width:480px){.vh-inner{width:92%;gap:12px;min-height:72px}.vh-brand-copy{display:none}.vh-header .vh-account{font-size:14px;gap:6px}.vh-links.is-open{grid-template-columns:minmax(0,1fr)}.vh-tagline{font-size:6px}.vh-return>a{font-size:13px}}
