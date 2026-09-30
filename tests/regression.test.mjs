@@ -58,6 +58,18 @@ test('prebook returns full offer price and rejects a missing verified price',asy
  env();await withFetch(async()=>response({data:{prebookId:'prebook-test',roomTypes:[offer]}}),async()=>{const r=await call(prebook,{method:'POST',body:{offerId:offer.offerId}});assert.equal(r.code,200);assert.equal(r.data.price,310.75);assert.equal(r.data.estimatedTotal,320.75);assert.equal(r.data.rates.length,2)});
  await withFetch(async()=>response({data:{prebookId:'prebook-test'}}),async()=>{const r=await call(prebook,{method:'POST',body:{offerId:offer.offerId}});assert.equal(r.code,502)});
 });
+test('no availability is an empty hotel result, including provider HTTP 200 errors',async()=>{
+ env();let calls=0;await withFetch(async()=>{calls++;return response({error:{code:2001,message:'No availability found'}})},async()=>{const r=await call(hotels,{method:'GET',query:{checkin:'2026-10-15',checkout:'2026-10-20',occupancies:JSON.stringify(party)}});assert.equal(r.code,200);assert.deepEqual(r.data.hotels,[]);assert.equal(r.data.search.rooms,2);assert.equal(calls,1)});
+});
+test('a temporary supplier failure gets one retry and preserves the room party',async()=>{
+ env();let calls=0;await withFetch(async(url,options)=>{assert.ok(url.includes('/hotels/rates'));assert.deepEqual(JSON.parse(options.body).occupancies,[{adults:2,children:[9]},{adults:2}]);calls++;return calls===1?response({error:{code:4011,message:'Supplier communication error'}},500):response({data:[{hotelId:'hotel-test',roomTypes:[offer]}],hotels:[{id:'hotel-test',name:'Test'}]})},async()=>{const r=await call(hotels,{method:'GET',query:{checkin:'2026-10-15',checkout:'2026-10-20',occupancies:JSON.stringify(party)}});assert.equal(r.code,200);assert.equal(r.data.hotels.length,1);assert.equal(calls,2)});
+});
+test('repeated temporary failures stop after two attempts; permanent errors are not retried',async()=>{
+ env();for(const code of [4291,4001]){let calls=0;await withFetch(async()=>{calls++;return response({error:{code,message:'Provider error'}},code===4291?429:400)},async()=>{const r=await call(hotels,{method:'GET',query:{checkin:'2026-10-15',checkout:'2026-10-20'}});assert.equal(r.code,502);assert.equal(r.data.providerCode,code);assert.equal(calls,code===4291?2:1)})}
+});
+test('prebook HTTP 200 with no availability requests a fresh search instead of checkout',async()=>{
+ env();await withFetch(async()=>response({error:{code:2001,message:'No availability found'}}),async()=>{const r=await call(prebook,{method:'POST',body:{offerId:offer.offerId}});assert.equal(r.code,409);assert.equal(r.data.reason,'refresh_offer');assert.equal(r.data.prebookId,undefined)});
+});
 const bookingBody={prebookId:'prebook-test',firstName:'Huesped',lastName:'Prueba',email:'huesped@example.test',roomGuests:[{firstName:'Segundo',lastName:'Huesped'}],reservation:{occupancies:party,adults:4,children:1,rooms:2,hotelName:'Hotel prueba',price:310.75,estimatedTotal:320.75,checkin:'2026-10-15',checkout:'2026-10-20'}};
 test('booking sends one named adult per room and reports failed email separately',async()=>{
  env();let bookCalls=0;

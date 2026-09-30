@@ -18,9 +18,18 @@ export default async function handler(req,res) {
       try{const pr=await fetch('https://api.liteapi.travel/v3.0/data/places/'+encodeURIComponent(placeId),{headers,signal:AbortSignal.timeout(4000)}),p=await pr.json(),l=p?.data?.location||p?.location,latitude=Number(l?.latitude??l?.lat),longitude=Number(l?.longitude??l?.lng);if(pr.ok&&Number.isFinite(latitude)&&Number.isFinite(longitude))locationQuery={latitude,longitude,radius:15000}}catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
-    const rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',{method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})});
-    const rates=await rr.json();
-    if(!rr.ok||rates.error){console.error('Nuitee rates',rr.status,JSON.stringify(rates.error||rates.message||'Consulta rechazada'));return res.status(502).json({error:'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:'provider_error',stage:'rates'})}
+    const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
+    let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
+    let providerCode=Number(rates.error?.code??rates.code)||null;
+    // Reintentamos una sola vez las fallas temporales explícitas, nunca una reserva.
+    if([4011,4291].includes(providerCode)){
+      await new Promise(resolve=>setTimeout(resolve,400));
+      rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest);rates=await rr.json();
+      providerCode=Number(rates.error?.code??rates.code)||null;
+    }
+    // LiteAPI puede devolver HTTP 200 con código 2001: es falta de disponibilidad.
+    if(providerCode===2001)rates={data:[],hotels:[]};
+    else if(!rr.ok||rates.error){console.error('Nuitee rates',rr.status,providerCode);return res.status(502).json({error:'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:'provider_error',stage:'rates',providerCode})}
     const rateHotels=Array.isArray(rates.data)?rates.data:rates.data?.hotels||[];
     let catalogHotels=Array.isArray(rates.hotels)?rates.hotels:[];
     // Los datos descriptivos son opcionales: su falla no elimina tarifas válidas.
