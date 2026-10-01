@@ -1,9 +1,79 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Servicios para tu viaje | Valijeando</title><link rel="icon" href="/valijeando-favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/site-header.css"><script src="/site-header.js" defer></script><style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f8fc;color:#172033;line-height:1.5}main{width:min(1100px,92%);margin:40px auto 60px}h1{font-size:clamp(28px,4vw,40px);margin:0 0 10px}.intro{color:#667085;max-width:720px}.services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:30px 0}.service{padding:26px;background:#fff;border:1px solid #e3eaf1;border-radius:16px;scroll-margin-top:106px}.service:target{border-color:#07558f;box-shadow:0 0 0 2px #07558f1a}h2{font-size:22px;margin:0 0 12px}.service p{color:#667085;margin:0 0 18px}.soon{display:inline-block;background:#eff7ff;border-radius:999px;padding:6px 12px;color:#07558f;font-size:13px;font-weight:700}.ready{padding:22px;background:#eaf3ff;border-radius:14px}.ready p{margin:0 0 14px}.ready a{display:inline-block;margin:0 12px 5px 0;color:#07558f;font-weight:700;text-decoration:none}@media(max-width:650px){.services{grid-template-columns:1fr}main{margin-top:28px}}
-</style></head><body><header class="vh-header" data-valijeando-header></header><main><h1>Más opciones para completar tu viaje</h1><p class="intro">Estamos preparando estos servicios para que puedas organizar más de tu viaje desde Valijeando.</p><div class="services">
-<section class="service" id="traslados"><h2>Traslados</h2><p>Transporte desde el aeropuerto y entre los puntos de tu viaje.</p><span class="soon">Próximamente</span></section>
-<section class="service" id="actividades"><h2>Actividades</h2><p>Paseos, experiencias y visitas para disfrutar tu destino.</p><span class="soon">Próximamente</span></section>
-<section class="service" id="asistencia"><h2>Asistencia al viajero</h2><p>Opciones de asistencia para acompañarte durante tu viaje.</p><span class="soon">Próximamente</span></section>
-<section class="service" id="autos"><h2>Alquiler de autos</h2><p>Opciones para moverte por tu cuenta en el destino.</p><span class="soon">Próximamente</span></section>
-</div><div class="ready"><p>Ya podés buscar alojamiento y comparar vuelos.</p><a href="/hoteles.html">Buscar hoteles →</a><a href="https://vuelos.valijeando.com.ar/">Comparar vuelos →</a></div></main></body></html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Servicios para tu viaje | Valijeando</title>
+<meta name="description" content="Completá tu viaje con traslados, actividades, asistencia al viajero, alquiler de autos y eSIM. Consultá las opciones de nuestros proveedores desde Valijeando.">
+<link rel="icon" href="/valijeando-favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js" defer></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f8fc;color:#172033;line-height:1.5}
+main{width:min(1100px,92%);margin:40px auto 60px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.2;margin:0 0 14px}
+.intro{color:#667085;max-width:760px;margin:0}
+.services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:30px 0 20px}
+.service{display:flex;flex-direction:column;padding:26px;background:#fff;border:1px solid #e3eaf1;border-radius:16px;scroll-margin-top:106px}
+.service:target{border-color:#07558f;box-shadow:0 0 0 2px #07558f1a}
+.provider{align-self:flex-start;display:inline-block;background:#eff7ff;border-radius:999px;padding:5px 11px;color:#07558f;font-size:12px;font-weight:700;margin-bottom:14px}
+h2{font-size:22px;line-height:1.3;margin:0 0 12px}
+.service p{color:#667085;margin:0 0 20px}
+.service .tip{font-size:13px;margin-top:-8px}
+.service-action{align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;gap:10px;margin-top:auto;padding:12px 18px;border-radius:9px;background:#07558f;color:#fff;font-size:14px;font-weight:700;line-height:1.4;text-decoration:none}
+.service-action:hover{background:#064574}
+.service-action:focus-visible,.ready a:focus-visible{outline:3px solid #1677ff;outline-offset:4px}
+.service-wide{grid-column:1/-1}
+.provider-note{font-size:13px;color:#667085;margin:0 0 28px;max-width:1000px}
+.ready{padding:22px;background:#eaf3ff;border-radius:14px}
+.ready p{margin:0 0 14px}
+.ready a{display:inline-block;margin:0 12px 5px 0;color:#07558f;font-weight:700;text-decoration:none}
+@media(max-width:650px){.services{grid-template-columns:1fr;gap:16px}main{margin-top:28px}.service{padding:22px;scroll-margin-top:94px}.service-wide{grid-column:auto}.service-action{width:100%}}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<header class="vh-header" data-valijeando-header></header>
+<main>
+<h1>Más opciones para completar tu viaje</h1>
+<p class="intro">Organizá los detalles que hacen la diferencia. Elegí el servicio que necesitás y consultá las opciones disponibles con nuestros proveedores.</p>
+<div class="services">
+<section class="service" id="traslados" aria-labelledby="traslados-title">
+<span class="provider">Kiwitaxi</span>
+<h2 id="traslados-title">Traslados</h2>
+<p>Buscá transporte desde el aeropuerto hasta tu alojamiento o entre los puntos de tu viaje.</p>
+<a class="service-action" href="https://kiwitaxi.tp.st/XUEjP8Q6" target="_blank" rel="sponsored noopener" aria-label="Ver traslados en Kiwitaxi, se abre en otra pestaña">Ver traslados <span aria-hidden="true">↗</span></a>
+</section>
+<section class="service" id="actividades" aria-labelledby="actividades-title">
+<span class="provider">Klook</span>
+<h2 id="actividades-title">Actividades</h2>
+<p>Descubrí excursiones, entradas y experiencias para disfrutar tu destino a tu manera.</p>
+<a class="service-action" href="https://klook.tp.st/OnKIw04J" target="_blank" rel="sponsored noopener" aria-label="Explorar actividades en Klook, se abre en otra pestaña">Explorar actividades <span aria-hidden="true">↗</span></a>
+</section>
+<section class="service" id="asistencia" aria-labelledby="asistencia-title">
+<span class="provider">EKTA</span>
+<h2 id="asistencia-title">Asistencia al viajero</h2>
+<p>Consultá los planes de seguro de viaje de EKTA según tu destino y las fechas de tu viaje.</p>
+<p class="tip">Antes de contratar, revisá las coberturas, los límites y las exclusiones del plan elegido.</p>
+<a class="service-action" href="https://ektatraveling.tp.st/HTwnLQDF" target="_blank" rel="sponsored noopener" aria-label="Consultar planes de viaje en EKTA, se abre en otra pestaña">Consultar planes <span aria-hidden="true">↗</span></a>
+</section>
+<section class="service" id="autos" aria-labelledby="autos-title">
+<span class="provider">GetRentacar.com</span>
+<h2 id="autos-title">Alquiler de autos</h2>
+<p>Consultá autos disponibles, compará ofertas y elegí una opción para recorrer tu destino.</p>
+<a class="service-action" href="https://getrentacar.tp.st/qFgXfZaP" target="_blank" rel="sponsored noopener" aria-label="Buscar autos en GetRentacar.com, se abre en otra pestaña">Buscar autos <span aria-hidden="true">↗</span></a>
+</section>
+<section class="service service-wide" id="esim" aria-labelledby="esim-title">
+<span class="provider">Airalo</span>
+<h2 id="esim-title">eSIM e internet en el viaje</h2>
+<p>Consultá paquetes de datos para tu destino y mantenete conectado durante el viaje.</p>
+<p class="tip">Verificá que tu celular sea compatible con eSIM y esté desbloqueado antes de comprar.</p>
+<a class="service-action" href="https://airalo.tp.st/mRqFR2Eg" target="_blank" rel="sponsored noopener" aria-label="Ver eSIM en Airalo, se abre en otra pestaña">Ver eSIM <span aria-hidden="true">↗</span></a>
+</section>
+</div>
+<p class="provider-note">Los botones abren el sitio del proveedor en otra pestaña. Allí se confirman la disponibilidad y el precio final, y se gestionan el pago, la reserva y sus cambios. Estos enlaces son de afiliados: Valijeando puede recibir una comisión por compras que cumplan las condiciones del programa.</p>
+<div class="ready"><p>Completá tu viaje con alojamiento y vuelos.</p><a href="/hoteles.html">Buscar hoteles →</a><a href="https://vuelos.valijeando.com.ar/">Comparar vuelos →</a></div>
+</main>
+</body>
+</html>

@@ -10,7 +10,7 @@
       <a class="vh-link" href="/servicios.html#actividades" data-section="actividades">Actividades</a>
       <a class="vh-link" href="/servicios.html#asistencia" data-section="asistencia">Asistencia al viajero</a>
       <a class="vh-link" href="/servicios.html#autos" data-section="autos">Alquiler de autos</a>
-      <details class="vh-more"><summary>Más</summary><div class="vh-more-panel"><a href="/#buscar">Viaje completo</a><a href="/guias.html">Guías para viajar</a><a href="/consejos.html">Consejos</a><a href="/#destinos">Destinos</a><a href="/#porque">¿Por qué Valijeando?</a></div></details>
+      <details class="vh-more"><summary>Más</summary><div class="vh-more-panel"><a href="/servicios.html#esim" data-section="esim">eSIM e internet</a><a href="/#buscar">Viaje completo</a><a href="/guias.html">Guías para viajar</a><a href="/consejos.html">Consejos</a><a href="/#destinos">Destinos</a><a href="/#porque">¿Por qué Valijeando?</a></div></details>
     </nav>
     <a class="vh-account" href="/mi-cuenta.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="7" r="4"></circle><path d="M3.5 22v-2a8.5 8.5 0 0 1 17 0v2"></path></svg>Mi cuenta</a>
     <button class="vh-menu-button" type="button" aria-label="Abrir menú" aria-controls="vh-navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
