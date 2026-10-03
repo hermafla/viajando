@@ -32,7 +32,6 @@
   const observedRoots = new WeakSet();
   let activeField = null;
   let pendingMonth = null;
-  let departureHeading = null;
   let restoreAttempts = 0;
   let internalClick = false;
 
@@ -49,11 +48,8 @@
 
   function restoreVisibleMonth(root) {
     if (!pendingMonth) return;
-    const picker = root.querySelector('[data-testid="date-range-picker-popover-root"]');
-    // Wait for the native picker to switch to return selection before restoring.
-    // This prevents clearing the saved month while the departure view is still open.
-    if (picker && picker.querySelector('h4')?.textContent === departureHeading) return;
     if (++restoreAttempts > 24) { pendingMonth = null; return; }
+    const picker = root.querySelector('[data-testid="date-range-picker-popover-root"]');
     if (!picker) {
       const searchRoot = document.getElementById('tpwl-search')?.shadowRoot;
       clickNative(searchRoot?.querySelector('[data-testid="date-range-return-input"]'));
@@ -67,7 +63,7 @@
     const arrow = picker.querySelector(`[data-testid="date-range-picker-${direction}-month-button"]`);
     if (!arrow || arrow.disabled) { pendingMonth = null; return; }
     clickNative(arrow);
-    queueMicrotask(installStyles);
+    scheduleInstall();
   }
 
   // Travelpayouts renders its popovers in an open shadow root.
@@ -82,12 +78,7 @@
     }
     if (!observedRoots.has(root)) {
       observedRoots.add(root);
-      // Restore during the DOM update, before the next paint, so the old return
-      // month does not flash on screen between the two selections.
-      new MutationObserver(installStyles).observe(root, {
-        childList: true, subtree: true, characterData: true,
-        attributes: true, attributeFilter: ['data-month-key']
-      });
+      new MutationObserver(scheduleInstall).observe(root, { childList: true, subtree: true });
     }
     restoreVisibleMonth(root);
   }
@@ -128,7 +119,6 @@
     if (activeField === 'departure') {
       const root = document.getElementById('tpwl-modals')?.shadowRoot;
       pendingMonth = root?.querySelector('[data-testid="date-range-picker-month-caption-0"]')?.dataset.monthKey || null;
-      departureHeading = root?.querySelector('[data-testid="date-range-picker-popover-root"] h4')?.textContent || null;
       restoreAttempts = 0;
       activeField = 'return';
       scheduleInstall();
