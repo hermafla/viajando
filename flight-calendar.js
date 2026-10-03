@@ -1,4 +1,5 @@
 (() => {
+  document.documentElement.dataset.valijeandoCalendar = 'ready';
   const styleId = 'valijeando-flight-calendar-viewport';
   const calendarStyles = `
     @media (min-width: 768px) {
@@ -92,7 +93,7 @@
     });
   }
 
-  new MutationObserver(scheduleInstall).observe(document.body, { childList: true });
+  new MutationObserver(scheduleInstall).observe(document.body, { childList: true, subtree: true });
   document.addEventListener('pointerdown', scheduleInstall, true);
   function trackField(event) {
     if (internalClick) return;
