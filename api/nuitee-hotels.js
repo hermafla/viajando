@@ -14,8 +14,16 @@ export default async function handler(req,res) {
   const request=(url,options={})=>fetch(url,{...options,headers,signal:AbortSignal.timeout(18000)});
   try{
     let locationQuery=hotelId?{hotelIds:[hotelId]}:placeId?{placeId}:{countryCode,cityName:city};
+    let destination=null;
     if(placeId&&!hotelId){
-      try{const pr=await fetch('https://api.liteapi.travel/v3.0/data/places/'+encodeURIComponent(placeId),{headers,signal:AbortSignal.timeout(4000)}),p=await pr.json(),l=p?.data?.location||p?.location,latitude=Number(l?.latitude??l?.lat),longitude=Number(l?.longitude??l?.lng);if(pr.ok&&Number.isFinite(latitude)&&Number.isFinite(longitude))locationQuery={latitude,longitude,radius:15000}}catch{}
+      try{
+        const pr=await fetch('https://api.liteapi.travel/v3.0/data/places/'+encodeURIComponent(placeId)+'?language=es',{headers,signal:AbortSignal.timeout(4000)}),p=await pr.json(),details=p?.data||p,l=details?.location,latitude=Number(l?.latitude??l?.lat),longitude=Number(l?.longitude??l?.lng);
+        if(pr.ok){
+          const displayName=details.displayName?.text||details.displayName||details.name;
+          destination={placeId,displayName:typeof displayName==='string'?displayName:'',formattedAddress:typeof details.formattedAddress==='string'?details.formattedAddress:''};
+          if(Number.isFinite(latitude)&&Number.isFinite(longitude))locationQuery={latitude,longitude,radius:15000};
+        }
+      }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
@@ -49,6 +57,6 @@ export default async function handler(req,res) {
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
-    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length}});
+    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,destination,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length}});
   }catch(e){console.error('Nuitee rates request',e.name);return res.status(502).json({error:'La consulta de hoteles demoró o no pudo completarse. Podés volver a intentar con las mismas fechas.',reason:'provider_error'})}
 }
