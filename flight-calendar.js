@@ -16,6 +16,7 @@
         overflow-y: auto !important;
         overscroll-behavior: contain;
         z-index: 160 !important;
+        transition: none !important;
       }
       [data-testid="date-range-picker-popover-root"] > div {
         min-height: 0 !important;
@@ -27,14 +28,58 @@
     }
   `;
 
+  const observedRoots = new WeakSet();
+  let activeField = null;
+  let pendingMonth = null;
+  let restoreAttempts = 0;
+  let internalClick = false;
+
+  function clickNative(element) {
+    if (!element) return;
+    internalClick = true;
+    try { element.click(); } finally { internalClick = false; }
+  }
+
+  function monthNumber(key) {
+    const [year, month] = key.split('-').map(Number);
+    return year * 12 + month - 1;
+  }
+
+  function restoreVisibleMonth(root) {
+    if (!pendingMonth) return;
+    if (++restoreAttempts > 24) { pendingMonth = null; return; }
+    const picker = root.querySelector('[data-testid="date-range-picker-popover-root"]');
+    if (!picker) {
+      const searchRoot = document.getElementById('tpwl-search')?.shadowRoot;
+      clickNative(searchRoot?.querySelector('[data-testid="date-range-return-input"]'));
+      scheduleInstall();
+      return;
+    }
+    const month = picker.querySelector('[data-testid="date-range-picker-month-caption-0"]')?.dataset.monthKey;
+    if (!month) { pendingMonth = null; return; }
+    if (month === pendingMonth) { pendingMonth = null; return; }
+    const direction = monthNumber(month) > monthNumber(pendingMonth) ? 'previous' : 'next';
+    const arrow = picker.querySelector(`[data-testid="date-range-picker-${direction}-month-button"]`);
+    if (!arrow || arrow.disabled) { pendingMonth = null; return; }
+    clickNative(arrow);
+    scheduleInstall();
+  }
+
   // Travelpayouts renders its popovers in an open shadow root.
   function installStyles() {
     const root = document.getElementById('tpwl-modals')?.shadowRoot;
-    if (!root || root.getElementById(styleId)) return;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = calendarStyles;
-    root.appendChild(style);
+    if (!root) return;
+    if (!root.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = calendarStyles;
+      root.appendChild(style);
+    }
+    if (!observedRoots.has(root)) {
+      observedRoots.add(root);
+      new MutationObserver(scheduleInstall).observe(root, { childList: true, subtree: true });
+    }
+    restoreVisibleMonth(root);
   }
 
   let scheduled = false;
@@ -49,6 +94,40 @@
 
   new MutationObserver(scheduleInstall).observe(document.body, { childList: true });
   document.addEventListener('pointerdown', scheduleInstall, true);
-  document.addEventListener('focusin', scheduleInstall, true);
+  function trackField(event) {
+    if (internalClick) return;
+    const path = event.composedPath();
+    if (path.some(node => node.dataset?.testid?.includes('clear-button'))) {
+      pendingMonth = null;
+      activeField = null;
+      return;
+    }
+    const field = path.find(node => /^date-range-(departure|return)-input(?:-root)?$/.test(node.dataset?.testid || ''));
+    if (field) {
+      activeField = field.dataset.testid.includes('departure') ? 'departure' : 'return';
+      if (!pendingMonth) restoreAttempts = 0;
+    }
+    scheduleInstall();
+  }
+  document.addEventListener('focusin', trackField, true);
+  document.addEventListener('click', event => {
+    if (internalClick) return;
+    trackField(event);
+    const button = event.composedPath().find(node => node.matches?.('button[name="day"]'));
+    if (!button || button.disabled) return;
+    if (activeField === 'departure') {
+      const root = document.getElementById('tpwl-modals')?.shadowRoot;
+      pendingMonth = root?.querySelector('[data-testid="date-range-picker-month-caption-0"]')?.dataset.monthKey || null;
+      restoreAttempts = 0;
+      activeField = 'return';
+      scheduleInstall();
+    } else {
+      pendingMonth = null;
+      activeField = null;
+    }
+  }, true);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { pendingMonth = null; activeField = null; }
+  }, true);
   installStyles();
 })();
