@@ -56,8 +56,9 @@ function chooseDestination(places,cityName,countryCode=''){
  }
  return candidates.find(p=>normalizeDestination(p.displayName)===wanted)||candidates[0];
 }
-const destinationLabel=p=>p.displayName+(p.formattedAddress?' · '+p.formattedAddress:'');
+const destinationLabel=p=>p.displayName+(p.formattedAddress?' · '+p.formattedAddress.split(',').pop().trim():'');
 if(incoming.get('city'))city.value=incoming.get('city');
+if(city.value.includes(' · ')){const [displayName,...address]=city.value.split(' · ');city.value=destinationLabel({displayName,formattedAddress:address.join(' · ')})}
 if(incoming.get('placeId'))placeId.value=incoming.get('placeId');
 if(incoming.get('checkin'))checkin.value=incoming.get('checkin');
 if(incoming.get('checkout'))checkout.value=incoming.get('checkout');updateDateTrigger();
@@ -80,7 +81,7 @@ const autoSearch=placeId.value&&checkin.value&&checkout.value;
 form.addEventListener('submit',async e=>{e.preventDefault();results.innerHTML='';status.textContent='Buscando disponibilidad y precios…';
 gApply.onclick();if(!checkin.value||!checkout.value||checkout.value<=checkin.value){status.textContent='Elegí entrada y salida válidas.';return}if(!placeId.value){status.textContent='Elegí un destino de la lista para buscar hoteles.';city.focus();return} const q=new URLSearchParams({city:city.value,placeId:placeId.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'USD',guestNationality:'AR'});ValijeandoParty.apply(q,occupancyData);
 const sequence=++searchSequence;try{const r=await fetch('/api/nuitee-hotels?'+q);const data=await r.json();if(sequence!==searchSequence)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar Nuitee');
-if(data.destination?.displayName)city.value=destinationLabel(data.destination);
+if(data.destination?.displayName&&data.destination.formattedAddress)city.value=destinationLabel(data.destination);
 status.textContent=data.hotels.length?data.hotels.length+' alojamientos disponibles':'No encontramos alojamientos con tarifa para esas fechas.';if(displayCurrency==='ARS')fxNote.textContent='Conversión BNA vendedor: $ '+bnaRate.toLocaleString('es-AR');else fxNote.textContent='Tarifa base en USD';document.getElementById('guestSummary').textContent=guestText();document.getElementById('guestField').textContent=guestText();
 window._hotels=data.hotels;renderHotelResults(data.hotels);
 
@@ -94,7 +95,7 @@ history.replaceState(null,'',location.pathname+'?'+back.toString());
 results.innerHTML=list.map(h=>{sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));sessionStorage.setItem('hotelSearch:'+h.hotelId,JSON.stringify({checkin:checkin.value,checkout:checkout.value,occupancies:occupancyData}));const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:incomingChildren,rooms:incomingRooms,currency:displayCurrency});if(incomingOccupancies)qp.set('occupancies',incomingOccupancies);if(incoming.get('returnTrip'))qp.set('returnTrip',incoming.get('returnTrip'));qp.set('backSearch','/hoteles.html?'+back.toString());const url='/hotel.html?'+qp;return `<article class="card" data-url="${esc(url)}" tabindex="0"><img src="${esc(h.photo||'')}" alt="${esc(h.name)}" loading="lazy"><div class="body"><div class="name">${esc(h.name)}</div><div class="meta">${h.stars?'★ '.repeat(Math.min(h.stars,5)):''}<span class="rating">${h.rating?h.rating+'/10':''}</span>${h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' reseñas':''}<br>${esc(h.address||'')}</div><div class="price"><span>Precio de la estadía</span><br><strong>${money(h.retailRate)}</strong><div class="small">${checkin.value} → ${checkout.value} · ${guestText()}</div>${h.dueAtProperty>0?`<div class="breakdown"><div>Pagás para reservar: <b>${money(h.retailRate)}</b></div><div>Pagás en el alojamiento: <b>${money(h.dueAtProperty)}</b></div><div class="total">Total estimado: ${money(h.estimatedTotal)}</div></div>`:''}<a class="detailBtn" href="${esc(url)}">Ver hotel, habitaciones y precio</a></div></div></article>`}).join('');}
 (async()=>{
  if(displayCurrency==='ARS')await loadBnaRate();
- if(!placeId.value&&incoming.get('city')&&checkin.value&&checkout.value){
+ if(incoming.get('city')&&checkin.value&&checkout.value&&(!placeId.value||!city.value.includes(' · '))){
    status.textContent='Preparando la búsqueda en '+incoming.get('city')+'…';
    try{
      const countryCode=incoming.get('countryCode')||'';
@@ -103,7 +104,7 @@ results.innerHTML=list.map(h=>{sessionStorage.setItem('hotelOffers:'+h.hotelId,J
      const r=await fetch('/api/nuitee-places?q='+encodeURIComponent(query));
      const d=await r.json(),ps=d.places||[];
      if(ps.length){
-       const chosen=chooseDestination(ps,incoming.get('city'),countryCode);
+       const chosen=placeId.value?ps.find(p=>p.placeId===placeId.value):chooseDestination(ps,incoming.get('city'),countryCode);
        if(chosen){city.value=destinationLabel(chosen);placeId.value=chosen.placeId||''}
      }
    }catch{}

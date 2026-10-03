@@ -25,15 +25,20 @@ test('automatic hotel navigation resolves Brazil and displays its address',async
  await vm.runInNewContext(helpers+initialize,context);
  assert.match(decodeURIComponent(query),/Rio de Janeiro, Brasil/);
  assert.equal(context.placeId.value,'brazil');
- assert.equal(context.city.value,'Río de Janeiro · Estado de Río de Janeiro, Brasil');
+ assert.equal(context.city.value,'Río de Janeiro · Brasil');
  assert.equal(submitted,true);
  assert.equal(context.checkin.value,'2027-01-10');assert.equal(context.checkout.value,'2027-01-25');
 });
 test('an explicitly chosen place remains selected without another lookup',async()=>{
  let submitted=false;
- const context={Intl,URLSearchParams,displayCurrency:'USD',incoming:new URLSearchParams('city=RIO+DE+JANEIRO'),city:{value:'RIO DE JANEIRO'},placeId:{value:'colombia'},checkin:{value:'2027-01-10'},checkout:{value:'2027-01-25'},status:{textContent:''},form:{requestSubmit(){submitted=true}},fetch:async()=>{throw Error('Explicit selection must not be replaced')}};
+ const context={Intl,URLSearchParams,displayCurrency:'USD',incoming:new URLSearchParams('city=RIO+DE+JANEIRO+%C2%B7+Colombia'),city:{value:'RIO DE JANEIRO · Colombia'},placeId:{value:'colombia'},checkin:{value:'2027-01-10'},checkout:{value:'2027-01-25'},status:{textContent:''},form:{requestSubmit(){submitted=true}},fetch:async()=>{throw Error('Explicit selection must not be replaced')}};
  await vm.runInNewContext(helpers+initialize,context);
  assert.equal(context.placeId.value,'colombia');assert.equal(submitted,true);
+});
+test('a legacy link shows its country without silently replacing its place',async()=>{
+ const context={Intl,URLSearchParams,displayCurrency:'USD',incoming:new URLSearchParams('city=RIO+DE+JANEIRO'),city:{value:'RIO DE JANEIRO'},placeId:{value:'colombia'},checkin:{value:'2027-01-10'},checkout:{value:'2027-01-25'},status:{textContent:''},form:{requestSubmit(){}},fetch:async()=>({json:async()=>({places:[brazil,colombia]})})};
+ await vm.runInNewContext(helpers+initialize,context);
+ assert.equal(context.placeId.value,'colombia');assert.equal(context.city.value,'RIO DE JANEIRO · Colombia');
 });
 test('even an empty rates result identifies the exact place and country',async()=>{
  const oldFetch=globalThis.fetch,oldKey=process.env.NUITEE_API_KEY;process.env.NUITEE_API_KEY='sand_test_only';
