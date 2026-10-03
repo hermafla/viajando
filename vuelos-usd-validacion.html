@@ -58,7 +58,7 @@ window.TPWL_CONFIGURATION = {defaultCurrency: "USD", availableCurrencies: ["USD"
   var originalFetch = window.fetch;
   window.fetch = function (input, init) {
     var url = typeof input === "string" ? input : input && input.url || "";
-    var isSearch = /\\/(?:whitelabels\\/web\\/flights\\/v1\\/search\\/sign|search\\/wl\\/(?:start|results))/.test(url);
+    var isSearch = url.includes("/whitelabels/web/flights/v1/search/sign") || url.includes("/search/wl/start") || url.includes("/search/wl/results");
     if (isSearch && init && typeof init.body === "string") {
       try { var body = JSON.parse(init.body); console.info("[Valijeando USD test]", url.split("?")[0], body.market_code || "", body.currency_code || ""); } catch (_) {}
     }
