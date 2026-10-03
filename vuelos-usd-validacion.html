@@ -64,6 +64,12 @@ window.TPWL_CONFIGURATION = {defaultCurrency: "USD", availableCurrencies: ["USD"
     }
     return originalFetch.apply(this, arguments).then(function(response) {
       if (isSearch) console.info("[Valijeando USD test response]", url.split("?")[0], response.status);
+      if (url.startsWith("https://www.apistp.com/whereami?") && response.ok) {
+        return response.json().then(function(location) {
+          console.info("[Valijeando USD test: región Argentina EMULADA]");
+          return new Response(JSON.stringify(Object.assign({}, location, {country_code: "AR"})), {status: 200, headers: {"Content-Type": "application/json"}});
+        });
+      }
       return response;
     });
   };
