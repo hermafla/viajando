@@ -4,17 +4,19 @@ import prepareHotelPayment from '../lib/prepare-hotel-payment.js';
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   const mode=bookingEnvironment(process.env.NUITEE_API_KEY);
+  const sandboxSdk=mode==='sandbox'&&process.env.NUITEE_SANDBOX_PAYMENT_SDK_ENABLED==='true';
   if(req.method==='POST'&&req.body?.action==='prepare_payment')return prepareHotelPayment(req,res);
   if(req.method==='GET'){
-    let paymentReady=false;
-    if(mode==='production'&&liveBookingEnabled())try{await productionStorageReady();paymentReady=true}catch{}
-    return res.status(200).json({bookingEnvironment:mode,bookingEnabled:mode==='sandbox'||paymentReady,paymentMethod:mode==='production'?'TRANSACTION_ID':'sandbox'});
+    const sdkMode=mode==='production'||sandboxSdk;
+    let paymentReady=mode==='sandbox'&&!sdkMode;
+    if(sandboxSdk||(mode==='production'&&liveBookingEnabled()))try{await productionStorageReady();paymentReady=true}catch{}
+    return res.status(200).json({bookingEnvironment:mode,bookingEnabled:paymentReady,paymentMethod:sdkMode?'TRANSACTION_ID':'sandbox'});
   }
   if(req.method!=='POST') return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key) return res.status(503).json({error:'Falta configurar NUITEE_API_KEY.'});
   if(mode==='unknown'||(mode==='production'&&!liveBookingEnabled()))return res.status(503).json({error:'Las reservas no están habilitadas en este momento. Podés seguir consultando alojamientos.'});
-  const usePaymentSdk=mode==='production'||req.body?.usePaymentSdk===true;
+  const usePaymentSdk=mode==='production'||sandboxSdk||req.body?.usePaymentSdk===true;
   let context;
   if(usePaymentSdk){
     try{context=reservationContext(req.body?.reservation)}catch{return res.status(400).json({error:'Revisá los datos del hotel, las fechas y los huéspedes.'})}

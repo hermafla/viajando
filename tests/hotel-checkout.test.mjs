@@ -7,8 +7,8 @@ import book from '../api/nuitee-book.js';
 
 const response=(data,status=200)=>new Response(JSON.stringify(data),{status});
 async function call(handler,body,method='POST'){const res={code:200,setHeader(){},status(n){this.code=n;return this},json(data){this.data=data;return this}};await handler({method,body,headers:{}},res);return res}
-async function mockFetch(fn,run){const old=globalThis.fetch;globalThis.fetch=fn;try{return await run()}finally{globalThis.fetch=old;delete process.env.NUITEE_LIVE_BOOKING_ENABLED}}
-function env(mode='sandbox'){process.env.NUITEE_API_KEY=mode==='production'?'prod_test':'sand_test';process.env.SUPABASE_URL='https://database.test';process.env.SUPABASE_SECRET_KEY='test-only';process.env.RESEND_API_KEY='test-only';delete process.env.NUITEE_LIVE_BOOKING_ENABLED}
+async function mockFetch(fn,run){const old=globalThis.fetch;globalThis.fetch=fn;try{return await run()}finally{globalThis.fetch=old;delete process.env.NUITEE_LIVE_BOOKING_ENABLED;delete process.env.NUITEE_SANDBOX_PAYMENT_SDK_ENABLED}}
+function env(mode='sandbox'){process.env.NUITEE_API_KEY=mode==='production'?'prod_test':'sand_test';process.env.SUPABASE_URL='https://database.test';process.env.SUPABASE_SECRET_KEY='test-only';process.env.RESEND_API_KEY='test-only';delete process.env.NUITEE_LIVE_BOOKING_ENABLED;delete process.env.NUITEE_SANDBOX_PAYMENT_SDK_ENABLED}
 const context={hotelId:'hotel-test',hotelName:'Hotel de prueba',checkin:'2027-01-10',checkout:'2027-01-11',occupancies:[{adults:2}],roomName:'Doble'};
 const verified={...context,price:100,estimatedTotal:110,dueAtProperty:10,currency:'USD'};
 function checkout(state='ready',environment='sandbox'){return {id:'checkout-test',environment,prebook_id:'prebook-test',transaction_id:'transaction-test',client_reference:clientReferenceFor('prebook-test'),reservation:verified,state,holder:{firstName:'Huésped',lastName:'Prueba',email:'test@example.test'},guests:[{occupancyNumber:1,firstName:'Huésped',lastName:'Prueba',email:'test@example.test'}]}}
@@ -22,6 +22,18 @@ test('a production key does not activate sales by itself',async()=>{
 });
 test('missing checkout storage stops SDK prebook before opening a payment',async()=>{
   env();let providerCalls=0;await mockFetch(async url=>{if(url.includes('/rates/'))providerCalls++;return response({},404)},async()=>{assert.equal((await call(prebook,{offerId:'offer',usePaymentSdk:true,reservation:context})).code,503);assert.equal(providerCalls,0)});
+});
+test('sandbox SDK switch advertises the real payment flow and cannot be disabled by the browser',async()=>{
+  env();process.env.NUITEE_SANDBOX_PAYMENT_SDK_ENABLED='true';let providerCalls=0;
+  await mockFetch(async(url,options)=>{
+    if(url.includes('hotel_checkouts')||url.includes('reservas_hoteles'))return response([]);
+    assert.ok(url.includes('/rates/prebook'));providerCalls++;assert.equal(JSON.parse(options.body).usePaymentSdk,true);
+    return response({data:{prebookId:'prebook-test',transactionId:'transaction-test',secretKey:'payment-secret',price:100,currency:'USD'}});
+  },async()=>{const mode=await call(prebook,{},'GET');assert.equal(mode.data.bookingEnabled,true);assert.equal(mode.data.paymentMethod,'TRANSACTION_ID');assert.equal(mode.data.bookingEnvironment,'sandbox');const r=await call(prebook,{offerId:'offer',usePaymentSdk:false,reservation:context});assert.equal(r.code,200);assert.equal(r.data.paymentPublicKey,'sandbox');assert.equal(providerCalls,1)});
+});
+test('sandbox SDK switch disables checkout when storage is unavailable before any provider call',async()=>{
+  env();process.env.NUITEE_SANDBOX_PAYMENT_SDK_ENABLED='true';let providerCalls=0;
+  await mockFetch(async url=>{if(url.includes('/rates/'))providerCalls++;return response({},404)},async()=>{const mode=await call(prebook,{},'GET');assert.equal(mode.data.bookingEnabled,false);assert.equal(mode.data.paymentMethod,'TRANSACTION_ID');assert.equal((await call(prebook,{offerId:'offer',reservation:context})).code,503);assert.equal(providerCalls,0)});
 });
 test('SDK prebook persists a verified price and the transaction pair before returning its secret',async()=>{
   env();let saved;
