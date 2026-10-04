@@ -20,10 +20,11 @@ export default async function handler(req,res){
     let session=null; try{session=JSON.parse(Buffer.from(body,'base64url').toString('utf8'))}catch{}
     if(!session?.email||Number(session.exp)<Date.now()) return json(res,401,{error:'La sesión venció. Volvé a ingresar.'});
     try{
-      const select='booking_id,confirmacion_hotel,hotel_id,hotel_nombre,checkin,checkout,noches,adultos,ninos,habitaciones,habitacion_nombre,regimen,reembolsable,politicas_cancelacion,moneda_base,total_usd,total_ars,cotizacion_bna,pagado,estado,creado_en';
+      const select='booking_id,confirmacion_hotel,hotel_id,hotel_nombre,checkin,checkout,noches,adultos,ninos,habitaciones,habitacion_nombre,regimen,reembolsable,politicas_cancelacion,moneda_base,total_usd,total_ars,cotizacion_bna,pagado,estado,creado_en,booking_environment:datos_proveedor->>valijeandoEnvironment';
       const rr=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select='+encodeURIComponent(select)+'&email=eq.'+encodeURIComponent(session.email)+'&order=creado_en.desc',{headers:sbHeaders(supabaseKey)});
       if(!rr.ok) return json(res,503,{error:'No pudimos cargar tus reservas.'});
-      return json(res,200,{email:session.email,reservations:await rr.json()});
+      const rows=await rr.json();
+      return json(res,200,{email:session.email,reservations:rows.map(row=>({...row,isTest:row.booking_environment==='sandbox'}))});
     }catch(e){return json(res,503,{error:'No pudimos cargar tus reservas.'});}
   }
   if(req.method==='PUT'){
