@@ -41,7 +41,7 @@
     event.preventDefault();if(!modeReady||busy||confirmed||paymentMounted)return;
     busy=true;submit.disabled=true;submit.textContent='Preparando el pago…';result.innerHTML='';
     try{
-      const response=await fetch('/api/hotel-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveContact())});
+      const response=await fetch('/api/nuitee-prebook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...saveContact(),action:'prepare_payment'})});
       const answer=await response.json();if(!response.ok||!answer.ready)throw Error(answer.error||'No pudimos preparar el pago.');
       await loadPaymentSdk();
       sessionStorage.setItem(returnKey,JSON.stringify({checkoutToken:data.checkoutToken}));

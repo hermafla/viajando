@@ -1,8 +1,10 @@
 import { bookingEnvironment, mapOffer, moneyNumber } from '../lib/nuitee.js';
 import { liveBookingEnabled, createCheckout, reservationContext, checkoutDatabase, productionStorageReady } from '../lib/hotel-checkout.js';
+import prepareHotelPayment from '../lib/prepare-hotel-payment.js';
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   const mode=bookingEnvironment(process.env.NUITEE_API_KEY);
+  if(req.method==='POST'&&req.body?.action==='prepare_payment')return prepareHotelPayment(req,res);
   if(req.method==='GET'){
     let paymentReady=false;
     if(mode==='production'&&liveBookingEnabled())try{await productionStorageReady();paymentReady=true}catch{}

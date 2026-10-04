@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkoutToken,verifyCheckoutToken,clientReferenceFor } from '../lib/hotel-checkout.js';
 import prebook from '../api/nuitee-prebook.js';
-import prepare from '../api/hotel-checkout.js';
+const prepare=(req,res)=>prebook({...req,body:{...req.body,action:'prepare_payment'}},res);
 import book from '../api/nuitee-book.js';
 
 const response=(data,status=200)=>new Response(JSON.stringify(data),{status});

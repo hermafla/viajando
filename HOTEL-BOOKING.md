@@ -14,7 +14,7 @@ El sitio utiliza Nuitee LiteAPI. Las ventas reales permanecen deshabilitadas por
 
 Prebook valida la tarifa y guarda precio, ocupación, prebookId y transactionId en el servidor. Solo entonces entrega al navegador el client secret del formulario de pago. El secret no se incluye en URLs ni se guarda en la tabla.
 
-Antes de abrir el formulario, `/api/hotel-checkout` guarda responsable y huéspedes. Al volver del pago, `/api/nuitee-book` usa un token firmado para recuperar los datos del servidor y envía `TRANSACTION_ID` al proveedor. El parámetro de retorno del navegador no demuestra que haya un pago: Nuitee comprueba la transacción al confirmar.
+Antes de abrir el formulario, `/api/nuitee-prebook` con `action:prepare_payment` guarda responsable y huéspedes. Al volver del pago, `/api/nuitee-book` usa un token firmado para recuperar los datos del servidor y envía `TRANSACTION_ID` al proveedor. El parámetro de retorno del navegador no demuestra que haya un pago: Nuitee comprueba la transacción al confirmar.
 
 Una actualización condicional reclama el checkout antes de Book. Las repeticiones consultan el estado o la confirmación guardada. Ante un resultado incierto se busca la reserva por clientReference; no se vuelve a cobrar ni a enviar Book. Si el guardado posterior falla, queda el resultado del proveedor para recuperar la reserva. El correo tiene una clave de idempotencia independiente.
 
