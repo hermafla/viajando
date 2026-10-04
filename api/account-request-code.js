@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import {handleAdmin} from '../lib/admin-console.js';
 
 const cleanEmail=v=>String(v||'').trim().toLowerCase();
 const json=(res,status,body)=>res.status(status).json(body);
@@ -7,6 +8,7 @@ const hash=(email,code,secret)=>crypto.createHmac('sha256',secret).update(email+
 
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
+  if(req.query?.console==='1'||req.body?.purpose==='admin-console')return handleAdmin(req,res);
   if(req.method==='GET'){
     const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
     const [body,sig]=token.split('.');
