@@ -26,7 +26,7 @@ export default async function handler(req,res) {
       }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
-    const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
+    const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
     let providerCode=Number(rates.error?.code??rates.code)||null;
     // Reintentamos una sola vez las fallas temporales explícitas, nunca una reserva.
