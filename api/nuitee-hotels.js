@@ -10,7 +10,7 @@ export default async function handler(req,res) {
   const checkin=String(req.query.checkin||''),checkout=String(req.query.checkout||''),currency=String(req.query.currency||'USD').toUpperCase(),guestNationality=String(req.query.guestNationality||'AR').toUpperCase();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)||checkout<=checkin)return res.status(400).json({error:'La salida debe ser posterior a la entrada.'});
   let occupancies;try{occupancies=occupanciesFromQuery(req.query)}catch{return res.status(400).json({error:'Revisá los huéspedes y las edades de los niños.'})}
-  const testMargin=Number(req.query.testMargin),effectiveMargin=req.query.testMargin!=null&&[0,5,10,15].includes(testMargin)?testMargin:10;
+  const effectiveMargin=10;
   const headers={'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'};
   const request=(url,options={})=>fetch(url,{...options,headers,signal:AbortSignal.timeout(18000)});
   try{
