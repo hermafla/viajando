@@ -38,7 +38,7 @@ export default async function handler(req,res){
     if(!d.prebookId||price==null||price<=0)return res.status(502).json({error:'No pudimos verificar el precio total de esta tarifa. Actualizá la búsqueda.'});
     const currency=(rawTotal&&rawTotal.currency)||d.currency||'USD';
     const fs=rr.taxesAndFees||d.taxesAndFees||d.rate?.taxesAndFees||[];
-    const fees=(Array.isArray(fs)?fs:[]).map(f=>({name:f.name||f.type||'Impuesto o cargo',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
+    const fees=(Array.isArray(fs)?fs:[]).map(f=>({name:f.description||f.name||f.type||'Concepto no detallado por el proveedor',amount:num(f.amount??f.value??f.total)||0,included:f.included===true,currency:f.currency||currency})).filter(f=>f.amount>0);
     const dueAtProperty=fees.filter(f=>!f.included).reduce((s,f)=>s+f.amount,0);
     const verified={sandbox:mode==='sandbox',bookingEnvironment:mode,prebookId:d.prebookId||'',price,currency,fees:mapped?.fees||fees,dueAtProperty:mapped?.dueAtProperty??dueAtProperty,estimatedTotal:mapped?.estimatedTotal??(price+dueAtProperty),rates:mapped?.rates||[],refundableTag:mapped?.refundableTag||d.cancellationPolicies?.refundableTag||d.refundableTag||'',cancellationPolicies:mapped?.cancellationPolicies||d.cancellationPolicies||{}};
     if(usePaymentSdk){
