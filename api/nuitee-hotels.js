@@ -6,6 +6,7 @@ export default async function handler(req,res) {
   const key=process.env.NUITEE_API_KEY;
   if(!key)return res.status(503).json({error:'La búsqueda de hoteles no está disponible en este momento.'});
   const city=String(req.query.city||'Rio de Janeiro'),countryCode=String(req.query.countryCode||'BR').toUpperCase(),placeId=String(req.query.placeId||'').trim(),hotelId=String(req.query.hotelId||'').trim();
+  const requestedSessionId=String(req.query.sessionId||'').trim(),sessionId=/^[A-Za-z0-9_-]{8,80}$/.test(requestedSessionId)?requestedSessionId:'';
   const checkin=String(req.query.checkin||''),checkout=String(req.query.checkout||''),currency=String(req.query.currency||'USD').toUpperCase(),guestNationality=String(req.query.guestNationality||'AR').toUpperCase();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)||checkout<=checkin)return res.status(400).json({error:'La salida debe ser posterior a la entrada.'});
   let occupancies;try{occupancies=occupanciesFromQuery(req.query)}catch{return res.status(400).json({error:'Revisá los huéspedes y las edades de los niños.'})}
@@ -26,7 +27,7 @@ export default async function handler(req,res) {
       }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
-    const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
+    const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
     let providerCode=Number(rates.error?.code??rates.code)||null;
     // Reintentamos una sola vez las fallas temporales explícitas, nunca una reserva.
