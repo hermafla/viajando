@@ -54,7 +54,7 @@
       const localizePayButton=()=>{
         paymentRoot.querySelectorAll('.lp-submit-button').forEach(button=>{
           const label=button.textContent.trim();
-          if(/^Pay\\b/i.test(label))button.textContent=label.replace(/^Pay\\b/i,'Pagar');
+          if(label.toLowerCase().startsWith('pay'))button.textContent='Pagar'+label.slice(3);
         });
       };
       const paymentButtonStyle=document.createElement('style');
