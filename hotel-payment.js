@@ -48,7 +48,21 @@
       const returnUrl=new URL('/reserva-hotel.html',location.origin);returnUrl.searchParams.set('pago','confirmado');
       container.hidden=false;form.hidden=true;
       const portal=new window.LiteAPIPayment({publicKey:data.paymentPublicKey,appearance:{theme:'flat'},options:{business:{name:'Valijeando'}},targetElement:'#hotelPaymentForm',secretKey:data.paymentSecret,returnUrl:returnUrl.href});
-      await portal.handlePayment();paymentMounted=true;
+      await portal.handlePayment();
+      paymentMounted=true;
+      const paymentRoot=document.getElementById('hotelPaymentForm');
+      const localizePayButton=()=>{
+        paymentRoot.querySelectorAll('.lp-submit-button').forEach(button=>{
+          const label=button.textContent.trim();
+          if(/^Pay\\b/i.test(label))button.textContent=label.replace(/^Pay\\b/i,'Pagar');
+        });
+      };
+      const paymentButtonStyle=document.createElement('style');
+      paymentButtonStyle.textContent='#hotelPaymentForm .lp-submit-button{width:100%;min-height:48px;background:#f58220;color:#fff;border:0;border-radius:10px;font:700 16px Arial,sans-serif;cursor:pointer}#hotelPaymentForm .lp-submit-button:disabled{opacity:.6;cursor:wait}';
+      document.head.append(paymentButtonStyle);
+      const paymentButtonObserver=new MutationObserver(localizePayButton);
+      paymentButtonObserver.observe(paymentRoot,{childList:true,subtree:true,characterData:true});
+      localizePayButton();
     }catch(error){container.hidden=true;form.hidden=false;result.innerHTML='<div class="err">'+esc(error.message)+'</div>';submit.disabled=false;submit.textContent='Ir al pago'}
     finally{busy=false}
   };
