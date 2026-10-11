@@ -33,7 +33,7 @@ fetch('/api/nuitee-hotel-detail?hotelId='+encodeURIComponent(id||'')).then(async
  const validPrice=Number.isFinite(searchPrice)&&searchPrice>0, validSsp=Number.isFinite(ssp)&&ssp>searchPrice;
  let offers=[],rateRefreshError='';
  if(checkin&&checkout){try{
-  const rateParams=new URLSearchParams({hotelId:id||'',checkin,checkout,adults,currency,guestNationality:'AR',occupancies:JSON.stringify(party)});
+  const rateParams=new URLSearchParams({hotelId:id||'',checkin,checkout,adults,currency,guestNationality:'AR',occupancies:JSON.stringify(party)});if(qs.get('sessionId'))rateParams.set('sessionId',qs.get('sessionId'));
   const rr=await fetch('/api/nuitee-hotels?'+rateParams.toString(),{cache:'no-store'}),rd=await rr.json();
   if(!rr.ok)throw new Error(rd.error||'No pudimos actualizar las tarifas.');
   const freshHotel=(rd.hotels||[]).find(x=>String(x.hotelId)===String(id));
