@@ -5,7 +5,7 @@
     if(document.getElementById('valijeando-hotel-tax-style'))return;
     const style=document.createElement('style');
     style.id='valijeando-hotel-tax-style';
-    style.textContent='.iva-estimate{margin-top:10px;padding:10px 12px;border:1px solid #d7e7f4;border-radius:10px;background:#f2f8fd;color:#23415f;font-size:13px;line-height:1.45}.iva-estimate strong{color:#07558f}.iva-estimate small{display:block;color:#53677b;margin-top:3px}.iva-estimate .iva-total{margin-top:5px;font-weight:800;color:#07558f}.iva-estimate-compact{margin-top:7px;padding:6px 8px;border-radius:8px;background:#fff;font-size:12px;line-height:1.3}.iva-estimate-compact .iva-total{margin-top:2px;font-size:12px;font-weight:700}';
+    style.textContent='.iva-estimate{margin-top:10px;padding:10px 12px;border:1px solid #d7e7f4;border-radius:10px;background:#f2f8fd;color:#23415f;font-size:13px;line-height:1.45}.iva-estimate strong{color:#07558f}.iva-estimate small{display:block;color:#53677b;margin-top:3px}.iva-estimate .iva-total{margin-top:5px;font-weight:800;color:#07558f}.iva-estimate-compact{margin-top:7px;padding:6px 8px;border-radius:8px;background:#fff;font-size:12px;line-height:1.3}.iva-estimate-compact .iva-total{margin-top:2px;font-size:12px;font-weight:700}.iva-estimate-compact strong{font-size:12px}';
     document.head.appendChild(style);
   };
   const line=(amount,total,money,vatAlreadyDue=0,compact=false)=>{
