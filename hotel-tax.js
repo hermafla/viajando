@@ -5,15 +5,15 @@
     if(document.getElementById('valijeando-hotel-tax-style'))return;
     const style=document.createElement('style');
     style.id='valijeando-hotel-tax-style';
-    style.textContent='.iva-estimate{margin-top:10px;padding:10px 12px;border:1px solid #d7e7f4;border-radius:10px;background:#f2f8fd;color:#23415f;font-size:13px;line-height:1.45}.iva-estimate strong{color:#07558f}.iva-estimate small{display:block;color:#53677b;margin-top:3px}.iva-estimate .iva-total{margin-top:5px;font-weight:800;color:#07558f}';
+    style.textContent='.iva-estimate{margin-top:10px;padding:10px 12px;border:1px solid #d7e7f4;border-radius:10px;background:#f2f8fd;color:#23415f;font-size:13px;line-height:1.45}.iva-estimate strong{color:#07558f}.iva-estimate small{display:block;color:#53677b;margin-top:3px}.iva-estimate .iva-total{margin-top:5px;font-weight:800;color:#07558f}.iva-estimate-compact{margin-top:7px;padding:6px 8px;border-radius:8px;background:#fff;font-size:12px;line-height:1.3}.iva-estimate-compact .iva-total{margin-top:2px;font-size:12px;font-weight:700}';
     document.head.appendChild(style);
   };
-  const line=(amount,total,money,vatAlreadyDue=0)=>{
+  const line=(amount,total,money,vatAlreadyDue=0,compact=false)=>{
     amount=Number(amount)||0;
     if(amount<=0)return '';
     styles();
     const remaining=Math.max(0,amount-(Number(vatAlreadyDue)||0));
-    return '<div class="iva-estimate"><div><strong>IVA 21%: '+money(amount)+'</strong> · se paga en el alojamiento</div><div class="iva-total">Total de la estadía con IVA 21%: '+money((Number(total)||0)+remaining)+'</div></div>';
+    return '<div class="iva-estimate'+(compact?' iva-estimate-compact':'')+'"><div><strong>IVA 21%: '+money(amount)+'</strong> · se paga en el alojamiento</div><div class="iva-total">Total de la estadía con IVA 21%: '+money((Number(total)||0)+remaining)+'</div></div>';
   };
   const rateLine=(offer,money)=>line(offer?.argentinaVatEstimate??estimate(offer?.retailRate,offer?.countryCode),offer?.estimatedTotal??offer?.retailRate,money,offer?.argentinaVatDueAtProperty);
   const decorateResults=(container,hotels,money)=>{
@@ -23,7 +23,7 @@
       if(!hotel)return;
       const amount=hotel.argentinaVatEstimate??estimate(hotel.retailRate,hotel.countryCode);
       const box=card.querySelector('.price');
-      if(box&&amount>0)box.insertAdjacentHTML('beforeend',line(amount,hotel.estimatedTotal??hotel.retailRate,money,hotel.argentinaVatDueAtProperty));
+      if(box&&amount>0){const cta=box.querySelector('.detailBtn');const tax=line(amount,hotel.estimatedTotal??hotel.retailRate,money,hotel.argentinaVatDueAtProperty,true);if(cta)cta.insertAdjacentHTML('beforebegin',tax);else box.insertAdjacentHTML('beforeend',tax);}
     });
   };
   const checkoutLine=(amount,total,money,vatAlreadyDue)=>line(amount,total,money,vatAlreadyDue);
