@@ -1,4 +1,4 @@
-import { bookingEnvironment, occupanciesFromQuery, mapOffer } from '../lib/nuitee.js';
+import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotelTaxEstimate } from '../lib/nuitee.js';
 
 const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 
@@ -52,11 +52,11 @@ export default async function handler(req,res) {
     for(const item of rateHotels){
       const meta=byId.get(item.hotelId)||item.hotel||item;
       const hotelCountryCode=countryCodeFrom(meta.countryCode||meta.country_code||meta.country||meta.address)||destination?.countryCode||requestedCountryCode;
-      const offers=(item.roomTypes||[]).map(r=>mapOffer(r,currency)).filter(o=>{
+      const offers=(item.roomTypes||[]).map(r=>applyArgentineHotelTaxEstimate(mapOffer(r,currency),hotelCountryCode,guestNationality)).filter(o=>{
         if(!o||o.rates.length!==occupancies.length)return false;
         const seen=new Set();
         return o.rates.every((r,i)=>{const n=r.occupancyNumber||i+1,wanted=occupancies[n-1];if(!wanted||seen.has(n))return false;seen.add(n);return Number(r.adultCount)===wanted.adults&&r.childCount===(wanted.children||[]).length&&JSON.stringify(r.childrenAges)===JSON.stringify(wanted.children||[])});
-      }).map(o=>({...o,countryCode:hotelCountryCode,argentinaVatEstimate:hotelCountryCode==='AR'&&guestNationality==='AR'?Math.round((Number(o.retailRate)+Number.EPSILON)*0.21*100)/100:0})).sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
+      }).sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
       if(!offers.length)continue;
       hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...offers[0],offers:offers.slice(0,8)});
     }
