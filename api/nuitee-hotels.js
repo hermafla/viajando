@@ -1,4 +1,6 @@
-import { bookingEnvironment, occupanciesFromQuery, mapOffer } from '../lib/nuitee.js';
+import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotelTaxEstimate } from '../lib/nuitee.js';
+
+const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
@@ -7,7 +9,7 @@ export default async function handler(req,res) {
   if(!key)return res.status(503).json({error:'La búsqueda de hoteles no está disponible en este momento.'});
   const city=String(req.query.city||'Rio de Janeiro'),countryCode=String(req.query.countryCode||'BR').toUpperCase(),placeId=String(req.query.placeId||'').trim(),hotelId=String(req.query.hotelId||'').trim();
   const requestedSessionId=String(req.query.sessionId||'').trim(),sessionId=/^[A-Za-z0-9_-]{8,80}$/.test(requestedSessionId)?requestedSessionId:'';
-  const checkin=String(req.query.checkin||''),checkout=String(req.query.checkout||''),currency=String(req.query.currency||'USD').toUpperCase(),guestNationality=String(req.query.guestNationality||'AR').toUpperCase();
+  const checkin=String(req.query.checkin||''),checkout=String(req.query.checkout||''),currency=String(req.query.currency||'USD').toUpperCase(),guestNationality=String(req.query.guestNationality||'AR').toUpperCase(),requestedCountryCode=String(req.query.countryCode||'').toUpperCase();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(checkin)||!/^\d{4}-\d{2}-\d{2}$/.test(checkout)||checkout<=checkin)return res.status(400).json({error:'La salida debe ser posterior a la entrada.'});
   let occupancies;try{occupancies=occupanciesFromQuery(req.query)}catch{return res.status(400).json({error:'Revisá los huéspedes y las edades de los niños.'})}
   const effectiveMargin=10;
@@ -20,8 +22,9 @@ export default async function handler(req,res) {
       try{
         const pr=await fetch('https://api.liteapi.travel/v3.0/data/places/'+encodeURIComponent(placeId)+'?language=es',{headers,signal:AbortSignal.timeout(4000)}),p=await pr.json(),details=p?.data||p,l=details?.location,latitude=Number(l?.latitude??l?.lat),longitude=Number(l?.longitude??l?.lng);
         if(pr.ok){
-          const displayName=details.displayName?.text||details.displayName||details.name;
-          destination={placeId,displayName:typeof displayName==='string'?displayName:'',formattedAddress:typeof details.formattedAddress==='string'?details.formattedAddress:''};
+          const displayName=details.displayName?.text||details.displayName||details.name,formattedAddress=typeof details.formattedAddress==='string'?details.formattedAddress:'',addressComponents=details.addressComponents||details.address_components||[],countryPart=addressComponents.find(c=>Array.isArray(c.types)&&c.types.includes('country'));
+          const placeCountryCode=countryCodeFrom(details.countryCode||details.country_code||countryPart?.shortText||countryPart?.shortName||countryPart?.short_name||countryPart?.longText||countryPart?.long_name)||countryCodeFrom(formattedAddress);
+          destination={placeId,displayName:typeof displayName==='string'?displayName:'',formattedAddress,countryCode:placeCountryCode};
           if(Number.isFinite(latitude)&&Number.isFinite(longitude))locationQuery={latitude,longitude,radius:15000};
         }
       }catch{}
@@ -48,13 +51,14 @@ export default async function handler(req,res) {
     const byId=new Map(catalogHotels.map(h=>[h.id||h.hotelId,h])),hotels=[];
     for(const item of rateHotels){
       const meta=byId.get(item.hotelId)||item.hotel||item;
-      const offers=(item.roomTypes||[]).map(r=>mapOffer(r,currency)).filter(o=>{
+      const hotelCountryCode=countryCodeFrom(meta.countryCode||meta.country_code||meta.country||meta.address)||destination?.countryCode||requestedCountryCode;
+      const offers=(item.roomTypes||[]).map(r=>applyArgentineHotelTaxEstimate(mapOffer(r,currency),hotelCountryCode,guestNationality)).filter(o=>{
         if(!o||o.rates.length!==occupancies.length)return false;
         const seen=new Set();
         return o.rates.every((r,i)=>{const n=r.occupancyNumber||i+1,wanted=occupancies[n-1];if(!wanted||seen.has(n))return false;seen.add(n);return Number(r.adultCount)===wanted.adults&&r.childCount===(wanted.children||[]).length&&JSON.stringify(r.childrenAges)===JSON.stringify(wanted.children||[])});
       }).sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
       if(!offers.length)continue;
-      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',stars:meta.stars||meta.starRating||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...offers[0],offers:offers.slice(0,8)});
+      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...offers[0],offers:offers.slice(0,8)});
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
