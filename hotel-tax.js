@@ -13,8 +13,7 @@
     if(amount<=0)return '';
     styles();
     const remaining=Math.max(0,amount-(Number(vatAlreadyDue)||0));
-    const providerNote=Number(vatAlreadyDue)>0?'<small>El proveedor ya informa '+money(vatAlreadyDue)+' de IVA para pagar en el alojamiento; se descuenta de este total de referencia.</small>':'';
-    return '<div class="iva-estimate"><div><strong>IVA estimado (21%): '+money(amount)+'</strong> · posible pago en el hotel</div><small>Estimación preventiva sobre la tarifa. El alojamiento confirma si corresponde y el importe final.</small>'+providerNote+'<div class="iva-total">Total de referencia con IVA estimado: '+money((Number(total)||0)+remaining)+'</div></div>';
+    return '<div class="iva-estimate"><div><strong>IVA 21%: '+money(amount)+'</strong> · se paga en el alojamiento</div><div class="iva-total">Total de la estadía con IVA 21%: '+money((Number(total)||0)+remaining)+'</div></div>';
   };
   const rateLine=(offer,money)=>line(offer?.argentinaVatEstimate??estimate(offer?.retailRate,offer?.countryCode),offer?.estimatedTotal??offer?.retailRate,money,offer?.argentinaVatDueAtProperty);
   const decorateResults=(container,hotels,money)=>{
