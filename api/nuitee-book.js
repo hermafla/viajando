@@ -88,7 +88,7 @@ export default async function handler(req,res){
       const nights=(checkin&&checkout)?Math.max(0,Math.round((new Date(checkout+'T00:00:00Z')-new Date(checkin+'T00:00:00Z'))/86400000)):0;
       const refundable=String(reservation.refundableTag||reservation.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
       const totalUsd=num(reservation.estimatedTotal??reservation.price);
-      const bna=num(reservation.bnaRate);
+      const bna=num(reservation.bnaRate),cardRate=num(reservation.cardRate),arsRate=reservation.displayCurrency==='ARS'&&cardRate!=null?cardRate:bna;
       const row={
         email:clean(email).toLowerCase(),
         nombre:clean(firstName),
@@ -111,13 +111,13 @@ export default async function handler(req,res){
         politicas_cancelacion:reservation.cancellationPolicies||{},
         moneda_base:'USD',
         total_usd:totalUsd,
-        total_ars:(totalUsd!=null&&bna!=null)?Number((totalUsd*bna).toFixed(2)):null,
+        total_ars:(totalUsd!=null&&arsRate!=null)?Number((totalUsd*arsRate).toFixed(2)):null,
         cotizacion_bna:bna,
         cotizacion_fecha:bna?new Date().toISOString():null,
         pagado:false,
         cargos_alojamiento_usd:num(reservation.dueAtProperty)||0,
         estado:dbStatus,
-        datos_proveedor:{...d,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:false}
+        datos_proveedor:{...d,valijeandoArsCardRate:cardRate,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:false}
       };
       try{
         const sr=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles',{
