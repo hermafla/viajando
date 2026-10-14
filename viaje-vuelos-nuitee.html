@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Probar vuelos para tu viaje | Valijeando</title>
+<link rel="icon" type="image/svg+xml" href="/valijeando-favicon.svg">
+<link rel="stylesheet" href="/site-header.css"><script src="/site-header.js" defer></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f8fc;color:#172033;font-family:Arial,Helvetica,sans-serif}
+main{max-width:1000px;margin:28px auto;padding:0 18px 60px}.hero,.notice,.offer{background:#fff;border:1px solid #e5eaf2;border-radius:18px;box-shadow:0 6px 24px rgba(16,24,40,.05)}
+.hero{padding:24px;margin-bottom:16px}.hero h1{margin:0;font-size:28px}.hero p{margin:8px 0 0;color:#667085;line-height:1.5}
+.sandbox{display:inline-flex;align-items:center;gap:7px;background:#fff7e6;border:1px solid #f5d58b;color:#8a5700;border-radius:999px;padding:7px 11px;font-weight:800;font-size:12px;margin-bottom:12px}
+.notice{padding:15px 18px;color:#475467;font-size:13px;line-height:1.5;margin-bottom:18px}
+#status{padding:22px;text-align:center;color:#667085}.offers{display:grid;gap:13px}.offer{padding:18px}.offer-top{display:flex;justify-content:space-between;gap:16px;align-items:start}.carrier{font-size:17px;font-weight:800}.price{font-size:22px;font-weight:800;color:#1677ff;white-space:nowrap}.route{margin-top:12px;display:grid;gap:8px}.leg{padding:10px 12px;background:#f8fafc;border-radius:10px;color:#475467;font-size:13px}.leg strong{color:#172033}.meta{color:#667085;font-size:12px;margin-top:7px}.select{display:block;width:100%;margin-top:14px;border:0;border-radius:10px;background:#1677ff;color:#fff;font-weight:800;font-size:14px;padding:12px;cursor:pointer}.select:hover{background:#0b68e8}.empty{background:#fff7e6;border-radius:12px;padding:15px;color:#7a4b00}.back{display:inline-block;margin:16px 0;color:#1677ff;text-decoration:none;font-weight:800}
+@media(max-width:650px){.offer-top{display:block}.price{margin-top:8px}.hero h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header class="vh-header" data-valijeando-header></header>
+<main>
+<a class="back" id="back" href="/viaje.html">← Volver a tu viaje</a>
+<section class="hero">
+<div class="sandbox">🧪 PRUEBA DE SANDBOX · NO RESERVA NI COBRA</div>
+<h1 id="title">Vuelos para tu viaje</h1>
+<p id="summary"></p>
+</section>
+<div class="notice"><strong>Prueba técnica:</strong> los precios y la disponibilidad del Sandbox pueden ser incompletos y no representan tarifas reales. Esta búsqueda sirve para comprobar cómo se vería Nuitee dentro de “Viaje completo”. Los vuelos individuales de Valijeando siguen usando su proveedor actual.</div>
+<div id="status">Consultando opciones de prueba…</div>
+<section id="offers" class="offers" aria-live="polite"></section>
+</main>
+<script src="/travel-party.js"></script>
+<script>
+(function(){
+  const p=new URLSearchParams(location.search),status=document.getElementById("status"),list=document.getElementById("offers");
+  const origin=(p.get("origin")||"").toUpperCase(),destination=(p.get("destination")||"").toUpperCase(),departureDate=p.get("departureDate")||"",returnDate=p.get("returnDate")||"";
+  const returnValue=p.get("returnTrip")||"",occupancies=ValijeandoParty.fromParams(p),counts=ValijeandoParty.flightCounts(occupancies);
+  const returnTrip=ValijeandoParty.internalUrl(returnValue,"/viaje.html");
+  const pax=counts.adults+counts.children+counts.infants;
+  document.getElementById("title").textContent=origin+" → "+destination;
+  document.getElementById("summary").textContent=departureDate+" → "+returnDate+" · "+pax+(pax===1?" viajero":" viajeros");
+  if(returnTrip)document.getElementById("back").href=returnTrip;
+  function fail(message){status.className="empty";status.textContent=message;list.replaceChildren()}
+  function money(offer){
+    const pricing=offer?.pricing?.display||offer?.pricing?.original||offer?.pricing||{};
+    const total=typeof pricing.total==="number"?pricing.total:Number(pricing.total?.amount??pricing.amount??offer?.price);
+    const currency=String(pricing.currency||pricing.total?.currency||offer?.currency||"USD").toUpperCase();
+    return Number.isFinite(total)?{total,currency}:null;
+  }
+  function addText(parent,tag,className,text){
+    const node=document.createElement(tag);if(className)node.className=className;node.textContent=text;parent.appendChild(node);return node;
+  }
+  function render(data){
+    const batches=Array.isArray(data?.data)?data.data:[];
+    const rows=[];
+    batches.forEach(batch=>(batch?.journeys||[]).forEach(journey=>(journey?.offers||[]).forEach(offer=>{
+      const price=money(offer);if(price)rows.push({journey,offer,price});
+    })));
+    rows.sort((a,b)=>a.price.total-b.price.total);
+    if(!rows.length){fail("El Sandbox no devolvió vuelos para esta búsqueda. Como sus datos son limitados, esto no confirma disponibilidad real.");return}
+    status.textContent=rows.length+" opciones de prueba";
+    rows.slice(0,20).forEach(({journey,offer,price})=>{
+      const card=document.createElement("article");card.className="offer";
+      const top=document.createElement("div");top.className="offer-top";card.appendChild(top);
+      const segments=Array.isArray(journey.segments)?journey.segments:[];
+      const carrier=segments.map(x=>x?.carrier?.marketingName).find(Boolean)||offer.providerName||offer.provider||"Vuelo";
+      addText(top,"div","carrier",carrier);
+      addText(top,"div","price",price.currency+" "+price.total.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}));
+      const route=document.createElement("div");route.className="route";card.appendChild(route);
+      segments.forEach((seg,index)=>{
+        const dir=seg.direction==="INBOUND"?"Regreso":"Ida";
+        const from=seg.originCode||seg.origin||"";
+        const to=seg.destinationCode||seg.destination||"";
+        const times=[seg.departureTime,seg.arrivalTime].filter(Boolean).map(x=>String(x).replace("T"," ").slice(0,16)).join(" · ");
+        const flight=seg.flight?.marketingNumber?(" · Vuelo "+seg.flight.marketingNumber):"";
+        const stops=Number(seg.stopCount||0);
+        addText(route,"div","leg",dir+" · "+from+" → "+to+(times?" · "+times:"")+flight+" · "+(stops===0?"directo":stops+" escala(s)"));
+      });
+      const terms=offer.terms||{};
+      const cabin=offer.cabinClass||offer.fare?.family||"";
+      const extras=[cabin,terms.refundable===true?"Reembolsable":terms.refundable===false?"No reembolsable":""].filter(Boolean);
+      if(extras.length)addText(card,"div","meta",extras.join(" · "));
+      const button=addText(card,"button","select","Usar este precio en mi viaje (prueba)");
+      button.type="button";
+      button.addEventListener("click",()=>{
+        if(!returnTrip){fail("No pudimos recuperar el resumen del viaje. Volvé a iniciar la búsqueda desde Viaje completo.");return}
+        const target=new URL(returnTrip,location.origin);
+        target.searchParams.set("vuelo",String(price.total));
+        target.searchParams.set("vueloReal","1");
+        target.searchParams.set("vueloSeleccionado","1");
+        target.searchParams.set("vueloProveedor","Nuitee Sandbox");
+        target.searchParams.set("vueloSandbox","1");
+        target.searchParams.set("precioPersona",String(price.total/pax));
+        target.searchParams.set("fechaVuelo",departureDate);
+        target.searchParams.set("aeropuertoOrigen",origin);
+        target.searchParams.set("aeropuertoDestino",destination);
+        location.href=target.pathname+target.search;
+      });
+      list.appendChild(card);
+    });
+  }
+  if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)||!/^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){
+    fail("Para probar vuelos en Viaje completo, elegí origen, destino y fechas exactas de ida y vuelta.");return;
+  }
+  const childAges=occupancies.flatMap(r=>r.childAges||[]),childrenAges=childAges.filter(age=>age>=2&&age<12),infantAges=childAges.filter(age=>age<2);
+  fetch("/api/nuitee-flights-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    legs:[{origin,destination,date:departureDate},{origin:destination,destination:origin,date:returnDate}],
+    adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"
+  })}).then(async response=>{
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||"No se pudo consultar el Sandbox.");
+    render(result.data);
+  }).catch(error=>fail(error.message||"No se pudieron buscar vuelos de prueba."));
+})();
+</script>
+</body>
+</html>
