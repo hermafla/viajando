@@ -99,13 +99,16 @@ async function buscarVuelo(e){
     return;
   }
   const fmt=x=>{const [y,m,d]=x.split("-");return d+m};
-  if(fechaIdaExacta&&fechaVueltaExacta){
-    const retorno=location.pathname+location.search;
-    let qVuelo;try{qVuelo=new URLSearchParams({flightSearch:ValijeandoParty.flightSearch(origin,destination,fechaIdaExacta,fechaVueltaExacta,party),returnTrip:retorno})}catch(err){alert(err.message);return}
-    location.href="prueba-vuelos.html?"+qVuelo.toString();
-    return;
-  }
-  location.href="prueba-vuelos.html";
+  const retorno=location.pathname+location.search;
+  const qVuelo=new URLSearchParams({
+    origin,
+    destination,
+    departureDate:fechaIdaExacta,
+    returnDate:fechaVueltaExacta,
+    returnTrip:retorno,
+    occupancies:JSON.stringify(party)
+  });
+  location.href="viaje-vuelos-nuitee.html?"+qVuelo.toString();
 }
 document.getElementById("verVuelo").onclick=buscarVuelo;
 if(vueloSeleccionado){
@@ -117,6 +120,14 @@ if(vueloSeleccionado){
     vv.textContent="✈️ Cambiar vuelo →";
   }
   const ayuda=document.getElementById("ayudaReserva");ayuda.textContent=completo?"Ya elegiste vuelo y alojamiento. Revisá todo junto antes de continuar.":"El vuelo está seleccionado. Completá el alojamiento para revisar el viaje.";
+}
+if(p.get("vueloSandbox")==="1"){
+  const boton=document.getElementById("verVuelo"),ayuda=document.getElementById("ayudaReserva");
+  boton.onclick=null;boton.removeAttribute("href");boton.setAttribute("aria-disabled","true");
+  boton.style.pointerEvents="none";boton.style.opacity=".65";boton.textContent="✈️ Precio Sandbox — no reservable";
+  ayuda.textContent="Este importe vino del entorno de prueba de Nuitee. No es una tarifa real y todavía no permite reservar ni pagar el vuelo.";
+  const aviso=document.getElementById("aviso");
+  aviso.innerHTML="<strong>Vuelo de prueba:</strong> este precio proviene del Sandbox de Nuitee; no confirma disponibilidad real y no puede usarse para reservar. El proveedor actual de vuelos individuales sigue sin cambios.";
 }
 document.getElementById("resumenTitulo").textContent="Tu viaje a "+destino;
 document.getElementById("resHotel").textContent=hotelNombre|| (hotel>0?"Alojamiento seleccionado":"Por elegir");
