@@ -6,7 +6,7 @@ async function searchNuiteeFlights(req,res) {
   if (process.env.VERCEL_ENV === 'production') {
     return res.status(404).json({ok:false,error:'Búsqueda de vuelos de prueba no disponible.'});
   }
-  const apiKey=process.env.NUITEE_FLIGHTS_SANDBOX_API_KEY||(process.env.VERCEL_ENV==='preview'?process.env.NUITEE_API_KEY:'');
+  const apiKey=process.env.NUITEE_FLIGHTS_SANDBOX_API_KEY;
   if(!apiKey)return res.status(503).json({ok:false,error:'Falta configurar NUITEE_FLIGHTS_SANDBOX_API_KEY en Vercel Preview.'});
   const body=req.body||{},legs=Array.isArray(body.legs)?body.legs:[];
   const adults=Number(body.adults),children=Number(body.children||0),infants=Number(body.infants||0),currency=String(body.currency||'USD').toUpperCase();
