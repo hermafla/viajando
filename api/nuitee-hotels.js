@@ -1,8 +1,10 @@
 import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotelTaxEstimate } from '../lib/nuitee.js';
+import { ratehawkSandboxHandler } from '../lib/ratehawk-sandbox.js';
 
 const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 
 export default async function handler(req,res) {
+  if(req.method==='POST')return ratehawkSandboxHandler(req,res);
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
