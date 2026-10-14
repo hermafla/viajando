@@ -102,7 +102,7 @@ main{max-width:1000px;margin:28px auto;padding:0 18px 60px}.hero,.notice,.offer{
     fail("Para probar vuelos en Viaje completo, elegí origen, destino y fechas exactas de ida y vuelta.");return;
   }
   const childAges=occupancies.flatMap(r=>r.childAges||[]),childrenAges=childAges.filter(age=>age>=2&&age<12),infantAges=childAges.filter(age=>age<2);
-  fetch("/api/nuitee-flights-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+  fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
     legs:[{origin,destination,date:departureDate},{origin:destination,destination:origin,date:returnDate}],
     adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"
   })}).then(async response=>{
