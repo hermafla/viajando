@@ -118,6 +118,6 @@ export default async function handler(req,res) {
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
-    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,destination,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length}});
+    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,destination,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,referenceCounts:{facilities:facilityRows.length,types:typeRows.length,chains:chainRows.length},referenceSample:{facility:facilityRows[0]||null,type:typeRows[0]||null,chain:chainRows[0]||null}}});
   }catch(e){console.error('Nuitee rates request',e.name);return res.status(502).json({error:'La consulta de hoteles demoró o no pudo completarse. Podés volver a intentar con las mismas fechas.',reason:'provider_error'})}
 }
