@@ -42,3 +42,6 @@ header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:st
 .vh-regret-card>a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:5px 12px;border-radius:999px;background:#07558f;color:#fff;text-decoration:none;font-size:11px;font-weight:700}
 .vh-regret-card>a:hover{background:#064773}
 @media(max-width:650px){.vh-regret-entry{width:92%;justify-content:center;margin:0 auto 5px}.vh-regret-entry a{min-height:28px;font-size:11px}.vh-regret-card{align-items:flex-start;flex-direction:column;margin:17px auto;padding:13px}.vh-regret-card div{display:block}.vh-regret-card span{display:block;margin-top:3px}.vh-regret-card>a{min-height:34px}}
+
+.vh-regret-card .vh-regret-info{flex-basis:100%;color:#07558f;text-decoration:underline;text-underline-offset:2px;font-size:11px;font-weight:700}
+@media(max-width:650px){.vh-regret-card .vh-regret-info{margin-top:7px}}
