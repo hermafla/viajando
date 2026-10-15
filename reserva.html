@@ -51,7 +51,7 @@ $('cancelBtn').onclick=async()=>{
  cancellationPreviewReady=false;confirmBtn.disabled=true;confirmBtn.style.opacity='.65';msg.textContent='Consultando las condiciones vigentes con Nuitee…';$('policy').textContent='';
  try{
   const token=sessionStorage.getItem('valijeandoAccountToken'),bookingId=new URLSearchParams(location.search).get('id')||'';
-  const r=await fetch('/api/account-cancel-preview',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({bookingId})});
+  const r=await fetch('/api/account-request-code',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({bookingId,purpose:'cancellation-preview'})});
   const j=await r.json();if(!r.ok)throw Error(j.error||'No pudimos consultar la política.');
   if(String(j.bookingStatus||'').toUpperCase()==='CANCELLED')throw Error('Nuitee informa que esta reserva ya está cancelada.');
   $('policy').textContent=cancellationPolicyText(j);
