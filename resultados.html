@@ -112,6 +112,7 @@ function card(v){
   detalle.delete("total");
   detalle.set("vueloReal","0");
   detalle.set("vueloReferencia","0");
+  if(v.vueloSandbox){detalle.set("vueloSandbox","1");detalle.set("vueloSandboxPrecio",String(v.vueloSandboxPrecio));detalle.set("vueloSandboxMoneda",v.vueloSandboxMoneda||"USD");detalle.set("vueloSandboxAerolinea",v.vueloSandboxAerolinea||"");}
   if(v.hotelId)detalle.set("hotelId",v.hotelId);if(v.hotelCity)detalle.set("hotelCity",v.hotelCity);if(v.hotelCountryCode)detalle.set("hotelCountryCode",v.hotelCountryCode);
   if(v.hotelNombre)detalle.set("hotelNombre",v.hotelNombre);
   if(codigosDestino[v.destino])detalle.set("aeropuertoDestino",codigosDestino[v.destino]);
