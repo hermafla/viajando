@@ -148,19 +148,34 @@ export default async function handler(req,res){
         const checkin=htmlEscape(reservation?.checkin),checkout=htmlEscape(reservation?.checkout);
         const totalUsd=num(reservation?.estimatedTotal??reservation?.price);
         const subject=(mode==='sandbox'?'[PRUEBA] ':'')+'Reserva confirmada - '+clean(reservation?.hotelName||'Alojamiento')+' | Valijeando';
-        const html='<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#172033">'
-          +'<h2 style="margin-bottom:8px">'+(mode==='sandbox'?'Reserva de prueba confirmada':'¡Tu reserva está confirmada!')+'</h2>'
-          +(mode==='sandbox'?'<p><strong>Esta es una prueba sin cobro. No tiene validez para alojarte en el hotel.</strong></p>':'')
-          +'<p>Hola '+htmlEscape(firstName)+', recibimos la confirmación de tu reserva en <strong>'+hotelName+'</strong>.</p>'
-          +'<div style="background:#f6f8fb;padding:16px;border-radius:12px;margin:18px 0">'
-          +(bookingId?'<p><strong>Código de reserva:</strong> '+htmlEscape(bookingId)+'</p>':'')
-          +(hotelConfirmationCode?'<p><strong>Confirmación del hotel:</strong> '+htmlEscape(hotelConfirmationCode)+'</p>':'')
-          +(checkin?'<p><strong>Entrada:</strong> '+checkin+'</p>':'')
-          +(checkout?'<p><strong>Salida:</strong> '+checkout+'</p>':'')
-          +(reservation?.roomName?'<p><strong>Habitación:</strong> '+htmlEscape(reservation.roomName)+'</p>':'')
-          +(totalUsd!=null?'<p><strong>Importe base:</strong> USD '+totalUsd.toFixed(2)+'</p>':'')
-          +'</div><p>Guardá este correo junto con tu código de reserva.</p>'
-          +'<p style="color:#657085;font-size:13px">Valijeando · valijeando.com.ar</p></div>';
+        const policyTag=String(reservation?.refundableTag||reservation?.cancellationPolicies?.refundableTag||'').toUpperCase();
+        const cancellationText=policyTag==='NRFN'
+          ?'Esta tarifa figura como no reembolsable. Revisá las condiciones guardadas en Mi cuenta antes de solicitar una cancelación.'
+          :policyTag==='RFN'
+            ?'Esta tarifa figura como reembolsable. La fecha límite y los cargos aplicables se consultan desde Mi cuenta antes de confirmar una cancelación.'
+            :'Consultá las condiciones vigentes de cancelación desde Mi cuenta antes de confirmar una solicitud.';
+        const accountUrl='https://www.valijeando.com.ar/mi-cuenta.html';
+        const html='<div style="margin:0;padding:24px 12px;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#172033">'
+          +'<div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden">'
+          +'<div style="padding:23px 28px;background:#fff;border-bottom:1px solid #edf1f6"><div style="font-size:24px;font-weight:800;color:#1769d2">Valijeando</div><div style="font-size:12px;color:#667085;margin-top:4px">Tu viaje, más fácil</div></div>'
+          +'<div style="padding:28px"><div style="display:inline-block;padding:6px 10px;border-radius:999px;background:#eaf7ef;color:#168344;font-size:12px;font-weight:700">RESERVA CONFIRMADA</div>'
+          +'<h1 style="font-size:25px;line-height:1.25;margin:16px 0 8px;color:#172033">'+(mode==='sandbox'?'Reserva de prueba confirmada':'¡Tu alojamiento está confirmado!')+'</h1>'
+          +(mode==='sandbox'?'<p style="padding:12px 14px;background:#fff7e5;border:1px solid #f3d18b;border-radius:10px;color:#7a4b00"><strong>Prueba sin cobro:</strong> no tiene validez para alojarte en el hotel.</p>':'')
+          +'<p style="font-size:15px;line-height:1.6;margin:0 0 20px">Hola '+htmlEscape(firstName)+'. El proveedor confirmó tu reserva en <strong>'+hotelName+'</strong>.</p>'
+          +'<div style="padding:18px;background:#f6f8fb;border-radius:13px">'
+          +(bookingId?'<p style="margin:0 0 12px"><span style="color:#667085">Código de reserva</span><br><strong style="font-size:17px">'+htmlEscape(bookingId)+'</strong></p>':'')
+          +(hotelConfirmationCode?'<p style="margin:0 0 12px"><span style="color:#667085">Confirmación del hotel</span><br><strong>'+htmlEscape(hotelConfirmationCode)+'</strong></p>':'')
+          +'<table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;line-height:1.6">'
+          +(checkin?'<tr><td style="padding:7px 0;color:#667085">Entrada</td><td style="padding:7px 0;text-align:right;font-weight:700">'+checkin+'</td></tr>':'')
+          +(checkout?'<tr><td style="padding:7px 0;color:#667085">Salida</td><td style="padding:7px 0;text-align:right;font-weight:700">'+checkout+'</td></tr>':'')
+          +(reservation?.roomName?'<tr><td style="padding:7px 0;color:#667085">Habitación</td><td style="padding:7px 0;text-align:right;font-weight:700">'+htmlEscape(reservation.roomName)+'</td></tr>':'')
+          +(reservation?.boardName?'<tr><td style="padding:7px 0;color:#667085">Régimen</td><td style="padding:7px 0;text-align:right;font-weight:700">'+htmlEscape(reservation.boardName)+'</td></tr>':'')
+          +(totalUsd!=null?'<tr><td style="padding:7px 0;color:#667085">Precio de la tarifa</td><td style="padding:7px 0;text-align:right;font-weight:700">USD '+totalUsd.toFixed(2)+'</td></tr>':'')
+          +'</table></div>'
+          +'<div style="margin-top:18px;padding:16px;border:1px solid #dce8f8;border-radius:12px"><strong style="color:#175ca8">Cancelación</strong><p style="font-size:14px;line-height:1.55;margin:7px 0 0">'+htmlEscape(cancellationText)+'</p></div>'
+          +'<div style="text-align:center;margin:24px 0 18px"><a href="'+accountUrl+'" style="display:inline-block;background:#1769d2;color:#fff;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:999px">Ver mi reserva</a></div>'
+          +'<p style="font-size:13px;line-height:1.55;color:#667085">Guardá este correo junto con el código de reserva. Para ayuda, escribinos a <a href="mailto:hola@valijeando.com.ar" style="color:#1769d2">hola@valijeando.com.ar</a>.</p>'
+          +'</div><div style="padding:16px 28px;background:#f8fafc;border-top:1px solid #edf1f6;color:#667085;font-size:12px">Valijeando · <a href="https://www.valijeando.com.ar" style="color:#1769d2">valijeando.com.ar</a></div></div></div>';
         const er=await fetch('https://api.resend.com/emails',{
           method:'POST',
           headers:{'Authorization':'Bearer '+resendKey,'Content-Type':'application/json','Idempotency-Key':'valijeando-confirmation-'+clientReference},
