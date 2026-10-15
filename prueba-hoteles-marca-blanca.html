@@ -161,7 +161,7 @@ function applyFilters(){
   if($('rating8').checked&&Number(h.rating||0)<8)return false;
   if(selectedStars&&Number(h.stars||0)<selectedStars)return false;
   for(const [group,values] of selectedFacets){if(!values.size)continue;
-   if(group==='rating'){const min=Number([...values][0]);if(Number(h.rating||0)<min)return false;continue}
+   if(group==='rating'){const min=Math.min(...[...values].map(Number));if(Number(h.rating||0)<min)return false;continue}
    if(group==='popular'){const terms={estacionamiento:/parking|estacionamiento/i,piscina:/pool|piscina/i,gimnasio:/gym|fitness|gimnasio/i};const pattern=terms[[...values][0]];if(!pattern||(h.facilities||[]).every(x=>!pattern.test(String(x))))return false;continue}
    if(group==='distance'){const d=Number(h.distanceKm);if(!Number.isFinite(d)||![...values].some(v=>d<=Number(v)))return false;continue}
    if(group==='meal'){const boards=offers.map(o=>String(o.boardName||'')).filter(Boolean);if(![...values].some(v=>boards.some(b=>sameText(b,v))))return false;continue}
@@ -176,7 +176,7 @@ function applyFilters(){
 }
 function sameText(a,b){return String(a||'').trim().toLocaleLowerCase('es-AR')===String(b||'').trim().toLocaleLowerCase('es-AR')}
 function optionsFor(group){
- const map=new Map(),add=(label,id=label)=>{if(!label)return;const key=String(id??label).trim(),name=String(label).trim();if(!key||!name)return;map.set(key,{label:name,count:(map.get(key)?.count||0)+1})};
+ const map=new Map(),add=(label,id=label)=>{if(!label)return;const key=String(id??label).trim(),name=String(label).trim();if(!key||!name||/^(not available|unknown|n\/a|no disponible)$/i.test(name))return;map.set(key,{label:name,count:(map.get(key)?.count||0)+1})};
  for(const h of hotels){
   if(group==='type')add(h.hotelType);
   if(group==='chain')add(h.chainName);
@@ -189,7 +189,7 @@ function optionsFor(group){
 }
 function renderOptions(id,group,opts){
  const el=$(id);if(!el)return;
- if(!opts.length){el.innerHTML='<div style="font-size:11px;line-height:1.4;color:#8995a3">Sin datos disponibles para esta búsqueda.</div>';return}
+ const section=el.closest('.filter-section');if(section)section.hidden=!opts.length;if(!opts.length){el.innerHTML='';return}
  el.innerHTML=opts.map(([value,o])=>'<label class="check facet-option" data-label="'+esc(o.label.toLocaleLowerCase('es-AR'))+'"><input type="checkbox" data-group="'+esc(group)+'" data-value="'+esc(value)+'"><span>'+esc(o.label)+'</span><em>'+o.count+'</em></label>').join('');
 }
 function rebuildFacetFilters(){
