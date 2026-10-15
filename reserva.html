@@ -33,7 +33,7 @@ function cancellationPolicyText(data){
  }
  const remarks=Array.isArray(data?.hotelRemarks)?data.hotelRemarks:[];remarks.forEach(v=>{if(typeof v==='string'&&v.trim())lines.push(v.trim())});
  if(!lines.length)lines.push('Nuitee no devolvió una fecha límite ni un detalle de cargos para esta reserva.');
- return lines.join('\\n');
+ return lines.join('\n');
 }
 function dateTime(v,timeZone){
  if(!v)return 'fecha no informada';
