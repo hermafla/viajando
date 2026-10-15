@@ -3,7 +3,15 @@ import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotel
 const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 const listOf=value=>Array.isArray(value)?value.map(x=>typeof x==='string'?x:x?.name||x?.displayName||x?.label||'').filter(Boolean):typeof value==='string'?value.split(/[,;|]/).map(x=>x.trim()).filter(Boolean):[];
 const textOf=value=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim():Array.isArray(value)?value.map(textOf).filter(Boolean).join('\n\n'):value&&typeof value==='object'?textOf(value.text||value.content||value.description||value.value||''):'';
-const rowsOf=value=>Array.isArray(value)?value:value&&typeof value==='object'?Object.values(value).filter(x=>x&&typeof x==='object'):[];
+const rowsOf=value=>{
+  if(Array.isArray(value))return value.flatMap(x=>Array.isArray(x)?x:[x]);
+  if(!value||typeof value!=='object')return [];
+  for(const key of ['data','facilities','hotelTypes','chains','items','results'])if(Array.isArray(value[key]))return value[key];
+  return Object.entries(value).filter(([,x])=>x&&typeof x==='object').map(([id,x])=>({...x,id:x.id??x.facilityId??x.hotelTypeId??x.chainId??id}));
+};
+const referenceRows=async(endpoint)=>{
+  try{const response=await request('https://api.liteapi.travel/v3.0/data/'+endpoint,{},3500);if(!response.ok)return [];const payload=await response.json();return rowsOf(payload?.data??payload)}catch{return []}
+};
 const referenceMap=(value,idKeys,labelKeys)=>{
   const map=new Map();
   for(const row of rowsOf(value)){const id=idKeys.map(k=>row?.[k]).find(x=>x!=null),label=labelKeys.map(k=>row?.[k]).find(x=>x!=null);if(id!=null&&label!=null)map.set(String(id),String(label))}
@@ -70,11 +78,7 @@ export default async function handler(req,res) {
       }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
-    const referencePromise=Promise.all([
-      request('https://api.liteapi.travel/v3.0/data/facilities?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[]),
-      request('https://api.liteapi.travel/v3.0/data/hotelTypes?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[]),
-      request('https://api.liteapi.travel/v3.0/data/chains?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[])
-    ]);
+    const referencePromise=Promise.all([referenceRows('facilities'),referenceRows('hotelTypes'),referenceRows('chains')]);
     const catalogPromise=hotelId?Promise.resolve([]):request('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1500',language:'es'}),{},6500).then(async response=>{if(!response.ok)return [];const payload=await response.json();return Array.isArray(payload.data)?payload.data:payload.data?.hotels||[]}).catch(()=>[]);
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
