@@ -44,7 +44,7 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
 .map-pin{position:absolute;left:50%;top:42%;width:21px;height:21px;border:5px solid white;border-radius:50% 50% 50% 0;background:var(--blue);transform:translate(-50%,-50%) rotate(-45deg);box-shadow:0 2px 7px #0003}
 .map-link{display:block;text-decoration:none;text-align:center;color:var(--blue);font-weight:700;font-size:12px;margin-top:9px}
 .hotel-content{margin:14px 0;padding:14px;border:1px solid #e5eaf0;border-radius:10px;background:#fbfcfe}.hotel-content h3{margin:0 0 8px;font-size:15px}.hotel-description{font-size:13px;line-height:1.6;color:#475569;white-space:pre-line}.hotel-amenities{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.hotel-amenity{font-size:11px;background:#edf4f8;color:#40566d;border-radius:5px;padding:5px 7px}.hotel-gallery{display:flex;gap:8px;overflow:auto;margin-top:12px}.hotel-gallery img{width:112px;height:78px;object-fit:cover;border-radius:7px;flex:none}.hotel-description-preview{font-size:12px;line-height:1.45;color:#5b6e82;margin-top:9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.results{display:grid;gap:13px}.hotel-card{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;display:grid;grid-template-columns:220px minmax(0,1fr) 190px;min-height:196px;transition:box-shadow .15s,border-color .15s}.hotel-card:hover{border-color:#c8d8ec;box-shadow:0 7px 20px #102a4310}
-.hotel-photo{position:relative;min-height:196px;background:#e8edf3}.hotel-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.no-photo{height:100%;min-height:196px;display:grid;place-items:center;color:#7c8b9c;font-size:12px}
+.hotel-photo{position:relative;min-height:196px;background:#e8edf3}.hotel-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.no-photo{height:100%;min-height:196px;display:grid;place-items:center;color:#7c8b9c;font-size:12px}.hotel-photo-link{display:block;color:inherit;text-decoration:none}.hotel-photo-link:focus-visible,.hotel-name-link:focus-visible,.availability-link:focus-visible{outline:3px solid #75adff;outline-offset:2px;border-radius:8px}.hotel-name-link{color:inherit;text-decoration:none}.hotel-name-link:hover{color:var(--blue);text-decoration:underline}.availability-link{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
 .hotel-main{padding:16px 17px}.hotel-name{font-size:18px;line-height:1.25;font-weight:800;margin:0 0 6px}.stars-label{color:#e4a522;letter-spacing:1px;font-size:13px;margin-left:5px;white-space:nowrap}
 .hotel-location{color:#617287;font-size:12px;line-height:1.45}.rating-row{display:flex;align-items:center;gap:7px;margin-top:11px}.rating-score{background:#146aa2;color:#fff;font-weight:800;padding:5px 7px;border-radius:6px}.rating-copy{font-size:12px;color:#54677b}.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.tag{font-size:11px;color:#3d5b77;background:#f1f6fa;border-radius:5px;padding:5px 7px}.tag.green{color:#176b37;background:#edf8f0}
 .hotel-price{border-left:1px solid #edf0f4;padding:15px 14px;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:3px}
@@ -207,6 +207,18 @@ function offerDiscount(o){
  if(!(reference>sale&&sale>0))return null;
  return {sale,reference,percent:Math.round((1-sale/reference)*100)};
 }
+function hotelPageUrl(h){
+ const occupancies=[{adults:Number(adults.value),children:[]}],encoded=JSON.stringify(occupancies);
+ const back=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'ARS',occupancies:encoded});
+ const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:'0',rooms:'1',currency:'ARS',countryCode:h.countryCode||countryCode.value,occupancies:encoded,backSearch:'/hoteles-filtros.html?'+back.toString()});
+ if(activeRateSessionId)qp.set('sessionId',activeRateSessionId);
+ return '/hotel.html?'+qp.toString();
+}
+function rememberHotel(h){
+ const occupancies=[{adults:Number(adults.value),children:[]}];
+ sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));
+ sessionStorage.setItem('hotelSearch:'+h.hotelId,JSON.stringify({checkin:checkin.value,checkout:checkout.value,occupancies}));
+}
 function paintHotels(list){
  if(!list.length){results.innerHTML='<div class="empty">No hay alojamientos que coincidan con esos filtros. Probá quitando alguno.</div>';return}
  const pages=Math.max(1,Math.ceil(list.length/PAGE_SIZE)),start=(currentPage-1)*PAGE_SIZE,pageHotels=list.slice(start,start+PAGE_SIZE),nights=stayNights();
@@ -214,7 +226,8 @@ function paintHotels(list){
   const first=rateList(h).slice().sort((a,b)=>Number(a.estimatedTotal??a.retailRate)-Number(b.estimatedTotal??b.retailRate))[0]||h;
   const hasFree=rateList(h).some(isRefundable),breakfast=rateList(h).some(hasBreakfast),stars=Math.max(0,Math.min(5,Number(h.stars)||0));
   const score=Number(h.rating||0),location=String(h.address||''),extraInfo=[h.hotelType,h.neighborhood,Number.isFinite(Number(h.distanceKm)?Number(h.distanceKm):NaN)?Number(h.distanceKm).toFixed(1)+' km del centro':''].filter(Boolean).join(' · '),facilityTags=(h.facilities||[]).slice(0,3);
-  const photo=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
+  const detailUrl=esc(hotelPageUrl(h)),photoContent=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
+  const photo='<a class="hotel-photo-link" href="'+detailUrl+'" data-hotel-link="'+i+'" aria-label="Ver ficha de '+esc(h.name||'alojamiento')+'"><div class="hotel-photo">'+photoContent+'</div></a>';
   const hasPropertyFees=rateList(h).some(o=>Number(o.dueAtProperty||0)>0),tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(!hasPropertyFees?'<span class="tag">Sin cargos separados informados</span>':'');
   const price=Number(first.retailRate??amount(first)),discount=offerDiscount(first),rooms=Number(first.rooms||first.rates?.length||1),roomLabel=rooms===1?'1 habitación':rooms+' habitaciones';
   const feeLine=Number(first.dueAtProperty||0)>0?'<div class="price-details property-charge">Pago en el alojamiento: '+money(first.dueAtProperty)+'</div>':'';
@@ -225,9 +238,9 @@ function paintHotels(list){
    '<div class="total-value">Total online: '+money(price)+'</div>'+
    '<div class="price-details">'+nights+' '+(nights===1?'noche':'noches')+' · '+roomLabel+'</div>'+includedLine+feeLine+
    (promo?'<div class="price-promo">'+esc(promo)+'</div>':'');
-  return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+(extraInfo?'<br>'+esc(extraInfo):'')+'</div>'+(h.description?'<div class="hotel-description-preview">'+esc(String(h.description).slice(0,260))+'</div>':'')+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+facilityTags.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')+'</div></div><div class="hotel-price">'+priceHtml+'<button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
+  return '<article class="hotel-card">'+photo+'<div class="hotel-main"><h2 class="hotel-name"><a class="hotel-name-link" href="'+detailUrl+'" data-hotel-link="'+i+'">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</a></h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+(extraInfo?'<br>'+esc(extraInfo):'')+'</div>'+(h.description?'<div class="hotel-description-preview">'+esc(String(h.description).slice(0,260))+'</div>':'')+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+facilityTags.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')+'</div></div><div class="hotel-price">'+priceHtml+'<a class="details-btn availability-link" href="'+detailUrl+'" data-hotel-link="'+i+'">Ver disponibilidad</a></div></article>'
  }).join('')+'<nav class="pagination" aria-label="Páginas de resultados"><button type="button" data-page="prev" '+(currentPage===1?'disabled':'')+'>← Anterior</button><span>Página '+currentPage+' de '+pages+' · '+list.length+' alojamientos</span><button type="button" data-page="next" '+(currentPage===pages?'disabled':'')+'>Siguiente →</button></nav>';
- results.querySelectorAll('.details-btn').forEach((btn,i)=>btn.addEventListener('click',()=>openOffers(pageHotels[i])));
+ results.querySelectorAll('[data-hotel-link]').forEach(link=>link.addEventListener('click',()=>rememberHotel(pageHotels[Number(link.dataset.hotelLink)])));
  results.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.disabled)return;currentPage+=btn.dataset.page==='next'?1:-1;paintHotels(list);results.scrollIntoView({behavior:'smooth',block:'start'})}));
 }
 function prettyReviewLabel(value){
@@ -286,7 +299,7 @@ function openOffers(h){
  $('continueBooking').hidden=!offers.length;
  $('modalBackdrop').hidden=false;
 }
-function continueToHotel(){if(!selectedHotel)return;const h=selectedHotel,occupancies=[{adults:Number(adults.value),children:[]}],encoded=JSON.stringify(occupancies);sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));sessionStorage.setItem('hotelSearch:'+h.hotelId,JSON.stringify({checkin:checkin.value,checkout:checkout.value,occupancies}));const back=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'ARS',occupancies:encoded});const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:'0',rooms:'1',currency:'ARS',countryCode:h.countryCode||countryCode.value,occupancies:encoded,backSearch:'/hoteles-filtros.html?'+back.toString()});if(activeRateSessionId)qp.set('sessionId',activeRateSessionId);location.href='/hotel.html?'+qp.toString()}
+function continueToHotel(){if(!selectedHotel)return;rememberHotel(selectedHotel);location.href=hotelPageUrl(selectedHotel)}
 $('continueBooking').addEventListener('click',continueToHotel);
 $('closeModal').addEventListener('click',()=>$('modalBackdrop').hidden=true);
 $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').hidden=true});
