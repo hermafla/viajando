@@ -74,7 +74,7 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
     <button class="search-btn" type="submit">Buscar</button>
   </form>
 
-  <div class="search-meta"><div class="status" id="status">Preparando la búsqueda…</div><select class="sort" id="sort"><option value="price">Ordenar: precio más bajo</option><option value="rating">Mejor valorados</option><option value="stars">Más estrellas</option></select></div>
+  <div class="search-meta"><div class="status" id="status">Preparando la búsqueda…</div><select class="sort" id="sort"><option value="price">Ordenar: precio más bajo</option><option value="rating">Mejor valorados</option><option value="stars">Más estrellas</option><option value="distance">Más cerca del centro</option></select></div>
 
   <div class="layout">
     <aside class="filters">
@@ -88,8 +88,17 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
         <label class="check"><input id="propertyFees" type="checkbox"> Sin cargos en el alojamiento</label>
         <label class="check"><input id="rating8" type="checkbox"> Puntuación 8 o más</label>
       </div></section>
-      <section class="filter-section"><div class="filter-title">Categoría del alojamiento</div><div class="stars" id="starFilters"><button class="star-btn" type="button" data-stars="5">5 ★</button><button class="star-btn" type="button" data-stars="4">4 ★ o más</button><button class="star-btn" type="button" data-stars="3">3 ★ o más</button></div></section>
-      <section class="filter-section"><div class="filter-title">Sobre estos filtros</div><div style="font-size:11px;line-height:1.5;color:#718096">Mostramos filtros que se pueden comprobar con los datos de tarifas devueltos por el proveedor. Servicios como piscina o estacionamiento se agregarán cuando estén disponibles en la ficha del hotel.</div></section>
+      <section class="filter-section"><div class="filter-title">Categoría por estrellas</div><div class="stars" id="starFilters"><button class="star-btn" type="button" data-stars="5">5 ★</button><button class="star-btn" type="button" data-stars="4">4 ★ o más</button><button class="star-btn" type="button" data-stars="3">3 ★ o más</button><button class="star-btn" type="button" data-stars="2">2 ★ o más</button></div></section>
+      <section class="filter-section"><div class="filter-title">Tipo de alojamiento</div><div class="check-list" id="typeFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Distancia del centro</div><div class="check-list" id="distanceFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Cadenas y marcas</div><input class="hotel-search facet-search" data-target="chainFilters" placeholder="Buscar cadena" type="search"><div class="check-list" id="chainFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Comidas incluidas</div><div class="check-list" id="mealFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Puntuación de huéspedes</div><div class="check-list" id="guestRatingFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Servicios del alojamiento</div><input class="hotel-search facet-search" data-target="facilityFilters" placeholder="Buscar servicio" type="search"><div class="check-list" id="facilityFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Servicios de habitación</div><input class="hotel-search facet-search" data-target="roomAmenityFilters" placeholder="Buscar servicio" type="search"><div class="check-list" id="roomAmenityFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Barrios</div><input class="hotel-search facet-search" data-target="neighborhoodFilters" placeholder="Buscar barrio" type="search"><div class="check-list" id="neighborhoodFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Servicios populares</div><div class="check-list" id="popularFilters"></div></section>
+      <section class="filter-section"><div class="filter-title">Sobre estos filtros</div><div style="font-size:11px;line-height:1.5;color:#718096">Los filtros detallados dependen de los datos que Nuitee devuelve para cada hotel y fecha. Las opciones muestran cuántos alojamientos disponibles coinciden.</div></section>
     </aside>
     <section class="results" id="results" aria-live="polite"><div class="loading-box">Buscando alojamientos disponibles…</div></section>
   </div>
@@ -109,7 +118,7 @@ const params=new URLSearchParams(location.search);
 const today=new Date(),dateIso=d=>d.toISOString().slice(0,10),nextDay=d=>new Date(d.getTime()+86400000);
 city.value=params.get('city')||'Buenos Aires';placeId.value=params.get('placeId')||'ChIJvQz5TjvKvJURh47oiC6Bs6A';countryCode.value=params.get('countryCode')||'AR';
 checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';adults.value=params.get('adults')||'2';
-let hotels=[],selectedStars=0,searchTimer,requestId=0;
+let hotels=[],selectedStars=0,searchTimer,requestId=0;const selectedFacets=new Map();
 const amount=h=>Number(h.estimatedTotal??h.retailRate??0);
 const rateList=h=>Array.isArray(h.offers)?h.offers:[h];
 const isRefundable=o=>String(o.refundableTag||o.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
@@ -131,7 +140,7 @@ async function runSearch(){
  const occupancies=JSON.stringify([{adults:Number(adults.value),children:[]}]);
  const q=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'ARS',guestNationality:'AR',occupancies});
  history.replaceState(null,'',location.pathname+'?'+q.toString());updateMapLink();
- try{const r=await fetch('/api/nuitee-hotels?'+q.toString());const data=await r.json();if(thisRequest!==requestId)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar la disponibilidad.');hotels=Array.isArray(data.hotels)?data.hotels:[];if(data.destination?.displayName){city.value=data.destination.displayName+(data.destination.formattedAddress?' · '+data.destination.formattedAddress.split(',').pop().trim():'');updateMapLink()}configurePriceFilter();applyFilters();status.textContent=hotels.length?hotels.length+' alojamientos encontrados · Sandbox · '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'No hay alojamientos disponibles para esos datos.'}
+ try{const r=await fetch('/api/nuitee-hotels?'+q.toString());const data=await r.json();if(thisRequest!==requestId)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar la disponibilidad.');hotels=Array.isArray(data.hotels)?data.hotels:[];rebuildFacetFilters();if(data.destination?.displayName){city.value=data.destination.displayName+(data.destination.formattedAddress?' · '+data.destination.formattedAddress.split(',').pop().trim():'');updateMapLink()}configurePriceFilter();applyFilters();status.textContent=hotels.length?hotels.length+' alojamientos encontrados · Sandbox · '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'No hay alojamientos disponibles para esos datos.'}
  catch(err){if(thisRequest!==requestId)return;hotels=[];results.innerHTML='<div class="error">'+esc(err.message||'Ocurrió un error.')+'</div>';status.textContent='No se pudo completar la búsqueda.'}
 }
 function configurePriceFilter(){
@@ -151,20 +160,55 @@ function applyFilters(){
   if($('propertyFees').checked&&offers.some(o=>Number(o.dueAtProperty||0)>0))return false;
   if($('rating8').checked&&Number(h.rating||0)<8)return false;
   if(selectedStars&&Number(h.stars||0)<selectedStars)return false;
+  for(const [group,values] of selectedFacets){if(!values.size)continue;
+   if(group==='rating'){const min=Number([...values][0]);if(Number(h.rating||0)<min)return false;continue}
+   if(group==='popular'){const terms={estacionamiento:/parking|estacionamiento/i,piscina:/pool|piscina/i,gimnasio:/gym|fitness|gimnasio/i};const pattern=terms[[...values][0]];if(!pattern||(h.facilities||[]).every(x=>!pattern.test(String(x))))return false;continue}
+   if(group==='distance'){const d=Number(h.distanceKm);if(!Number.isFinite(d)||![...values].some(v=>d<=Number(v)))return false;continue}
+   if(group==='meal'){const boards=offers.map(o=>String(o.boardName||'')).filter(Boolean);if(![...values].some(v=>boards.some(b=>sameText(b,v))))return false;continue}
+   const field={type:h.hotelType,chain:h.chainName,facility:h.facilities,room:h.roomAmenities,neighborhood:h.neighborhood}[group];
+   const items=(Array.isArray(field)?field:[field]).filter(Boolean).map(String);
+   if(![...values].some(v=>items.some(x=>sameText(x,v))))return false;
+  }
   return true;
  });
- const sort=$('sort').value;list.sort((a,b)=>sort==='rating'?Number(b.rating||0)-Number(a.rating||0):sort==='stars'?Number(b.stars||0)-Number(a.stars||0):nightly(a)-nightly(b));
+ const sort=$('sort').value;list.sort((a,b)=>sort==='rating'?Number(b.rating||0)-Number(a.rating||0):sort==='stars'?Number(b.stars||0)-Number(a.stars||0):sort==='distance'?(Number(a.distanceKm??Infinity)-Number(b.distanceKm??Infinity)):nightly(a)-nightly(b));
  paintHotels(list);const total=hotels.length;status.textContent=list.length+' de '+total+' alojamientos'+(total?' · precios para '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'');
+}
+function sameText(a,b){return String(a||'').trim().toLocaleLowerCase('es-AR')===String(b||'').trim().toLocaleLowerCase('es-AR')}
+function optionsFor(group){
+ const map=new Map(),add=(label,id=label)=>{if(!label)return;const key=String(id??label).trim(),name=String(label).trim();if(!key||!name)return;map.set(key,{label:name,count:(map.get(key)?.count||0)+1})};
+ for(const h of hotels){
+  if(group==='type')add(h.hotelType);
+  if(group==='chain')add(h.chainName);
+  if(group==='neighborhood')add(h.neighborhood);
+  if(group==='facility')for(const v of h.facilities||[])add(v);
+  if(group==='room')for(const v of h.roomAmenities||[])add(v);
+  if(group==='meal'){const boards=new Set(rateList(h).map(o=>String(o.boardName||'').trim()).filter(Boolean));for(const v of boards)add(v)}
+ }
+ return [...map.entries()].sort((a,b)=>a[1].label.localeCompare(b[1].label,'es'));
+}
+function renderOptions(id,group,opts){
+ const el=$(id);if(!el)return;
+ if(!opts.length){el.innerHTML='<div style="font-size:11px;line-height:1.4;color:#8995a3">Sin datos disponibles para esta búsqueda.</div>';return}
+ el.innerHTML=opts.map(([value,o])=>'<label class="check facet-option" data-label="'+esc(o.label.toLocaleLowerCase('es-AR'))+'"><input type="checkbox" data-group="'+esc(group)+'" data-value="'+esc(value)+'"><span>'+esc(o.label)+'</span><em>'+o.count+'</em></label>').join('');
+}
+function rebuildFacetFilters(){
+ for(const [id,group] of [['typeFilters','type'],['chainFilters','chain'],['mealFilters','meal'],['facilityFilters','facility'],['roomAmenityFilters','room'],['neighborhoodFilters','neighborhood']])renderOptions(id,group,optionsFor(group));
+ const distanceOptions=[[1,'Menos de 1 km'],[3,'Menos de 3 km'],[5,'Menos de 5 km']].map(([km,label])=>[String(km),{label,count:hotels.filter(h=>Number.isFinite(Number(h.distanceKm))&&Number(h.distanceKm)<=km).length}]).filter(x=>x[1].count);
+ renderOptions('distanceFilters','distance',distanceOptions);
+ renderOptions('guestRatingFilters','rating',[9,8,7,6].map(n=>[String(n),{label:n+' o más',count:hotels.filter(h=>Number(h.rating||0)>=n).length}]).filter(x=>x[1].count));
+ const popular=['Estacionamiento','Piscina','Gimnasio'].map(label=>{const token=label.toLocaleLowerCase('es');return [token,{label,count:hotels.filter(h=>(h.facilities||[]).some(x=>String(x).toLocaleLowerCase('es').includes(token))).length}]}).filter(x=>x[1].count);
+ renderOptions('popularFilters','popular',popular);
 }
 function paintHotels(list){
  if(!list.length){results.innerHTML='<div class="empty">No hay alojamientos que coincidan con esos filtros. Probá quitando alguno.</div>';return}
  results.innerHTML=list.map((h,i)=>{
   const first=rateList(h).slice().sort((a,b)=>Number(a.estimatedTotal??a.retailRate)-Number(b.estimatedTotal??b.retailRate))[0]||h;
   const hasFree=rateList(h).some(isRefundable),breakfast=rateList(h).some(hasBreakfast),stars=Math.max(0,Math.min(5,Number(h.stars)||0));
-  const score=Number(h.rating||0),location=String(h.address||'');
+  const score=Number(h.rating||0),location=String(h.address||''),extraInfo=[h.hotelType,h.neighborhood,Number.isFinite(Number(h.distanceKm)?Number(h.distanceKm):NaN)?Number(h.distanceKm).toFixed(1)+' km del centro':''].filter(Boolean).join(' · '),facilityTags=(h.facilities||[]).slice(0,3);
   const photo=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
   const hasPropertyFees=rateList(h).some(o=>Number(o.dueAtProperty||0)>0);const tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(!hasPropertyFees?'<span class="tag">Sin cargos separados informados</span>':'');
-  return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+'</div>'+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+'</div></div><div class="hotel-price"><div class="per-night">Desde · por noche</div><div class="price-value">'+money(nightly(first))+'</div><div class="total-value">Total estadía: '+money(amount(first))+'</div><button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
+  return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+(extraInfo?'<br>'+esc(extraInfo):'')+'</div>'+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+facilityTags.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')+'</div></div><div class="hotel-price"><div class="per-night">Desde · por noche</div><div class="price-value">'+money(nightly(first))+'</div><div class="total-value">Total estadía: '+money(amount(first))+'</div><button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
  }).join('');
  results.querySelectorAll('.details-btn').forEach(btn=>btn.addEventListener('click',()=>openOffers(list[Number(btn.dataset.hotel)])));
 }
@@ -182,7 +226,9 @@ $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop')
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modalBackdrop').hidden=true});
 ['nameFilter','priceRange','refundable','breakfast','propertyFees','rating8','sort'].forEach(id=>$(id).addEventListener(id==='nameFilter'?'input':'change',applyFilters));
 $('starFilters').addEventListener('click',e=>{const b=e.target.closest('[data-stars]');if(!b)return;const n=Number(b.dataset.stars);selectedStars=selectedStars===n?0:n;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.toggle('active',Number(x.dataset.stars)===selectedStars));applyFilters()});
-$('reset').addEventListener('click',()=>{$('nameFilter').value='';$('refundable').checked=false;$('breakfast').checked=false;$('propertyFees').checked=false;$('rating8').checked=false;selectedStars=0;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.remove('active'));configurePriceFilter();applyFilters()});
+document.addEventListener('change',e=>{const input=e.target.closest('input[data-group]');if(!input)return;const group=input.dataset.group,value=input.dataset.value;if(!selectedFacets.has(group))selectedFacets.set(group,new Set());const set=selectedFacets.get(group);if(input.checked)set.add(value);else set.delete(value);applyFilters()});
+document.querySelectorAll('.facet-search').forEach(input=>input.addEventListener('input',()=>{const q=input.value.trim().toLocaleLowerCase('es-AR'),container=$(input.dataset.target);container?.querySelectorAll('.facet-option').forEach(row=>{row.hidden=q&&!row.dataset.label.includes(q)})}));
+$('reset').addEventListener('click',()=>{$('nameFilter').value='';$('refundable').checked=false;$('breakfast').checked=false;$('propertyFees').checked=false;$('rating8').checked=false;document.querySelectorAll('input[data-group]').forEach(x=>x.checked=false);document.querySelectorAll('.facet-search').forEach(x=>x.value='');document.querySelectorAll('.facet-option').forEach(x=>x.hidden=false);selectedFacets.clear();selectedStars=0;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.remove('active'));configurePriceFilter();applyFilters()});
 if(placeId.value)runSearch();else{status.textContent='Completá el destino y elegí una sugerencia para buscar.';results.innerHTML='<div class="empty">Preparado para consultar alojamientos de Nuitee.</div>'}
 </script>
 </body>
