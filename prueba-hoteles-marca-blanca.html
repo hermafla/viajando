@@ -148,7 +148,7 @@ function applyFilters(){
   if(n>maxPrice)return false;
   if($('refundable').checked&&!offers.some(isRefundable))return false;
   if($('breakfast').checked&&!offers.some(hasBreakfast))return false;
-  if($('propertyFees').checked&&Number(h.dueAtProperty||0)>0)return false;
+  if($('propertyFees').checked&&offers.some(o=>Number(o.dueAtProperty||0)>0))return false;
   if($('rating8').checked&&Number(h.rating||0)<8)return false;
   if(selectedStars&&Number(h.stars||0)<selectedStars)return false;
   return true;
@@ -163,7 +163,7 @@ function paintHotels(list){
   const hasFree=rateList(h).some(isRefundable),breakfast=rateList(h).some(hasBreakfast),stars=Math.max(0,Math.min(5,Number(h.stars)||0));
   const score=Number(h.rating||0),location=String(h.address||'');
   const photo=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
-  const tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(Number(h.dueAtProperty||0)===0?'<span class="tag">Sin cargos separados informados</span>':'');
+  const hasPropertyFees=rateList(h).some(o=>Number(o.dueAtProperty||0)>0);const tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(!hasPropertyFees?'<span class="tag">Sin cargos separados informados</span>':'');
   return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+'</div>'+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+'</div></div><div class="hotel-price"><div class="per-night">Desde · por noche</div><div class="price-value">'+money(nightly(first))+'</div><div class="total-value">Total estadía: '+money(amount(first))+'</div><button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
  }).join('');
  results.querySelectorAll('.details-btn').forEach(btn=>btn.addEventListener('click',()=>openOffers(list[Number(btn.dataset.hotel)])));
