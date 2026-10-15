@@ -230,7 +230,7 @@ async function loadReviewSummary(h){
  box.hidden=false;box.innerHTML='<div class="review-top">'+(rating?'<span class="review-score">'+rating.toLocaleString('es-AR')+'</span>':'')+'<div><div class="review-title">Calificaciones de huéspedes · '+caption+'</div><div class="review-subtitle">'+(count?count.toLocaleString('es-AR')+' reseñas':'Puntuación general')+'</div></div></div><div class="review-loading">Cargando el detalle de las calificaciones…</div>';
  try{
   let data=reviewCache.get(h.hotelId);
-  if(!data){const response=await fetch('/api/nuitee-hotel-reviews?hotelId='+encodeURIComponent(h.hotelId));data=await response.json();if(!response.ok)throw Error(data.error||'');reviewCache.set(h.hotelId,data)}
+  if(!data){const response=await fetch('/api/nuitee-hotels?action=reviews&hotelId='+encodeURIComponent(h.hotelId));data=await response.json();if(!response.ok)throw Error(data.error||'');reviewCache.set(h.hotelId,data)}
   if(rid!==reviewRequestId)return;
   const sentiment=data.sentiment,cat=Array.isArray(sentiment?.categories)?sentiment.categories:[];
   const pros=(Array.isArray(sentiment?.pros)?sentiment.pros:[]).slice(0,4);
