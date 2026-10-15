@@ -7,6 +7,21 @@ export default async function handler(req,res) {
   if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key)return res.status(503).json({error:'La búsqueda de hoteles no está disponible en este momento.'});
+  if(String(req.query.action||'')==='reviews'){
+    const hotelId=String(req.query.hotelId||'').trim();
+    if(!/^[A-Za-z0-9_-]{1,80}$/.test(hotelId))return res.status(400).json({error:'Falta un hotelId válido.'});
+    res.setHeader('Cache-Control','public, s-maxage=86400, stale-while-revalidate=604800');
+    try{
+      const params=new URLSearchParams({hotelId,limit:'10',getSentiment:'true',language:'es',timeout:'4'});
+      const reviewResponse=await fetch('https://api.liteapi.travel/v3.0/data/reviews?'+params,{headers:{'X-API-Key':key,Accept:'application/json'},signal:AbortSignal.timeout(9000)});
+      const reviewJson=await reviewResponse.json();
+      if(!reviewResponse.ok){console.error('Nuitee hotel reviews',reviewResponse.status);return res.status(502).json({error:'No se pudo cargar el detalle de reseñas.'});}
+      const reviewData=reviewJson.data||reviewJson,sentiment=reviewData.sentimentAnalysis||reviewJson.sentimentAnalysis||{};
+      const categories=(Array.isArray(sentiment.categories)?sentiment.categories:[]).map(x=>({name:String(x.name||''),rating:Number(x.rating),description:String(x.description||'')})).filter(x=>x.name&&Number.isFinite(x.rating));
+      const labels=list=>(Array.isArray(list)?list:[]).map(x=>typeof x==='string'?x:String(x?.name||x?.label||'')).filter(Boolean).slice(0,8);
+      return res.status(200).json({hotelId,available:categories.length>0||labels(sentiment.pros).length>0||labels(sentiment.cons).length>0,sentiment:categories.length||sentiment.pros||sentiment.cons?{categories,pros:labels(sentiment.pros),cons:labels(sentiment.cons)}:null});
+    }catch(e){console.error('Nuitee hotel reviews request',e.name);return res.status(502).json({error:'No se pudo cargar el detalle de calificaciones.'});}
+  }
   const city=String(req.query.city||'Rio de Janeiro'),countryCode=String(req.query.countryCode||'BR').toUpperCase(),placeId=String(req.query.placeId||'').trim(),hotelId=String(req.query.hotelId||'').trim();
   const requestedSessionId=String(req.query.sessionId||'').trim(),sessionId=/^[A-Za-z0-9_-]{8,80}$/.test(requestedSessionId)?requestedSessionId:'';
   const checkin=String(req.query.checkin||''),checkout=String(req.query.checkout||''),currency=String(req.query.currency||'USD').toUpperCase(),guestNationality=String(req.query.guestNationality||'AR').toUpperCase(),requestedCountryCode=String(req.query.countryCode||'').toUpperCase();
