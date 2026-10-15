@@ -37,19 +37,33 @@ async function aplicarVuelosNuiteeSandbox(opciones){
   if(!fechaIdaExacta||!fechaVueltaExacta)return opciones.map(v=>({...v,vueloSandboxError:"Elegí fechas exactas para consultar tarifas de prueba."}));
   if(!origin)return opciones.map(v=>({...v,vueloSandboxError:"No pudimos identificar el aeropuerto de origen."}));
   const counts=ValijeandoParty.flightCounts(party),ages=party.flatMap(r=>r.childAges||[]),childrenAges=ages.filter(age=>age>=2&&age<12),infantAges=ages.filter(age=>age<2);
-  const output=[...opciones];let next=0;
-  async function worker(){while(next<opciones.length){const i=next++,v=opciones[i],destination=codigosDestino[v.destino];if(!destination){output[i]={...v,vueloSandboxError:"No hay aeropuerto configurado para este destino."};continue}
-    try{
-      const response=await fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({legs:[{origin,destination,date:fechaIdaExacta},{origin:destination,destination:origin,date:fechaVueltaExacta}],adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"})});
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok||!result.ok)throw Error(result.error||"No se pudo consultar Nuitee Sandbox.");
-      const fare=tarifaMinimaNuitee(result.data);
-      if(!fare){output[i]={...v,vueloSandboxError:"El Sandbox no devolvió tarifas para estas fechas."};continue}
-      const carrier=fare.journey?.segments?.map(seg=>seg?.carrier?.marketingName).find(Boolean)||fare.offer?.providerName||"Vuelo";
-      output[i]={...v,vueloSandbox:true,vueloSandboxPrecio:fare.total,vueloSandboxMoneda:fare.currency,vueloSandboxAerolinea:carrier};
-    }catch(error){output[i]={...v,vueloSandboxError:error.message||"No se pudo consultar Nuitee Sandbox."}}
+  const output=[...opciones];let next=0,completed=0;
+  const controller=new AbortController();
+  const deadline=setTimeout(()=>controller.abort(),120000);
+  function updateProgress(){
+    const note=document.getElementById("notaPrecios");
+    if(note)note.textContent="Buscando vuelos Sandbox: "+completed+" de "+opciones.length+" destinos";
+    const title=document.getElementById("busquedaTitulo");
+    if(title)title.textContent="Consultando vuelos de prueba…";
+    const detail=document.getElementById("busquedaDetalle");
+    if(detail)detail.textContent="Los hoteles ya se consultaron. Estamos buscando referencias de vuelo para tus destinos: "+completed+" de "+opciones.length+".";
+  }
+  updateProgress();
+  async function worker(){while(next<opciones.length){const i=next++,v=opciones[i],destination=codigosDestino[v.destino];try{
+    if(!destination){output[i]={...v,vueloSandboxError:"No hay aeropuerto configurado para este destino."};continue}
+    const response=await fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({legs:[{origin,destination,date:fechaIdaExacta},{origin:destination,destination:origin,date:fechaVueltaExacta}],adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"}),signal:controller.signal});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok)throw Error(result.error||"No se pudo consultar Nuitee Sandbox.");
+    const fare=tarifaMinimaNuitee(result.data);
+    if(!fare){output[i]={...v,vueloSandboxError:"El Sandbox no devolvió tarifas para estas fechas."};continue}
+    const carrier=fare.journey?.segments?.map(seg=>seg?.carrier?.marketingName).find(Boolean)||fare.offer?.providerName||"Vuelo";
+    output[i]={...v,vueloSandbox:true,vueloSandboxPrecio:fare.total,vueloSandboxMoneda:fare.currency,vueloSandboxAerolinea:carrier};
+  }catch(error){output[i]={...v,vueloSandboxError:controller.signal.aborted?"La consulta de vuelos de prueba tardó demasiado; no se recibió respuesta.":(error.message||"No se pudo consultar Nuitee Sandbox.")}}
+  finally{completed++;updateProgress()}
   }}
-  await Promise.all(Array.from({length:Math.min(2,opciones.length)},worker));return output;
+  try{await Promise.all(Array.from({length:Math.min(2,opciones.length)},worker))}
+  finally{clearTimeout(deadline)}
+  return output;
 }
 async function aplicarHotelesReales(opciones){
   if(!fechaIdaExacta||!fechaVueltaExacta)return opciones.map(v=>({...v,hotelError:true}));
@@ -110,7 +124,7 @@ let opciones=base.map(calcular).sort((a,b)=>{
   if(aMes!==bMes)return aMes?-1:1;
   return Number(a.hotelCalc||0)-Number(b.hotelCalc||0);
 });
-document.getElementById("grid").innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:34px;text-align:center"><h3 style="font-size:22px;margin-bottom:8px">Buscando alojamientos disponibles…</h3><p style="color:#667085">Estamos comprobando hoteles reales para tus fechas. El vuelo se confirma después en nuestro motor de vuelos.</p></div>';
+document.getElementById("grid").innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:34px;text-align:center"><h3 id="busquedaTitulo" style="font-size:22px;margin-bottom:8px">Buscando alojamientos disponibles…</h3><p id="busquedaDetalle" style="color:#667085">Estamos comprobando hoteles reales para tus fechas.</p></div>';
 let destinosVisibles=6;
 function mostrarDestinos(disponibles,fallidas){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios"),actions=document.getElementById("resultActions");
