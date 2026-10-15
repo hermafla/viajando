@@ -14,7 +14,7 @@ export default async function handler(req,res) {
   let occupancies;try{occupancies=occupanciesFromQuery(req.query)}catch{return res.status(400).json({error:'Revisá los huéspedes y las edades de los niños.'})}
   const effectiveMargin=10;
   const headers={'X-API-Key':key,'Content-Type':'application/json','Accept':'application/json'};
-  const request=(url,options={})=>fetch(url,{...options,headers,signal:AbortSignal.timeout(18000)});
+  const request=(url,options={},timeout=18000)=>fetch(url,{...options,headers,signal:AbortSignal.timeout(timeout)});
   try{
     let locationQuery=hotelId?{hotelIds:[hotelId]}:placeId?{placeId}:{countryCode,cityName:city};
     let destination=null;
@@ -24,7 +24,7 @@ export default async function handler(req,res) {
         if(pr.ok){
           const displayName=details.displayName?.text||details.displayName||details.name,formattedAddress=typeof details.formattedAddress==='string'?details.formattedAddress:'',addressComponents=details.addressComponents||details.address_components||[],countryPart=addressComponents.find(c=>Array.isArray(c.types)&&c.types.includes('country'));
           const placeCountryCode=countryCodeFrom(details.countryCode||details.country_code||countryPart?.shortText||countryPart?.shortName||countryPart?.short_name||countryPart?.longText||countryPart?.long_name)||countryCodeFrom(formattedAddress);
-          destination={placeId,displayName:typeof displayName==='string'?displayName:'',formattedAddress,countryCode:placeCountryCode};
+          destination={placeId,displayName:typeof displayName==='string'?displayName:'',formattedAddress,countryCode:placeCountryCode,...(Number.isFinite(latitude)&&Number.isFinite(longitude)?{latitude,longitude}:{})};
           if(Number.isFinite(latitude)&&Number.isFinite(longitude))locationQuery={latitude,longitude,radius:15000};
         }
       }catch{}
@@ -44,11 +44,16 @@ export default async function handler(req,res) {
     else if(!rr.ok||rates.error){console.error('Nuitee rates',rr.status,providerCode);return res.status(502).json({error:'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:'provider_error',stage:'rates',providerCode})}
     const rateHotels=Array.isArray(rates.data)?rates.data:rates.data?.hotels||[];
     let catalogHotels=Array.isArray(rates.hotels)?rates.hotels:[];
-    // Los datos descriptivos son opcionales: su falla no elimina tarifas válidas.
-    if(!catalogHotels.length&&rateHotels.length&&!hotelId){
-      try{const cr=await request('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1500',language:'es'})),c=await cr.json();if(cr.ok)catalogHotels=Array.isArray(c.data)?c.data:c.data?.hotels||[]}catch{}
+    // Enriquecemos los resultados con la ficha estática de hoteles para exponer
+    // tipos, cadenas, ubicación y servicios cuando el proveedor los devuelve.
+    if(rateHotels.length&&!hotelId){
+      try{
+        const cr=await request('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1500',language:'es'}),{},6000),c=await cr.json();
+        const rich=cr.ok?(Array.isArray(c.data)?c.data:c.data?.hotels||[]):[];
+        if(rich.length)catalogHotels=rich.concat(catalogHotels.filter(h=>!rich.some(r=>(r.id||r.hotelId)===(h.id||h.hotelId))));
+      }catch{}
     }
-    const byId=new Map(catalogHotels.map(h=>[h.id||h.hotelId,h])),hotels=[];
+    const byId=new Map(catalogHotels.map(h=>[h.id||h.hotelId||h.hotel_id,h])),hotels=[];
     for(const item of rateHotels){
       const meta=byId.get(item.hotelId)||item.hotel||item;
       const hotelCountryCode=countryCodeFrom(meta.countryCode||meta.country_code||meta.country||meta.address)||destination?.countryCode||requestedCountryCode;
@@ -58,7 +63,15 @@ export default async function handler(req,res) {
         return o.rates.every((r,i)=>{const n=r.occupancyNumber||i+1,wanted=occupancies[n-1];if(!wanted||seen.has(n))return false;seen.add(n);return Number(r.adultCount)===wanted.adults&&r.childCount===(wanted.children||[]).length&&JSON.stringify(r.childrenAges)===JSON.stringify(wanted.children||[])});
       }).sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
       if(!offers.length)continue;
-      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.thumbnail||'',address:meta.address||'',countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||0,rating:meta.rating||0,reviewCount:meta.reviewCount||0,...offers[0],offers:offers.slice(0,8)});
+      const asList=value=>Array.isArray(value)?value.map(x=>typeof x==='string'?x:x?.name||x?.displayName||x?.label||'').filter(Boolean):typeof value==='string'?value.split(/[,;|]/).map(x=>x.trim()).filter(Boolean):[];
+      const hotelLat=Number(meta.latitude??meta.location?.latitude),hotelLng=Number(meta.longitude??meta.location?.longitude);
+      const distanceKm=destination&&Number.isFinite(hotelLat)&&Number.isFinite(hotelLng)?(()=>{const rad=n=>n*Math.PI/180,dl=rad(hotelLat-destination.latitude),dn=rad(hotelLng-destination.longitude),a=Math.sin(dl/2)**2+Math.cos(rad(destination.latitude))*Math.cos(rad(hotelLat))*Math.sin(dn/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))})():null;
+      const hotelType=meta.hotelTypeName||meta.hotelType||meta.propertyType||meta.type||'';
+      const chainName=meta.chainName||meta.chain?.name||meta.chain||meta.brand||'';
+      const facilities=asList(meta.facilities||meta.hotelFacilities||meta.amenities);
+      const roomAmenities=asList(meta.roomAmenities||meta.room_amenities);
+      const neighborhood=meta.neighborhood||meta.district||meta.suburb||meta.area||'';
+      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.mainPhoto||meta.thumbnail||meta.image||'',address:meta.address||meta.formattedAddress||'',countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||meta.star_rating||0,rating:meta.rating||meta.reviewRating||0,reviewCount:meta.reviewCount||meta.reviewsCount||0,hotelType:String(hotelType||''),hotelTypeId:meta.hotelTypeId||meta.hotelTypeID||meta.typeId||null,chainName:String(chainName||''),chainId:meta.chainId||meta.chainID||null,facilities,roomAmenities,neighborhood:String(neighborhood||''),latitude:Number.isFinite(hotelLat)?hotelLat:null,longitude:Number.isFinite(hotelLng)?hotelLng:null,distanceKm,...offers[0],offers:offers.slice(0,8)});
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
