@@ -18,7 +18,7 @@
   const currentPage=location.pathname.split('/').pop();
   if(currentPage!=='arrepentimiento.html'){
     const footer=document.querySelector('.site-footer,footer');
-    if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>Este botón es para alojamientos. En vuelos regulares no se usa este trámite: cambios y devoluciones siguen las condiciones de la tarifa y la normativa aérea, informadas en el voucher.</span><span class="vh-consumer-link">¿Necesitás iniciar otro reclamo? <a href="https://www.argentina.gob.ar/servicio/iniciar-un-reclamo-ante-defensa-del-consumidor" target="_blank" rel="noopener noreferrer">Defensa del Consumidor</a></span></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
+    if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>Este botón es para alojamientos. En vuelos regulares no se usa este trámite: cambios y devoluciones siguen las condiciones de la tarifa y la normativa aérea, informadas en el voucher.</span></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
   }
   const nav=header.querySelector('.vh-links'),button=header.querySelector('.vh-menu-button'),more=header.querySelector('.vh-more');
   const closeMenu=()=>{nav.classList.remove('is-open');button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menú');more.open=false};
