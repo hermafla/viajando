@@ -15,8 +15,32 @@ const j=await api({page:String(page),q:$('search').value,status:$('status').valu
 current=j.reservations||[];total=j.total;page=j.page;$('login').hidden=true;$('dashboard').hidden=false;$('logout').hidden=false;$('initialMessage').hidden=true;$('operatorEmail').textContent=j.email;
 $('total').textContent=total;$('confirmed').textContent=current.filter(x=>x.estado==='confirmada').length;$('testCount').textContent='Prueba: '+current.filter(x=>x.booking_environment==='sandbox').length+' · sin entorno: '+current.filter(x=>!['sandbox','production'].includes(x.booking_environment)).length;$('amount').textContent=money(current.reduce((sum,x)=>sum+(Number(x.total_usd)||0),0));$('margin').textContent=marginSummary(current);$('mailCount').textContent=current.filter(x=>x.email_sent===true||x.email_sent==='true').length+' / '+current.length;
 $('rows').innerHTML=current.map((r,i)=>'<tr><td><span class="code">'+esc(r.booking_id||'—')+'</span><small>'+esc([r.nombre,r.apellido].filter(Boolean).join(' ')||'Sin nombre')+'</small><small>'+esc(r.email||'—')+'</small></td><td><strong>'+esc(r.hotel_nombre||'Alojamiento')+'</strong><small>'+esc(r.habitacion_nombre||'—')+'</small></td><td>'+date(r.checkin)+' → '+date(r.checkout)+'<small>'+esc(r.noches??'—')+' noches · '+esc(r.habitaciones??'—')+' hab.</small></td><td><strong>'+money(r.total_usd)+'</strong></td><td>'+recordedMoney(r.finance?.commissionAmount,r.finance?.commissionCurrency)+'</td><td>'+badge(r)+'</td><td>'+(r.email_sent===true||r.email_sent==='true'?'✓ Enviado':r.email_sent===false||r.email_sent==='false'?'Pendiente':'Sin registro')+'</td><td><button class="view" data-row="'+i+'" aria-label="Ver reserva '+esc(r.booking_id)+'">Ver detalle</button></td></tr>').join('');
-$('empty').hidden=current.length>0;$('pageInfo').textContent='Página '+page+' de '+Math.max(1,Math.ceil(total/25))+' · '+total+' reservas';$('previous').disabled=page<=1;$('next').disabled=page*25>=total;$('export').disabled=!current.length;note('message','');
+$('empty').hidden=current.length>0;$('pageInfo').textContent='Página '+page+' de '+Math.max(1,Math.ceil(total/25))+' · '+total+' reservas';$('previous').disabled=page<=1;$('next').disabled=page*25>=total;$('export').disabled=!current.length;note('message','');loadRegrets();
 }catch(e){if(version!==loadVersion)return;if(e.status===401){showLogin();note('loginMessage','Ingresá para consultar las reservas.')}else{current=[];total=0;$('rows').replaceChildren();['total','confirmed','amount','margin','mailCount','testCount','pageInfo'].forEach(id=>$(id).textContent='—');$('empty').hidden=true;$('export').disabled=true;$('previous').disabled=true;$('next').disabled=true;note($('dashboard').hidden?'initialMessage':'message',e.message,true)}}finally{if(version===loadVersion){busy=false;$('refresh').disabled=false}}}
+let regretItems=[];
+const regretStatusLabel={recibida:'Recibida',en_gestion:'En gestión',resuelta:'Resuelta'};
+const dateTime=v=>{if(!v)return '—';const d=new Date(v);return Number.isNaN(+d)?'—':d.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})};
+async function loadRegrets(){
+  if(!$('regretRows'))return;
+  note('regretMessage','Cargando solicitudes…');
+  $('refreshRegrets').disabled=true;
+  try{
+    const j=await api({section:'arrepentimiento',q:$('regretSearch').value,status:$('regretStatus').value});
+    regretItems=j.requests||[];
+    $('regretCount').textContent=(j.total??regretItems.length)+' solicitudes';
+    $('regretRows').innerHTML=regretItems.map(r=>{
+      const customerMail=r.correo_cliente_enviado?'✓ Cliente':'— Cliente';
+      const adminMail=r.correo_valijeando_enviado?'✓ Valijeando':'— Valijeando';
+      const status=regretStatusLabel[r.estado]||'Recibida';
+      return '<tr><td><span class="code">'+esc(r.codigo)+'</span><small>Reserva '+esc(r.booking_id)+'</small></td><td><strong>'+esc(r.email)+'</strong><small>'+esc(r.hotel_nombre||'Alojamiento')+'</small></td><td>'+date(r.checkin)+' → '+date(r.checkout)+'</td><td>'+dateTime(r.creado_en)+'</td><td>'+customerMail+'<small>'+adminMail+'</small></td><td><div class="regret-manage"><select data-regret-status="'+esc(r.codigo)+'" aria-label="Estado del trámite '+esc(r.codigo)+'">'+Object.entries(regretStatusLabel).map(([key,label])=>'<option value="'+key+'" '+(r.estado===key?'selected':'')+'>'+label+'</option>').join('')+'</select><input data-regret-note="'+esc(r.codigo)+'" maxlength="1000" aria-label="Nota interna '+esc(r.codigo)+'" placeholder="Nota interna" value="'+esc(r.nota_interna||'')+'"><button type="button" class="view" data-save-regret="'+esc(r.codigo)+'">Guardar</button></div></td></tr>';
+    }).join('');
+    $('regretEmpty').hidden=regretItems.length>0;
+    note('regretMessage','');
+  }catch(e){
+    if(e.status===401){showLogin();note('loginMessage','La sesión venció. Volvé a ingresar.',true)}
+    else note('regretMessage',e.message,true);
+  }finally{$('refreshRegrets').disabled=false}
+}
 function pair(label,value){return '<div><dt>'+esc(label)+'</dt><dd>'+esc(value??'—')+'</dd></div>'}
 function financePanel(r){
  const f=r.finance||{},d=f.invoiceDraft||{};
@@ -55,6 +79,17 @@ $('logout').onclick=async()=>{try{await api({},{action:'logout'});showLogin();$(
 $('filters').onsubmit=e=>{e.preventDefault();if($('from').value&&$('to').value&&$('from').value>$('to').value)return note('message','La fecha inicial debe ser anterior a la final.',true);page=1;load()};$('filters').onreset=()=>{setTimeout(()=>{page=1;load()},0)};$('refresh').onclick=()=>load();$('previous').onclick=()=>{if(!busy&&page>1){page--;load()}};$('next').onclick=()=>{if(!busy&&page*25<total){page++;load()}};$('rows').onclick=e=>{const b=e.target.closest('button[data-row]');if(b)detail(Number(b.dataset.row))};$('detailContent').addEventListener('input',e=>{const form=e.target.closest('#financeForm,#draftForm');if(form)updateSaveButton(form)});
 $('detailContent').addEventListener('change',e=>{const form=e.target.closest('#financeForm,#draftForm');if(form)updateSaveButton(form)});
 $('detailContent').addEventListener('submit',async e=>{const form=e.target;if(!['financeForm','draftForm'].includes(form.id))return;e.preventDefault();const button=form.querySelector('button[type="submit"]');if(form.dataset.saving==='true')return;if(saveFormSnapshot(form)===(form.dataset.savedSnapshot||'')){updateSaveButton(form);note('detailMessage','No hay cambios nuevos para guardar.');return}if(!saveFormHasData(form)&&form.dataset.savedOnce!=='true'){updateSaveButton(form);note('detailMessage','Ingresá al menos un dato antes de guardar.',true);return}const fields=Object.fromEntries(new FormData(form).entries()),snapshot=saveFormSnapshot(form),action=form.id==='financeForm'?'save-financials':'prepare-invoice';form.dataset.saving='true';updateSaveButton(form);note('detailMessage',form.id==='financeForm'?'Guardando registro…':'Guardando borrador…');try{const j=await api({}, {action,bookingId:form.dataset.bookingId,...fields});const row=current.find(x=>x.booking_id===form.dataset.bookingId);if(row)row.finance=j.finance;form.dataset.savedSnapshot=snapshot;form.dataset.savedOnce='true';await load();note('detailMessage',form.id==='financeForm'?'Registro interno guardado.':'Borrador interno guardado; no se emitió ni se compartió una factura.')}catch(err){note('detailMessage',err.message,true)}finally{form.dataset.saving='false';updateSaveButton(form)}});
+$('refreshRegrets').onclick=loadRegrets;
+$('applyRegretFilters').onclick=loadRegrets;
+$('regretSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();loadRegrets()}});
+$('regretRows').addEventListener('click',async e=>{
+ const button=e.target.closest('[data-save-regret]');if(!button)return;
+ const code=button.dataset.saveRegret,status=$('regretRows').querySelector('[data-regret-status="'+code+'"]').value,noteText=$('regretRows').querySelector('[data-regret-note="'+code+'"]').value;
+ button.disabled=true;note('regretMessage','Guardando '+code+'…');
+ try{await api({}, {action:'update-regret',code,status,note:noteText});note('regretMessage','Trámite '+code+' actualizado.');await loadRegrets();note('regretMessage','Trámite '+code+' actualizado.')}
+ catch(err){note('regretMessage',err.message,true)}
+ finally{button.disabled=false}
+});
 $('closeDetail').onclick=()=>$('detail').close();
 $('export').onclick=()=>{const cell=v=>'"'+String(v??'').replace(/^[\s]*[=+@-]/,'\t$&').replace(/"/g,'""')+'"';const columns=['Código','Huésped','Email','Hotel','Entrada','Salida','Total USD','Margen anotado','Moneda margen','Costo proveedor','Moneda costo','Pago proveedor','Estado','Entorno','Correo'];const csv='\uFEFF'+[columns,...current.map(r=>[r.booking_id,[r.nombre,r.apellido].filter(Boolean).join(' '),r.email,r.hotel_nombre,r.checkin,r.checkout,r.total_usd,r.finance?.commissionAmount??'',r.finance?.commissionCurrency||'',r.finance?.supplierCost??'',r.finance?.supplierCurrency||'',r.finance?.supplierPaymentStatus||'Sin registrar',r.estado,r.booking_environment||'Sin registrar',r.email_sent===true||r.email_sent==='true'?'Enviado':'Sin envío confirmado'])].map(row=>row.map(cell).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='valijeando-reservas-pagina-'+page+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 load();
