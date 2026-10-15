@@ -162,7 +162,7 @@ function applyFilters(){
   if(selectedStars&&Number(h.stars||0)<selectedStars)return false;
   for(const [group,values] of selectedFacets){if(!values.size)continue;
    if(group==='rating'){const min=Math.min(...[...values].map(Number));if(Number(h.rating||0)<min)return false;continue}
-   if(group==='popular'){const terms={estacionamiento:/parking|estacionamiento/i,piscina:/pool|piscina/i,gimnasio:/gym|fitness|gimnasio/i};const pattern=terms[[...values][0]];if(!pattern||(h.facilities||[]).every(x=>!pattern.test(String(x))))return false;continue}
+   if(group==='popular'){const terms={estacionamiento:/parking|estacionamiento|aparcamiento/i,piscina:/pool|piscina/i,gimnasio:/gym|fitness|gimnasio/i};const pattern=terms[[...values][0]];if(!pattern||(h.facilities||[]).every(x=>!pattern.test(String(x))))return false;continue}
    if(group==='distance'){const d=Number(h.distanceKm);if(!Number.isFinite(d)||![...values].some(v=>d<=Number(v)))return false;continue}
    if(group==='meal'){const boards=offers.map(o=>String(o.boardName||'')).filter(Boolean);if(![...values].some(v=>boards.some(b=>sameText(b,v))))return false;continue}
    const field={type:h.hotelType,chain:h.chainName,facility:h.facilities,room:h.roomAmenities,neighborhood:h.neighborhood}[group];
@@ -198,7 +198,7 @@ function rebuildFacetFilters(){
  const distanceOptions=[[1,'Menos de 1 km'],[3,'Menos de 3 km'],[5,'Menos de 5 km']].map(([km,label])=>[String(km),{label,count:hotels.filter(h=>Number.isFinite(Number(h.distanceKm))&&Number(h.distanceKm)<=km).length}]).filter(x=>x[1].count);
  renderOptions('distanceFilters','distance',distanceOptions);
  renderOptions('guestRatingFilters','rating',[9,8,7,6].map(n=>[String(n),{label:n+' o más',count:hotels.filter(h=>Number(h.rating||0)>=n).length}]).filter(x=>x[1].count));
- const popular=['Estacionamiento','Piscina','Gimnasio'].map(label=>{const token=label.toLocaleLowerCase('es');return [token,{label,count:hotels.filter(h=>(h.facilities||[]).some(x=>String(x).toLocaleLowerCase('es').includes(token))).length}]}).filter(x=>x[1].count);
+ const popularTerms={estacionamiento:/parking|estacionamiento|aparcamiento/i,piscina:/pool|piscina/i,gimnasio:/gym|fitness|gimnasio/i};const popular=[['estacionamiento','Estacionamiento'],['piscina','Piscina'],['gimnasio','Gimnasio']].map(([key,label])=>[key,{label,count:hotels.filter(h=>(h.facilities||[]).some(x=>popularTerms[key].test(String(x)))).length}]).filter(x=>x[1].count);
  renderOptions('popularFilters','popular',popular);
 }
 function stayNights(){return Math.max(1,Math.round((new Date(checkout.value)-new Date(checkin.value))/86400000))}
@@ -264,7 +264,7 @@ async function loadHotelDetails(h){
   const response=await fetch('/api/nuitee-hotels?action=details&hotelId='+encodeURIComponent(h.hotelId)),data=await response.json();
   if(!response.ok)throw Error(data.error||'');
   if(requestId!==hotelContentRequestId)return;
-  const description=String(data.description||h.description||'').trim(),facilities=Array.isArray(data.facilities)&&data.facilities.length?data.facilities:(h.facilities||[]),images=(Array.isArray(data.images)?data.images:[]).map(x=>typeof x==='string'?x:x?.url||x?.imageUrl||x?.main_photo||'').filter(Boolean).slice(0,12);
+  const description=String(data.description||h.description||'').trim(),facilities=Array.isArray(h.facilities)&&h.facilities.length?h.facilities:(data.facilities||[]),images=(Array.isArray(data.images)?data.images:[]).map(x=>typeof x==='string'?x:x?.url||x?.imageUrl||x?.main_photo||'').filter(Boolean).slice(0,12);
   box.innerHTML='<h3>Sobre el alojamiento</h3>'+(description?'<div class="hotel-description">'+esc(description)+'</div>':'<div class="review-empty">Nuitee no informó una descripción para este alojamiento.</div>')+(facilities.length?'<div class="hotel-amenities">'+facilities.map(x=>'<span class="hotel-amenity">'+esc(x)+'</span>').join('')+'</div>':'')+(images.length?'<div class="hotel-gallery">'+images.map(src=>'<img src="'+esc(src)+'" alt="'+esc(h.name||'Foto del alojamiento')+'" loading="lazy">').join('')+'</div>':'');
  }catch{
   if(requestId!==hotelContentRequestId)return;
