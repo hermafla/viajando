@@ -32,9 +32,9 @@ header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:st
 @media(max-width:1020px){.vh-inner{min-height:74px}.vh-menu-button{display:flex;margin-left:0;order:4}.vh-header .vh-account{margin-left:auto;border-left:0;padding-left:0}.vh-links{display:none;position:absolute;top:100%;left:0;right:0;padding:12px 4%;background:#fff;border-top:1px solid #e4eaf1;box-shadow:0 12px 20px #00284626;max-height:calc(100dvh - 74px);overflow-y:auto}.vh-links.is-open{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px}.vh-header .vh-link,.vh-header .vh-more summary{padding:13px 8px;font-size:14px;white-space:normal}.vh-header .vh-link[aria-current="page"]::after{bottom:4px;left:8px;right:auto;width:36px}.vh-more-panel{position:static;min-width:0;box-shadow:none;margin-top:4px}.vh-logo-frame{width:60px;height:60px}.vh-header .vh-brand img{width:54px;height:54px}}
 @media(max-width:480px){.vh-inner{width:92%;gap:12px;min-height:72px}.vh-brand-copy{display:none}.vh-header .vh-account{font-size:14px;gap:6px}.vh-links.is-open{grid-template-columns:minmax(0,1fr)}.vh-tagline{font-size:6px}.vh-return>a{font-size:13px}}
 
-.vh-regret-entry{width:min(1240px,94%);min-height:28px;margin:-4px auto 5px;display:flex;justify-content:flex-end;align-items:center}
-.vh-regret-entry a{display:inline-flex;align-items:center;min-height:25px;padding:3px 10px;border:1px solid #bdd4df;border-radius:999px;color:#07558f;background:#fff;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:.1px}
-.vh-regret-entry a:hover{background:#eef7fb;border-color:#6c9eb1}
+.vh-regret-entry{width:min(1240px,94%);min-height:34px;margin:0 auto 6px;display:flex;justify-content:flex-end;align-items:center}
+.vh-regret-entry a{display:inline-flex;align-items:center;min-height:30px;padding:5px 11px;border:1px solid #8fb6c5;border-radius:7px;color:#07558f;background:#f2f8fa;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:.1px}
+.vh-regret-entry a:hover{background:#e8f3f7;border-color:#6c9eb1}
 .vh-regret-card{width:min(1160px,92%);margin:22px auto;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid #d5e1e7;border-radius:8px;background:#fff;color:#172b4d;font-family:Arial,Helvetica,sans-serif}
 .vh-regret-card div{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 .vh-regret-card strong{font-size:13px}
