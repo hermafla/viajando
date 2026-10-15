@@ -16,6 +16,7 @@
     <button class="vh-menu-button" type="button" aria-label="Abrir menú" aria-controls="vh-navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
   </div>`;
   const currentPage=location.pathname.split('/').pop();
+  if(currentPage!=='arrepentimiento.html')header.insertAdjacentHTML('afterend','<div class="vh-regret-entry"><a href="/arrepentimiento.html">Botón de arrepentimiento</a></div>');
   if(currentPage!=='arrepentimiento.html'){
     const footer=document.querySelector('.site-footer,footer');
     if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>En general, podés solicitarlo dentro de los 10 días corridos desde la contratación. Para servicios turísticos con fecha determinada, enviá el aviso dentro de ese plazo y al menos 24 horas antes del inicio. Los vuelos regulares se rigen por la tarifa y la normativa aérea indicadas en el voucher.</span><a class="vh-regret-info" href="/derecho-arrepentimiento.html">Ver información y plazos</a></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
