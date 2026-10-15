@@ -127,13 +127,25 @@ let opciones=base.map(calcular).sort((a,b)=>{
 });
 document.getElementById("grid").innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:34px;text-align:center"><h3 id="busquedaTitulo" style="font-size:22px;margin-bottom:8px">Buscando alojamientos disponibles…</h3><p id="busquedaDetalle" style="color:#667085">Estamos comprobando hoteles reales para tus fechas.</p></div>';
 let destinosVisibles=6;
+const vuelosSandboxIniciados=new Set();
+async function consultarVuelosVisibles(){
+  const disponibles=opciones.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc);
+  const porConsultar=disponibles.slice(0,destinosVisibles).filter(x=>!vuelosSandboxIniciados.has(x.destino));
+  if(!porConsultar.length)return;
+  porConsultar.forEach(x=>vuelosSandboxIniciados.add(x.destino));
+  const vuelosActualizados=await aplicarVuelosNuiteeSandbox(porConsultar);
+  const porDestino=new Map(vuelosActualizados.map(x=>[x.destino,x]));
+  opciones=opciones.map(x=>porDestino.get(x.destino)||x);
+  const hotelesActuales=opciones.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc);
+  mostrarDestinos(hotelesActuales,opciones.filter(x=>x.hotelError));
+}
 function mostrarDestinos(disponibles,fallidas){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios"),actions=document.getElementById("resultActions");
   actions.replaceChildren();nota.classList.remove("real");
   if(disponibles.length){
     const cantidad=Math.min(destinosVisibles,disponibles.length);
     grid.innerHTML=disponibles.slice(0,cantidad).map(card).join("");nota.textContent="Mostrando "+cantidad+" de "+disponibles.length+" destinos con hotel disponible"+(fallidas.length?" · "+fallidas.length+" consultas pendientes":"");nota.classList.add("real");
-    if(cantidad<disponibles.length){const more=document.createElement('button');more.type='button';more.className='btn';more.textContent='Ver más destinos';more.onclick=()=>{destinosVisibles+=6;mostrarDestinos(disponibles,fallidas)};actions.appendChild(more)}
+    if(cantidad<disponibles.length){const more=document.createElement('button');more.type='button';more.className='btn';more.textContent='Ver más destinos';more.onclick=()=>{destinosVisibles+=6;mostrarDestinos(disponibles,fallidas);consultarVuelosVisibles().catch(()=>{})};actions.appendChild(more)}
   }
   else if(fallidas.length){grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No pudimos completar la consulta de disponibilidad</h3><p>Podés volver a intentar con las mismas fechas y viajeros.</p></div>';nota.textContent="Consulta incompleta"}
   else{grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No encontramos alojamiento disponible para estas fechas</h3><p>Probá cambiando las fechas para buscar otras opciones.</p></div>';nota.textContent="Sin hoteles disponibles para estas fechas"}
@@ -142,12 +154,12 @@ function mostrarDestinos(disponibles,fallidas){
 async function buscarDestinos(){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios");
   if(!Number.isFinite(presupuesto)||presupuesto<=0){grid.innerHTML='<p>Indicá un presupuesto mayor que cero en el buscador.</p>';nota.textContent="Presupuesto inválido";return}
-  let actualizadas=await aplicarHotelesReales(opciones);actualizadas=await aplicarVuelosNuiteeSandbox(actualizadas);
-  const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError);
-  mostrarDestinos(disponibles,fallidas);
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> el precio del vuelo que aparece es una referencia del Sandbox de Nuitee; puede no representar una tarifa disponible y no permite reservar ni pagar. El buscador de Vuelos por separado sigue usando su proveedor actual.";
-  // Conservamos resultados correctos si sólo se reintenta una parte.
+  const actualizadas=await aplicarHotelesReales(opciones);
   opciones=actualizadas;
+  const disponibles=opciones.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=opciones.filter(x=>x.hotelError);
+  mostrarDestinos(disponibles,fallidas);
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> los hoteles se muestran primero. Los vuelos se consultan después en el Sandbox de Nuitee como referencia; no se pueden reservar ni pagar. El buscador de Vuelos por separado sigue usando su proveedor actual.";
+  consultarVuelosVisibles().catch(()=>{});
 }
 buscarDestinos();
 </script></body></html>
