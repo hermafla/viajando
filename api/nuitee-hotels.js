@@ -95,7 +95,7 @@ export default async function handler(req,res) {
     const rateHotels=Array.isArray(rates.data)?rates.data:rates.data?.hotels||[];
     const [staticHotels,referenceData]=await Promise.all([catalogPromise,referencePromise]);
     const [facilityRows,typeRows,chainRows]=referenceData;
-    const facilityNames=referenceMap(facilityRows,['id','facilityId','facility_id'],['name','displayName','label']);
+    const facilityNames=new Map(facilityRows.map(row=>{const id=row?.facilityId??row?.facility_id??row?.id,spanish=Array.isArray(row?.translation)?row.translation.find(x=>String(x.lang||'').toLowerCase()==='es')?.facility:null,label=spanish||row?.name||row?.facility||row?.displayName||row?.label;return id!=null&&label!=null?[String(id),String(label)]:null}).filter(Boolean));
     const typeNames=referenceMap(typeRows,['id','hotelTypeId','typeId','hotel_type_id'],['name','hotelType','displayName','label']);
     const chainNames=referenceMap(chainRows,['id','chainId','chain_id'],['name','chain','displayName','label']);
     let catalogHotels=Array.isArray(rates.hotels)?rates.hotels:[];
@@ -118,6 +118,6 @@ export default async function handler(req,res) {
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
-    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,destination,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length,referenceCounts:{facilities:facilityRows.length,types:typeRows.length,chains:chainRows.length},referenceSample:{facility:facilityRows[0]||null,type:typeRows[0]||null,chain:chainRows[0]||null}}});
+    return res.status(200).json({sandbox:bookingMode==='sandbox',bookingEnvironment:bookingMode,effectiveMargin,destination,hotels,search:{adults:occupancies.reduce((s,o)=>s+o.adults,0),children:occupancies.reduce((s,o)=>s+(o.children||[]).length,0),rooms:occupancies.length,occupancies},debug:{catalogCount:catalogHotels.length,rateHotelCount:rateHotels.length}});
   }catch(e){console.error('Nuitee rates request',e.name);return res.status(502).json({error:'La consulta de hoteles demoró o no pudo completarse. Podés volver a intentar con las mismas fechas.',reason:'provider_error'})}
 }
