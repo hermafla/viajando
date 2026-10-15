@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Prueba de buscador Nuitee | Valijeando</title>
+<link rel="icon" href="/valijeando-favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/site-header.css">
+<script src="/site-header.js" defer></script>
+<style>
+:root{--navy:#102a43;--blue:#1677ff;--muted:#667085;--line:#e5eaf0;--bg:#f5f7fa;--orange:#f36b2b;--green:#16804a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:14px Arial,Helvetica,sans-serif}
+main{width:min(1240px,94%);margin:26px auto 56px}
+.page-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:11px;font-weight:800;letter-spacing:1.2px;margin-bottom:7px}
+h1{font-size:27px;line-height:1.15;margin:0 0 5px;letter-spacing:-.3px}
+.page-head p{margin:0;color:var(--muted);font-size:14px}
+.test-note{flex:none;border:1px solid #c7e8d3;background:#f0faf4;color:#176b37;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700}
+.search{display:grid;grid-template-columns:1.5fr 1fr 1fr .75fr auto;gap:10px;align-items:end;background:#fff;padding:14px;border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 13px #102a4308;margin-bottom:20px}
+label{display:block;font-size:11px;color:#687789;font-weight:700;margin:0 0 6px}
+input,select{width:100%;height:42px;border:1px solid #c9d2dc;border-radius:9px;padding:0 11px;background:white;color:#182b43;font:14px Arial}
+input:focus,select:focus{outline:2px solid #b6d4fe;border-color:var(--blue)}
+.dest-wrap{position:relative}.suggestions{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 28px #142b441c;overflow:hidden}.suggestions[hidden]{display:none}
+.suggestion{padding:10px 12px;cursor:pointer}.suggestion:hover{background:#f2f7ff}.suggestion small{display:block;color:var(--muted);margin-top:3px}
+button{font:inherit;cursor:pointer}.search-btn{height:42px;background:var(--orange);color:#fff;border:0;border-radius:9px;padding:0 18px;font-weight:800;white-space:nowrap}.search-btn:hover{background:#e96024}
+.search-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 1px 12px}
+.status{color:#53657a;font-size:13px;font-weight:600}.sort{width:205px;height:38px}
+.layout{display:grid;grid-template-columns:274px minmax(0,1fr);gap:18px;align-items:start}
+.filters{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.filter-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;border-bottom:1px solid var(--line)}
+.filter-head strong{font-size:16px}.reset{border:0;background:none;color:var(--blue);font-weight:700;padding:4px}
+.filter-section{padding:15px 16px;border-bottom:1px solid var(--line)}.filter-section:last-child{border-bottom:0}
+.filter-title{font-size:13px;font-weight:800;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.hotel-search{height:37px;font-size:13px;background:#fbfcfe}
+.price-chart{height:48px;display:flex;align-items:end;gap:3px;margin:0 0 7px;padding:0 2px}
+.price-chart i{display:block;flex:1;background:#c9e4ff;border-radius:3px 3px 0 0;min-height:5px}
+.price-bounds{display:flex;justify-content:space-between;color:#6b7889;font-size:11px;margin-bottom:8px}
+input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
+.check-list{display:grid;gap:11px}.check{display:flex;align-items:center;gap:9px;color:#3e5065;font-size:13px;cursor:pointer}
+.check input{accent-color:var(--blue);width:15px;height:15px;margin:0;flex:none}
+.check em{font-style:normal;color:#8a96a5;margin-left:auto;font-size:11px}
+.stars{display:flex;gap:7px;flex-wrap:wrap}.star-btn{border:1px solid #d8e0e8;background:#fff;color:#52657a;padding:7px 9px;border-radius:7px;font-size:12px}.star-btn.active{border-color:#8dbdff;background:#eff6ff;color:#075db8;font-weight:800}
+.map-card{height:115px;border-radius:9px;background-color:#eef3ed;background-image:linear-gradient(28deg,transparent 42%,#fff 43%,#fff 47%,transparent 48%),linear-gradient(115deg,transparent 36%,#fff 37%,#fff 41%,transparent 42%),linear-gradient(165deg,transparent 58%,#fff 59%,#fff 63%,transparent 64%),linear-gradient(90deg,#dbe8d8 1px,transparent 1px),linear-gradient(#dbe8d8 1px,transparent 1px);background-size:100% 100%,100% 100%,100% 100%,25px 25px,25px 25px;position:relative;overflow:hidden}
+.map-pin{position:absolute;left:50%;top:42%;width:21px;height:21px;border:5px solid white;border-radius:50% 50% 50% 0;background:var(--blue);transform:translate(-50%,-50%) rotate(-45deg);box-shadow:0 2px 7px #0003}
+.map-link{display:block;text-decoration:none;text-align:center;color:var(--blue);font-weight:700;font-size:12px;margin-top:9px}
+.results{display:grid;gap:13px}.hotel-card{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;display:grid;grid-template-columns:220px minmax(0,1fr) 190px;min-height:196px;transition:box-shadow .15s,border-color .15s}.hotel-card:hover{border-color:#c8d8ec;box-shadow:0 7px 20px #102a4310}
+.hotel-photo{position:relative;min-height:196px;background:#e8edf3}.hotel-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.no-photo{height:100%;min-height:196px;display:grid;place-items:center;color:#7c8b9c;font-size:12px}
+.hotel-main{padding:16px 17px}.hotel-name{font-size:18px;line-height:1.25;font-weight:800;margin:0 0 6px}.stars-label{color:#e4a522;letter-spacing:1px;font-size:13px;margin-left:5px;white-space:nowrap}
+.hotel-location{color:#617287;font-size:12px;line-height:1.45}.rating-row{display:flex;align-items:center;gap:7px;margin-top:11px}.rating-score{background:#146aa2;color:#fff;font-weight:800;padding:5px 7px;border-radius:6px}.rating-copy{font-size:12px;color:#54677b}.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.tag{font-size:11px;color:#3d5b77;background:#f1f6fa;border-radius:5px;padding:5px 7px}.tag.green{color:#176b37;background:#edf8f0}
+.hotel-price{border-left:1px solid #edf0f4;padding:17px 15px;display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.per-night{font-size:11px;color:#66778a;margin-top:auto}.price-value{font-size:23px;font-weight:800;color:#142e49;margin:3px 0 2px;white-space:nowrap}.total-value{font-size:11px;color:#6b7889}
+.details-btn{margin-top:12px;width:100%;height:38px;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:8px;font-weight:800}.details-btn:hover{background:#f1f7ff}
+.empty,.error,.loading-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px;text-align:center;color:#65758a}.error{color:#9b1c1c;background:#fff6f6;border-color:#ffd8d8}
+.modal-backdrop{position:fixed;inset:0;z-index:100;background:#10203388;display:grid;place-items:center;padding:18px}.modal-backdrop[hidden]{display:none}.modal{width:min(620px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 18px 50px #00152e44}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start;padding:18px 20px;border-bottom:1px solid var(--line)}.modal-head h2{font-size:19px;margin:0 0 4px}.modal-head p{font-size:12px;color:var(--muted);margin:0}.close{border:0;border-radius:50%;background:#f2f4f7;color:#475467;width:34px;height:34px;font-size:20px;line-height:1}.modal-body{padding:17px 20px}.preview-warning{background:#f0faf4;color:#176b37;border:1px solid #c7e8d3;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:13px}
+.offer{border:1px solid var(--line);border-radius:10px;padding:13px;margin:10px 0}.offer h3{font-size:14px;margin:0 0 7px}.offer-meta{font-size:12px;color:#62758a;line-height:1.6}.offer-price{font-size:18px;font-weight:800;margin-top:7px}.policy{color:#176b37;font-size:12px;font-weight:700}
+@media(max-width:1050px){.hotel-card{grid-template-columns:190px minmax(0,1fr) 170px}.search{grid-template-columns:1.2fr 1fr 1fr .7fr auto}}
+@media(max-width:800px){main{width:94%;margin-top:18px}.page-head{align-items:flex-start;flex-direction:column}.search{grid-template-columns:1fr 1fr}.dest-wrap{grid-column:span 2}.search-btn{grid-column:span 2;width:100%}.layout{grid-template-columns:1fr}.filters{display:grid;grid-template-columns:1fr 1fr}.filter-head{grid-column:1/-1}.filter-section:nth-child(2){grid-column:1/-1}.hotel-card{grid-template-columns:170px minmax(0,1fr)}.hotel-price{grid-column:2;border-left:0;border-top:1px solid #edf0f4;align-items:flex-start;text-align:left;padding:12px 16px;display:grid;grid-template-columns:1fr auto;align-items:center}.per-night{margin:0}.price-value{grid-column:2;grid-row:1/3}.total-value{grid-column:1}.details-btn{grid-column:1/-1;margin-top:9px}}
+@media(max-width:560px){h1{font-size:23px}.test-note{font-size:11px}.search{padding:11px;gap:8px}.search input{font-size:13px}.layout{gap:12px}.filters{display:block}.filter-section:nth-child(2){grid-column:auto}.filter-section{padding:13px 14px}.hotel-card{grid-template-columns:1fr}.hotel-photo{height:190px;min-height:190px}.no-photo{min-height:190px}.hotel-main{padding:14px}.hotel-price{grid-column:auto}.price-value{font-size:22px}.search-meta{align-items:flex-start;flex-direction:column}.sort{width:100%}}
+</style>
+</head>
+<body>
+<header class="vh-header" data-valijeando-header></header>
+<main>
+  <div class="page-head">
+    <div><div class="eyebrow">VISTA DE PRUEBA · NUITEE</div><h1>Encontrá tu alojamiento ideal</h1><p>Un buscador inspirado en la marca blanca, con disponibilidad de Nuitee.</p></div>
+    <div class="test-note">Prueba visual: esta página no reserva ni cobra</div>
+  </div>
+  <form class="search" id="searchForm">
+    <div class="dest-wrap"><label for="city">Destino</label><input id="city" autocomplete="off" required><input id="placeId" type="hidden"><input id="countryCode" type="hidden" value="AR"><div class="suggestions" id="suggestions" hidden></div></div>
+    <div><label for="checkin">Entrada</label><input id="checkin" type="date" required></div>
+    <div><label for="checkout">Salida</label><input id="checkout" type="date" required></div>
+    <div><label for="adults">Huéspedes</label><select id="adults"><option value="1">1 adulto</option><option value="2">2 adultos</option><option value="3">3 adultos</option><option value="4">4 adultos</option><option value="5">5 adultos</option><option value="6">6 adultos</option></select></div>
+    <button class="search-btn" type="submit">Buscar</button>
+  </form>
+
+  <div class="search-meta"><div class="status" id="status">Preparando la búsqueda…</div><select class="sort" id="sort"><option value="price">Ordenar: precio más bajo</option><option value="rating">Mejor valorados</option><option value="stars">Más estrellas</option></select></div>
+
+  <div class="layout">
+    <aside class="filters">
+      <div class="filter-head"><strong>Filtros</strong><button class="reset" id="reset" type="button">Limpiar</button></div>
+      <section class="filter-section"><div class="filter-title">Ver en el mapa</div><div class="map-card" aria-label="Vista ilustrativa del mapa"><span class="map-pin"></span></div><a class="map-link" id="mapLink" target="_blank" rel="noopener">Explorar la zona en el mapa ↗</a></section>
+      <section class="filter-section"><div class="filter-title">Nombre del alojamiento</div><input class="hotel-search" id="nameFilter" placeholder="Ej. Hotel Central" type="search"></section>
+      <section class="filter-section"><div class="filter-title">Precio por noche</div><div class="price-chart" id="priceChart" aria-hidden="true"></div><div class="price-bounds"><span id="minPrice"></span><span id="maxPrice"></span></div><input id="priceRange" type="range" min="0" max="0" value="0" aria-label="Precio máximo por noche"></section>
+      <section class="filter-section"><div class="filter-title">Opciones populares</div><div class="check-list">
+        <label class="check"><input id="refundable" type="checkbox"> Cancelación gratuita</label>
+        <label class="check"><input id="breakfast" type="checkbox"> Desayuno incluido</label>
+        <label class="check"><input id="propertyFees" type="checkbox"> Sin cargos en el alojamiento</label>
+        <label class="check"><input id="rating8" type="checkbox"> Puntuación 8 o más</label>
+      </div></section>
+      <section class="filter-section"><div class="filter-title">Categoría del alojamiento</div><div class="stars" id="starFilters"><button class="star-btn" type="button" data-stars="5">5 ★</button><button class="star-btn" type="button" data-stars="4">4 ★ o más</button><button class="star-btn" type="button" data-stars="3">3 ★ o más</button></div></section>
+      <section class="filter-section"><div class="filter-title">Sobre estos filtros</div><div style="font-size:11px;line-height:1.5;color:#718096">Mostramos filtros que se pueden comprobar con los datos de tarifas devueltos por el proveedor. Servicios como piscina o estacionamiento se agregarán cuando estén disponibles en la ficha del hotel.</div></section>
+    </aside>
+    <section class="results" id="results" aria-live="polite"><div class="loading-box">Buscando alojamientos disponibles…</div></section>
+  </div>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><div><h2 id="modalTitle">Habitaciones disponibles</h2><p id="modalSubtitle"></p></div><button class="close" type="button" id="closeModal" aria-label="Cerrar">×</button></div>
+    <div class="modal-body"><div class="preview-warning">Vista de prueba: podés comparar tarifas, pero no se inicia una reserva ni un pago.</div><div id="offerList"></div></div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),form=$('searchForm'),city=$('city'),placeId=$('placeId'),countryCode=$('countryCode'),suggestions=$('suggestions'),checkin=$('checkin'),checkout=$('checkout'),adults=$('adults'),results=$('results'),status=$('status');
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const params=new URLSearchParams(location.search);
+const today=new Date(),dateIso=d=>d.toISOString().slice(0,10),nextDay=d=>new Date(d.getTime()+86400000);
+city.value=params.get('city')||'Buenos Aires';placeId.value=params.get('placeId')||'ChIJvQz5TjvKvJURh47oiC6Bs6A';countryCode.value=params.get('countryCode')||'AR';
+checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';adults.value=params.get('adults')||'2';
+let hotels=[],selectedStars=0,searchTimer,requestId=0;
+const amount=h=>Number(h.estimatedTotal??h.retailRate??0);
+const rateList=h=>Array.isArray(h.offers)?h.offers:[h];
+const isRefundable=o=>String(o.refundableTag||o.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
+const hasBreakfast=o=>/desayun|breakfast|buffet/i.test(String(o.boardName||''));
+const nightly=h=>amount(h)/Math.max(1,(new Date(checkout.value)-new Date(checkin.value))/86400000);
+const money=n=>Number(n||0).toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0});
+function formatDate(s){return new Date(s+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})}
+function updateMapLink(){const q=encodeURIComponent(city.value||'Argentina');$('mapLink').href='https://www.google.com/maps/search/?api=1&query='+q}
+updateMapLink();
+let destinationTimer;
+city.addEventListener('input',()=>{placeId.value='';updateMapLink();clearTimeout(destinationTimer);const q=city.value.trim();if(q.length<2){suggestions.hidden=true;return}destinationTimer=setTimeout(async()=>{try{const r=await fetch('/api/nuitee-places?q='+encodeURIComponent(q));const d=await r.json();const places=d.places||[];suggestions.innerHTML=places.map((p,i)=>'<div class="suggestion" data-i="'+i+'"><b>'+esc(p.displayName)+'</b><small>'+esc(p.formattedAddress||'')+'</small></div>').join('');suggestions._places=places;suggestions.hidden=!places.length}catch{suggestions.hidden=true}},240)});
+suggestions.addEventListener('click',e=>{const row=e.target.closest('.suggestion');if(!row)return;const p=suggestions._places[Number(row.dataset.i)];city.value=p.displayName;placeId.value=p.placeId||'';countryCode.value=p.countryCode||'';suggestions.hidden=true;updateMapLink()});
+document.addEventListener('click',e=>{if(!e.target.closest('.dest-wrap'))suggestions.hidden=true});
+form.addEventListener('submit',e=>{e.preventDefault();runSearch()});
+async function runSearch(){
+ if(!placeId.value){status.textContent='Elegí un destino de las sugerencias para iniciar la búsqueda.';city.focus();return}
+ if(!checkin.value||!checkout.value||checkout.value<=checkin.value){status.textContent='Elegí fechas de entrada y salida válidas.';return}
+ const thisRequest=++requestId;results.innerHTML='<div class="loading-box">Consultando disponibilidad y preparando los filtros…</div>';status.textContent='Buscando alojamientos…';
+ const occupancies=JSON.stringify([{adults:Number(adults.value),children:[]}]);
+ const q=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'ARS',guestNationality:'AR',occupancies});
+ history.replaceState(null,'',location.pathname+'?'+q.toString());updateMapLink();
+ try{const r=await fetch('/api/nuitee-hotels?'+q.toString());const data=await r.json();if(thisRequest!==requestId)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar la disponibilidad.');hotels=Array.isArray(data.hotels)?data.hotels:[];if(data.destination?.displayName){city.value=data.destination.displayName+(data.destination.formattedAddress?' · '+data.destination.formattedAddress.split(',').pop().trim():'');updateMapLink()}configurePriceFilter();applyFilters();status.textContent=hotels.length?hotels.length+' alojamientos encontrados · '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'No hay alojamientos disponibles para esos datos.'}
+ catch(err){if(thisRequest!==requestId)return;hotels=[];results.innerHTML='<div class="error">'+esc(err.message||'Ocurrió un error.')+'</div>';status.textContent='No se pudo completar la búsqueda.'}
+}
+function configurePriceFilter(){
+ const values=hotels.map(nightly).filter(Number.isFinite).sort((a,b)=>a-b);const min=values[0]||0,max=values.at(-1)||0,range=$('priceRange');
+ range.min=String(Math.floor(min));range.max=String(Math.ceil(max));range.value=String(Math.ceil(max));$('minPrice').textContent=money(min);$('maxPrice').textContent=money(max);
+ const bins=Array(20).fill(0);values.forEach(v=>{const i=max===min?0:Math.min(19,Math.floor((v-min)/(max-min)*20));bins[i]++});const high=Math.max(1,...bins);
+ $('priceChart').innerHTML=bins.map(n=>'<i style="height:'+Math.max(9,Math.round(n/high*42))+'px"></i>').join('');
+}
+function applyFilters(){
+ const maxPrice=Number($('priceRange').value||Infinity),name=$('nameFilter').value.trim().toLocaleLowerCase('es-AR');
+ let list=hotels.filter(h=>{
+  const offers=rateList(h),n=nightly(h);
+  if(name&&!String(h.name||'').toLocaleLowerCase('es-AR').includes(name))return false;
+  if(n>maxPrice)return false;
+  if($('refundable').checked&&!offers.some(isRefundable))return false;
+  if($('breakfast').checked&&!offers.some(hasBreakfast))return false;
+  if($('propertyFees').checked&&Number(h.dueAtProperty||0)>0)return false;
+  if($('rating8').checked&&Number(h.rating||0)<8)return false;
+  if(selectedStars&&Number(h.stars||0)<selectedStars)return false;
+  return true;
+ });
+ const sort=$('sort').value;list.sort((a,b)=>sort==='rating'?Number(b.rating||0)-Number(a.rating||0):sort==='stars'?Number(b.stars||0)-Number(a.stars||0):nightly(a)-nightly(b));
+ paintHotels(list);const total=hotels.length;status.textContent=list.length+' de '+total+' alojamientos'+(total?' · precios para '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'');
+}
+function paintHotels(list){
+ if(!list.length){results.innerHTML='<div class="empty">No hay alojamientos que coincidan con esos filtros. Probá quitando alguno.</div>';return}
+ results.innerHTML=list.map((h,i)=>{
+  const first=rateList(h).slice().sort((a,b)=>Number(a.estimatedTotal??a.retailRate)-Number(b.estimatedTotal??b.retailRate))[0]||h;
+  const hasFree=rateList(h).some(isRefundable),breakfast=rateList(h).some(hasBreakfast),stars=Math.max(0,Math.min(5,Number(h.stars)||0));
+  const score=Number(h.rating||0),location=String(h.address||'');
+  const photo=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
+  const tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(Number(h.dueAtProperty||0)===0?'<span class="tag">Sin cargos separados informados</span>':'');
+  return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+'</div>'+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+'</div></div><div class="hotel-price"><div class="per-night">Desde · por noche</div><div class="price-value">'+money(nightly(first))+'</div><div class="total-value">Total estadía: '+money(amount(first))+'</div><button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
+ }).join('');
+ results.querySelectorAll('.details-btn').forEach(btn=>btn.addEventListener('click',()=>openOffers(list[Number(btn.dataset.hotel)])));
+}
+function openOffers(h){
+ $('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+adults.value+' adultos';const offers=rateList(h);
+ $('offerList').innerHTML=offers.map(o=>{
+  const cancel=isRefundable(o),board=o.boardName||'Régimen no informado';
+  const room=Array.isArray(o.rates)?o.rates.map(r=>r.roomName).filter(Boolean).join(' + '):o.roomName||'Habitación';
+  return '<article class="offer"><h3>'+esc(room)+'</h3><div class="offer-meta">'+esc(board)+'<br>'+(cancel?'<span class="policy">Cancelación gratuita disponible</span>':'<span>Tarifa no reembolsable o política no informada</span>')+(Number(o.dueAtProperty||0)>0?'<br>Cargos informados en el alojamiento: '+money(o.dueAtProperty):'')+'</div><div class="offer-price">'+money(amount(o))+' total de la estadía</div></article>'
+ }).join('')||'<p>No hay detalle de tarifa para mostrar.</p>';
+ $('modalBackdrop').hidden=false;
+}
+$('closeModal').addEventListener('click',()=>$('modalBackdrop').hidden=true);
+$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modalBackdrop').hidden=true});
+['nameFilter','priceRange','refundable','breakfast','propertyFees','rating8','sort'].forEach(id=>$(id).addEventListener(id==='nameFilter'?'input':'change',applyFilters));
+$('starFilters').addEventListener('click',e=>{const b=e.target.closest('[data-stars]');if(!b)return;const n=Number(b.dataset.stars);selectedStars=selectedStars===n?0:n;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.toggle('active',Number(x.dataset.stars)===selectedStars));applyFilters()});
+$('reset').addEventListener('click',()=>{$('nameFilter').value='';$('refundable').checked=false;$('breakfast').checked=false;$('propertyFees').checked=false;$('rating8').checked=false;selectedStars=0;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.remove('active'));configurePriceFilter();applyFilters()});
+if(placeId.value)runSearch();else{status.textContent='Completá el destino y elegí una sugerencia para buscar.';results.innerHTML='<div class="empty">Preparado para consultar alojamientos de Nuitee.</div>'}
+</script>
+</body>
+</html>
