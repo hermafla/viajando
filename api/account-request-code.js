@@ -9,9 +9,9 @@ const hash=(email,code,secret)=>crypto.createHmac('sha256',secret).update(email+
 
 async function handleCancellationPreview(req,res){
   if(req.method!=='POST')return json(res,405,{error:'Método no permitido'});
-  const token=String(req.headers.authorization||'').replace(/^Bearer\\s+/i,'');
+  const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
   const [body,sig]=token.split('.');
-  const supabaseUrl=process.env.SUPABASE_URL?.replace(/\\/$/,'');
+  const supabaseUrl=process.env.SUPABASE_URL?.replace(/\/$/,'');
   const supabaseKey=process.env.SUPABASE_SECRET_KEY;
   const secret=process.env.MI_CUENTA_SECRET||supabaseKey;
   const nuiteeKey=process.env.NUITEE_API_KEY;
