@@ -18,7 +18,7 @@
   const currentPage=location.pathname.split('/').pop();
   if(currentPage!=='arrepentimiento.html'){
     const footer=document.querySelector('.site-footer,footer');
-    if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>Podés solicitar el arrepentimiento dentro de los 10 días corridos desde la contratación. Para servicios turísticos con fecha determinada, enviá la solicitud al menos 24 horas antes del inicio. Los vuelos regulares se rigen por la tarifa y la normativa aérea indicadas en el voucher.</span><a class="vh-regret-info" href="/derecho-arrepentimiento.html">Ver información y plazos</a></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
+    if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>En general, podés solicitarlo dentro de los 10 días corridos desde la contratación. Para servicios turísticos con fecha determinada, enviá el aviso dentro de ese plazo y al menos 24 horas antes del inicio. Los vuelos regulares se rigen por la tarifa y la normativa aérea indicadas en el voucher.</span><a class="vh-regret-info" href="/derecho-arrepentimiento.html">Ver información y plazos</a></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
   }
   const nav=header.querySelector('.vh-links'),button=header.querySelector('.vh-menu-button'),more=header.querySelector('.vh-more');
   const closeMenu=()=>{nav.classList.remove('is-open');button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menú');more.open=false};
