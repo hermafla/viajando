@@ -6,9 +6,9 @@ const sbHeaders=key=>({'apikey':key,'Authorization':'Bearer '+key,'Content-Type'
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST')return json(res,405,{error:'Método no permitido'});
-  const token=String(req.headers.authorization||'').replace(/^Bearer\\s+/i,'');
+  const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
   const [body,sig]=token.split('.');
-  const supabaseUrl=process.env.SUPABASE_URL?.replace(/\\/$/,'');
+  const supabaseUrl=process.env.SUPABASE_URL?.replace(/\/$/,'');
   const supabaseKey=process.env.SUPABASE_SECRET_KEY;
   const secret=process.env.MI_CUENTA_SECRET||supabaseKey;
   const nuiteeKey=process.env.NUITEE_API_KEY;
@@ -35,6 +35,7 @@ export default async function handler(req,res){
       ok:true,
       bookingId,
       bookingStatus:booking.status||null,
+      currency:booking.currency||null,
       refundableTag:booking.tag||policies.refundableTag||(reservation.reembolsable===true?'RFN':reservation.reembolsable===false?'NRFN':null),
       lastFreeCancellationDate:booking.lastFreeCancellationDate||null,
       cancellationPolicies:policies,
