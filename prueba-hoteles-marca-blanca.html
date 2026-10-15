@@ -51,7 +51,7 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
 .hotel-price{border-left:1px solid #edf0f4;padding:17px 15px;display:flex;flex-direction:column;align-items:flex-end;text-align:right}
 .per-night{font-size:11px;color:#66778a;margin-top:auto}.price-value{font-size:23px;font-weight:800;color:#142e49;margin:3px 0 2px;white-space:nowrap}.total-value{font-size:11px;color:#6b7889}
 .details-btn{margin-top:12px;width:100%;height:38px;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:8px;font-weight:800}.details-btn:hover{background:#f1f7ff}
-.empty,.error,.loading-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px;text-align:center;color:#65758a}.error{color:#9b1c1c;background:#fff6f6;border-color:#ffd8d8}
+ .empty,.error,.loading-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px;text-align:center;color:#65758a}.error{color:#9b1c1c;background:#fff6f6;border-color:#ffd8d8}.pagination{display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 0 18px;color:#607188;font-size:13px}.pagination button{border:1px solid #d5dee8;background:#fff;color:#1768c5;border-radius:8px;padding:9px 13px;font-weight:700}.pagination button:disabled{color:#9aa5b1;background:#f5f7fa;cursor:not-allowed}
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:#10203388;display:grid;place-items:center;padding:18px}.modal-backdrop[hidden]{display:none}.modal{width:min(620px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 18px 50px #00152e44}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start;padding:18px 20px;border-bottom:1px solid var(--line)}.modal-head h2{font-size:19px;margin:0 0 4px}.modal-head p{font-size:12px;color:var(--muted);margin:0}.close{border:0;border-radius:50%;background:#f2f4f7;color:#475467;width:34px;height:34px;font-size:20px;line-height:1}.modal-body{padding:17px 20px}.preview-warning{background:#f0faf4;color:#176b37;border:1px solid #c7e8d3;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:13px}
 .offer{border:1px solid var(--line);border-radius:10px;padding:13px;margin:10px 0}.offer h3{font-size:14px;margin:0 0 7px}.offer-meta{font-size:12px;color:#62758a;line-height:1.6}.offer-price{font-size:18px;font-weight:800;margin-top:7px}.policy{color:#176b37;font-size:12px;font-weight:700}
 @media(max-width:1050px){.hotel-card{grid-template-columns:190px minmax(0,1fr) 170px}.search{grid-template-columns:1.2fr 1fr 1fr .7fr auto}}
@@ -118,7 +118,7 @@ const params=new URLSearchParams(location.search);
 const today=new Date(),dateIso=d=>d.toISOString().slice(0,10),nextDay=d=>new Date(d.getTime()+86400000);
 city.value=params.get('city')||'Buenos Aires';placeId.value=params.get('placeId')||'ChIJvQz5TjvKvJURh47oiC6Bs6A';countryCode.value=params.get('countryCode')||'AR';
 checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';adults.value=params.get('adults')||'2';
-let hotels=[],selectedStars=0,searchTimer,requestId=0;const selectedFacets=new Map();
+let hotels=[],selectedStars=0,searchTimer,requestId=0,currentPage=1;const PAGE_SIZE=20,selectedFacets=new Map();
 const amount=h=>Number(h.estimatedTotal??h.retailRate??0);
 const rateList=h=>Array.isArray(h.offers)?h.offers:[h];
 const isRefundable=o=>String(o.refundableTag||o.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
@@ -175,6 +175,7 @@ function applyFilters(){
  paintHotels(list);const total=hotels.length;status.textContent=list.length+' de '+total+' alojamientos'+(total?' · precios para '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'');
 }
 function sameText(a,b){return String(a||'').trim().toLocaleLowerCase('es-AR')===String(b||'').trim().toLocaleLowerCase('es-AR')}
+function prettyBoard(value){const s=String(value||'').trim();const map={'Breakfast Included':'Desayuno incluido','Room Only':'Solo alojamiento','Lunch Included':'Almuerzo incluido','Dinner Included':'Cena incluida','Breakfast and Lunch Included':'Desayuno y almuerzo incluidos','Breakfast and Dinner Included':'Desayuno y cena incluidos','All Meals Included':'Todas las comidas incluidas','All Inclusive':'Todo incluido'};return map[s]||s}
 function optionsFor(group){
  const map=new Map(),add=(label,id=label)=>{if(!label)return;const key=String(id??label).trim(),name=String(label).trim();if(!key||!name||/^(not available|unknown|n\/a|no disponible)$/i.test(name))return;map.set(key,{label:name,count:(map.get(key)?.count||0)+1})};
  for(const h of hotels){
@@ -183,7 +184,7 @@ function optionsFor(group){
   if(group==='neighborhood')add(h.neighborhood);
   if(group==='facility')for(const v of h.facilities||[])add(v);
   if(group==='room')for(const v of h.roomAmenities||[])add(v);
-  if(group==='meal'){const boards=new Set(rateList(h).map(o=>String(o.boardName||'').trim()).filter(Boolean));for(const v of boards)add(v)}
+  if(group==='meal'){const boards=new Set(rateList(h).map(o=>String(o.boardName||'').trim()).filter(Boolean));for(const v of boards)add(prettyBoard(v),v)}
  }
  return [...map.entries()].sort((a,b)=>a[1].label.localeCompare(b[1].label,'es'));
 }
@@ -202,15 +203,17 @@ function rebuildFacetFilters(){
 }
 function paintHotels(list){
  if(!list.length){results.innerHTML='<div class="empty">No hay alojamientos que coincidan con esos filtros. Probá quitando alguno.</div>';return}
- results.innerHTML=list.map((h,i)=>{
+ const pages=Math.max(1,Math.ceil(list.length/PAGE_SIZE)),start=(currentPage-1)*PAGE_SIZE,pageHotels=list.slice(start,start+PAGE_SIZE);
+ results.innerHTML=pageHotels.map((h,i)=>{
   const first=rateList(h).slice().sort((a,b)=>Number(a.estimatedTotal??a.retailRate)-Number(b.estimatedTotal??b.retailRate))[0]||h;
   const hasFree=rateList(h).some(isRefundable),breakfast=rateList(h).some(hasBreakfast),stars=Math.max(0,Math.min(5,Number(h.stars)||0));
   const score=Number(h.rating||0),location=String(h.address||''),extraInfo=[h.hotelType,h.neighborhood,Number.isFinite(Number(h.distanceKm)?Number(h.distanceKm):NaN)?Number(h.distanceKm).toFixed(1)+' km del centro':''].filter(Boolean).join(' · '),facilityTags=(h.facilities||[]).slice(0,3);
   const photo=h.photo?'<img src="'+esc(h.photo)+'" alt="'+esc(h.name||'Alojamiento')+'" loading="lazy">':'<div class="no-photo">Foto no disponible</div>';
   const hasPropertyFees=rateList(h).some(o=>Number(o.dueAtProperty||0)>0);const tags=(hasFree?'<span class="tag green">Cancelación gratuita disponible</span>':'')+(breakfast?'<span class="tag">Desayuno disponible</span>':'')+(!hasPropertyFees?'<span class="tag">Sin cargos separados informados</span>':'');
   return '<article class="hotel-card"><div class="hotel-photo">'+photo+'</div><div class="hotel-main"><h2 class="hotel-name">'+esc(h.name||'Alojamiento')+(stars?'<span class="stars-label">'+('★'.repeat(stars))+'</span>':'')+'</h2><div class="hotel-location">'+(location?esc(location):'Ubicación no informada')+(extraInfo?'<br>'+esc(extraInfo):'')+'</div>'+(score?'<div class="rating-row"><span class="rating-score">'+score.toLocaleString('es-AR')+'</span><span class="rating-copy">'+(score>=9?'Excepcional':score>=8?'Muy bueno':score>=7?'Bueno':'Puntuación de huéspedes')+(h.reviewCount?' · '+Number(h.reviewCount).toLocaleString('es-AR')+' opiniones':'')+'</span></div>':'')+'<div class="tags">'+tags+facilityTags.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')+'</div></div><div class="hotel-price"><div class="per-night">Desde · por noche</div><div class="price-value">'+money(nightly(first))+'</div><div class="total-value">Total estadía: '+money(amount(first))+'</div><button class="details-btn" type="button" data-hotel="'+i+'">Ver opciones</button></div></article>'
- }).join('');
- results.querySelectorAll('.details-btn').forEach(btn=>btn.addEventListener('click',()=>openOffers(list[Number(btn.dataset.hotel)])));
+ }).join('')+'<nav class="pagination" aria-label="Páginas de resultados"><button type="button" data-page="prev" '+(currentPage===1?'disabled':'')+'>← Anterior</button><span>Página '+currentPage+' de '+pages+' · '+list.length+' alojamientos</span><button type="button" data-page="next" '+(currentPage===pages?'disabled':'')+'>Siguiente →</button></nav>';
+ results.querySelectorAll('.details-btn').forEach((btn,i)=>btn.addEventListener('click',()=>openOffers(pageHotels[i])));
+ results.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.disabled)return;currentPage+=btn.dataset.page==='next'?1:-1;paintHotels(list);results.scrollIntoView({behavior:'smooth',block:'start'})}));
 }
 function openOffers(h){
  $('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+adults.value+' adultos';const offers=rateList(h);
@@ -224,9 +227,9 @@ function openOffers(h){
 $('closeModal').addEventListener('click',()=>$('modalBackdrop').hidden=true);
 $('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').hidden=true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modalBackdrop').hidden=true});
-['nameFilter','priceRange','refundable','breakfast','propertyFees','rating8','sort'].forEach(id=>$(id).addEventListener(id==='nameFilter'?'input':'change',applyFilters));
+['nameFilter','priceRange','refundable','breakfast','propertyFees','rating8','sort'].forEach(id=>$(id).addEventListener(id==='nameFilter'?'input':'change',()=>{currentPage=1;applyFilters()}));
 $('starFilters').addEventListener('click',e=>{const b=e.target.closest('[data-stars]');if(!b)return;const n=Number(b.dataset.stars);selectedStars=selectedStars===n?0:n;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.toggle('active',Number(x.dataset.stars)===selectedStars));applyFilters()});
-document.addEventListener('change',e=>{const input=e.target.closest('input[data-group]');if(!input)return;const group=input.dataset.group,value=input.dataset.value;if(!selectedFacets.has(group))selectedFacets.set(group,new Set());const set=selectedFacets.get(group);if(input.checked)set.add(value);else set.delete(value);applyFilters()});
+document.addEventListener('change',e=>{const input=e.target.closest('input[data-group]');if(!input)return;currentPage=1;const group=input.dataset.group,value=input.dataset.value;if(!selectedFacets.has(group))selectedFacets.set(group,new Set());const set=selectedFacets.get(group);if(input.checked)set.add(value);else set.delete(value);applyFilters()});
 document.querySelectorAll('.facet-search').forEach(input=>input.addEventListener('input',()=>{const q=input.value.trim().toLocaleLowerCase('es-AR'),container=$(input.dataset.target);container?.querySelectorAll('.facet-option').forEach(row=>{row.hidden=q&&!row.dataset.label.includes(q)})}));
 $('reset').addEventListener('click',()=>{$('nameFilter').value='';$('refundable').checked=false;$('breakfast').checked=false;$('propertyFees').checked=false;$('rating8').checked=false;document.querySelectorAll('input[data-group]').forEach(x=>x.checked=false);document.querySelectorAll('.facet-search').forEach(x=>x.value='');document.querySelectorAll('.facet-option').forEach(x=>x.hidden=false);selectedFacets.clear();selectedStars=0;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.remove('active'));configurePriceFilter();applyFilters()});
 if(placeId.value)runSearch();else{status.textContent='Completá el destino y elegí una sugerencia para buscar.';results.innerHTML='<div class="empty">Preparado para consultar alojamientos de Nuitee.</div>'}
