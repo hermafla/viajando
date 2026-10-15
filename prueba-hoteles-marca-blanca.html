@@ -258,7 +258,7 @@ async function loadReviewSummary(h){
  }
 }
 function openOffers(h){
- $('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+adults.value+' adultos';const offers=rateList(h);loadReviewSummary(h),nights=stayNights();
+ $('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+adults.value+' adultos';const offers=rateList(h),nights=stayNights();loadReviewSummary(h);
  $('offerList').innerHTML=offers.map(o=>{
   const cancel=isRefundable(o),board=prettyBoard(o.boardName||'Régimen no informado');
   const room=Array.isArray(o.rates)?o.rates.map(r=>r.roomName).filter(Boolean).join(' + '):o.roomName||'Habitación';
