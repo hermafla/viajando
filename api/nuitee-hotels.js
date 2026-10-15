@@ -9,7 +9,7 @@ const rowsOf=value=>{
   for(const key of ['data','facilities','hotelTypes','chains','items','results'])if(Array.isArray(value[key]))return value[key];
   return Object.entries(value).filter(([,x])=>x&&typeof x==='object').map(([id,x])=>({...x,id:x.id??x.facilityId??x.hotelTypeId??x.chainId??id}));
 };
-const referenceRows=async(endpoint)=>{
+const referenceRows=async(request,endpoint)=>{
   try{const response=await request('https://api.liteapi.travel/v3.0/data/'+endpoint,{},3500);if(!response.ok)return [];const payload=await response.json();return rowsOf(payload?.data??payload)}catch{return []}
 };
 const referenceMap=(value,idKeys,labelKeys)=>{
@@ -78,7 +78,7 @@ export default async function handler(req,res) {
       }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
-    const referencePromise=Promise.all([referenceRows('facilities'),referenceRows('hotelTypes'),referenceRows('chains')]);
+    const referencePromise=Promise.all([referenceRows(request,'facilities'),referenceRows(request,'hotelTypes'),referenceRows(request,'chains')]);
     const catalogPromise=hotelId?Promise.resolve([]):request('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1500',language:'es'}),{},6500).then(async response=>{if(!response.ok)return [];const payload=await response.json();return Array.isArray(payload.data)?payload.data:payload.data?.hotels||[]}).catch(()=>[]);
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
