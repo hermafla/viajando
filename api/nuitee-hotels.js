@@ -2,7 +2,21 @@ import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotel
 
 const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 const listOf=value=>Array.isArray(value)?value.map(x=>typeof x==='string'?x:x?.name||x?.displayName||x?.label||'').filter(Boolean):typeof value==='string'?value.split(/[,;|]/).map(x=>x.trim()).filter(Boolean):[];
-const textOf=value=>typeof value==='string'?value: Array.isArray(value)?value.map(textOf).filter(Boolean).join('\n\n'):value&&typeof value==='object'?String(value.text||value.content||value.description||value.value||''):'';
+const textOf=value=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim():Array.isArray(value)?value.map(textOf).filter(Boolean).join('\n\n'):value&&typeof value==='object'?textOf(value.text||value.content||value.description||value.value||''):'';
+const rowsOf=value=>Array.isArray(value)?value:value&&typeof value==='object'?Object.values(value).filter(x=>x&&typeof x==='object'):[];
+const referenceMap=(value,idKeys,labelKeys)=>{
+  const map=new Map();
+  for(const row of rowsOf(value)){const id=idKeys.map(k=>row?.[k]).find(x=>x!=null),label=labelKeys.map(k=>row?.[k]).find(x=>x!=null);if(id!=null&&label!=null)map.set(String(id),String(label))}
+  return map;
+};
+const namesFor=(value,map)=>{
+  const values=Array.isArray(value)?value:value==null?[]:[value];
+  return [...new Set(values.map(x=>{
+    if(x&&typeof x==='object')return String(x.name||x.displayName||x.label||map.get(String(x.id||x.facilityId||x.hotelTypeId||x.chainId))||'');
+    return map.get(String(x))||String(x);
+  }).filter(Boolean))];
+};
+const imageUrls=value=>rowsOf(value).map(x=>typeof x==='string'?x:String(x?.url||x?.imageUrl||x?.imageURL||x?.main_photo||x?.image||x?.photo||'')).filter(Boolean);
 
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
@@ -23,9 +37,11 @@ export default async function handler(req,res) {
       const data=payload.data||payload;
       if(action==='details'){
         const hotel=data.hotel||data;
-        const images=listOf(hotel.hotelImages||hotel.images||hotel.photos||hotel.gallery);
-        const facilities=listOf(hotel.hotelFacilities||hotel.facilities||hotel.amenities||hotel.services);
-        return res.status(200).json({hotelId:hotelIdForContent,name:String(hotel.name||hotel.hotelName||''),description:textOf(hotel.description||hotel.hotelDescription||hotel.hotel_description),address:String(hotel.address||hotel.formattedAddress||''),stars:Number(hotel.stars||hotel.starRating||0),rating:Number(hotel.rating||hotel.reviewRating||0),reviewCount:Number(hotel.reviewCount||hotel.reviewsCount||0),facilities,images,hotelType:String(hotel.hotelTypeName||hotel.hotelType||hotel.propertyType||''),chainName:String(hotel.chainName||hotel.chain?.name||hotel.brand||''),checkInInstructions:textOf(hotel.checkInInstructions||hotel.checkinInstructions||'')});
+        const rawFacilities=hotel.hotelFacilities||hotel.facilities||hotel.amenities||hotel.services||hotel.facilityIds||[];
+        const facilities=namesFor(rawFacilities,new Map());
+        const rawImages=hotel.hotelImages||hotel.images||hotel.photos||hotel.gallery||[];
+        const images=Array.isArray(rawImages)?rawImages.map(x=>typeof x==='string'?x:String(x?.url||x?.imageUrl||x?.imageURL||x?.main_photo||x?.image||x?.photo||'')).filter(Boolean):[];
+        return res.status(200).json({hotelId:hotelIdForContent,name:String(hotel.name||hotel.hotelName||''),description:textOf(hotel.normalizedDescription||hotel.markdownDescription||hotel.hotelDescription||hotel.description||hotel.hotel_description),address:String(hotel.address||hotel.formattedAddress||''),stars:Number(hotel.stars||hotel.starRating||0),rating:Number(hotel.rating||hotel.reviewRating||0),reviewCount:Number(hotel.reviewCount||hotel.reviewsCount||0),facilities,images,hotelType:String(hotel.hotelTypeName||hotel.hotelType||hotel.propertyType||''),chainName:String(hotel.chainName||hotel.chain?.name||hotel.brand||''),checkInInstructions:textOf(hotel.checkInInstructions||hotel.checkinInstructions||hotel.hotelImportantInformation||'')});
       }
       const sentiment=data.sentimentAnalysis||payload.sentimentAnalysis||{},categories=(Array.isArray(sentiment.categories)?sentiment.categories:[]).map(x=>({name:String(x.name||''),rating:Number(x.rating),description:String(x.description||'')})).filter(x=>x.name&&Number.isFinite(x.rating)),labels=list=>Array.isArray(list)?list.map(x=>typeof x==='string'?x:String(x?.name||x?.label||'')).filter(Boolean).slice(0,8):[];
       return res.status(200).json({hotelId:hotelIdForContent,available:categories.length>0||labels(sentiment.pros).length>0||labels(sentiment.cons).length>0,sentiment:categories.length||sentiment.pros||sentiment.cons?{categories,pros:labels(sentiment.pros),cons:labels(sentiment.cons)}:null});
@@ -54,6 +70,11 @@ export default async function handler(req,res) {
       }catch{}
     }
     // Una consulta, hasta 1500 propiedades, sin tres páginas simultáneas por destino.
+    const referencePromise=Promise.all([
+      request('https://api.liteapi.travel/v3.0/data/facilities?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[]),
+      request('https://api.liteapi.travel/v3.0/data/hotelTypes?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[]),
+      request('https://api.liteapi.travel/v3.0/data/chains?language=es',{},3500).then(async r=>r.ok?(await r.json()).data||[]:[]).catch(()=>[])
+    ]);
     const catalogPromise=hotelId?Promise.resolve([]):request('https://api.liteapi.travel/v3.0/data/hotels?'+new URLSearchParams({...locationQuery,limit:'1500',language:'es'}),{},6500).then(async response=>{if(!response.ok)return [];const payload=await response.json();return Array.isArray(payload.data)?payload.data:payload.data?.hotels||[]}).catch(()=>[]);
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
@@ -68,7 +89,11 @@ export default async function handler(req,res) {
     if(providerCode===2001)rates={data:[],hotels:[]};
     else if(!rr.ok||rates.error){console.error('Nuitee rates',rr.status,providerCode);return res.status(502).json({error:'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:'provider_error',stage:'rates',providerCode})}
     const rateHotels=Array.isArray(rates.data)?rates.data:rates.data?.hotels||[];
-    const staticHotels=await catalogPromise;
+    const [staticHotels,referenceData]=await Promise.all([catalogPromise,referencePromise]);
+    const [facilityRows,typeRows,chainRows]=referenceData;
+    const facilityNames=referenceMap(facilityRows,['id','facilityId','facility_id'],['name','displayName','label']);
+    const typeNames=referenceMap(typeRows,['id','hotelTypeId','typeId','hotel_type_id'],['name','hotelType','displayName','label']);
+    const chainNames=referenceMap(chainRows,['id','chainId','chain_id'],['name','chain','displayName','label']);
     let catalogHotels=Array.isArray(rates.hotels)?rates.hotels:[];
     if(staticHotels.length)catalogHotels=staticHotels.concat(catalogHotels.filter(h=>!staticHotels.some(r=>(r.id||r.hotelId||r.hotel_id)===(h.id||h.hotelId||h.hotel_id))));
     const byId=new Map(catalogHotels.map(h=>[h.id||h.hotelId||h.hotel_id,h])),hotels=[];
@@ -81,9 +106,11 @@ export default async function handler(req,res) {
       }).sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
       if(!offers.length)continue;
       const hotelLat=Number(meta.latitude??meta.location?.latitude),hotelLng=Number(meta.longitude??meta.location?.longitude),distanceKm=destination&&Number.isFinite(hotelLat)&&Number.isFinite(hotelLng)?(()=>{const rad=n=>n*Math.PI/180,dl=rad(hotelLat-destination.latitude),dn=rad(hotelLng-destination.longitude),a=Math.sin(dl/2)**2+Math.cos(rad(destination.latitude))*Math.cos(rad(hotelLat))*Math.sin(dn/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))})():null;
-      const hotelType=meta.hotelTypeName||meta.hotelType||meta.propertyType||meta.type||'',chainName=meta.chainName||meta.chain?.name||meta.chain||meta.brand||'';
-      const facilities=listOf(meta.facilities||meta.hotelFacilities||meta.amenities),roomAmenities=listOf(meta.roomAmenities||meta.room_amenities),neighborhood=meta.neighborhood||meta.district||meta.suburb||meta.area||'';
-      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.mainPhoto||meta.thumbnail||meta.image||'',address:meta.address||meta.formattedAddress||'',description:textOf(meta.description||meta.hotelDescription||meta.hotel_description),countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||meta.star_rating||0,rating:meta.rating||meta.reviewRating||0,reviewCount:meta.reviewCount||meta.reviewsCount||0,hotelType:String(hotelType||''),hotelTypeId:meta.hotelTypeId||meta.hotelTypeID||meta.typeId||null,chainName:String(chainName||''),chainId:meta.chainId||meta.chainID||null,facilities,roomAmenities,neighborhood:String(neighborhood||''),latitude:Number.isFinite(hotelLat)?hotelLat:null,longitude:Number.isFinite(hotelLng)?hotelLng:null,distanceKm,...offers[0],offers:offers.slice(0,8)});
+      const typeId=meta.hotelTypeId||meta.hotelTypeID||meta.typeId||meta.hotel_type_id||null,chainId=meta.chainId||meta.chainID||meta.chain_id||null;
+      const hotelType=meta.hotelTypeName||meta.hotelType?.name||meta.hotelType||meta.propertyType||meta.type||typeNames.get(String(typeId||meta.hotelType||''))||'',chainName=meta.chainName||meta.chain?.name||meta.chain||meta.brand||chainNames.get(String(chainId||''))||'';
+      const facilities=[...new Set([...listOf(meta.facilities||meta.hotelFacilities||meta.amenities||meta.facilityIds),...namesFor(meta.facilityIds||meta.facility_ids||[],facilityNames)])],roomAmenities=listOf(meta.roomAmenities||meta.room_amenities||meta.roomFacilityIds||meta.room_facility_ids),neighborhood=meta.neighborhood||meta.district||meta.suburb||meta.area||'';
+
+      hotels.push({hotelId:item.hotelId,name:meta.name||meta.hotelName||item.hotelId,photo:meta.main_photo||meta.mainPhoto||meta.thumbnail||meta.image||'',address:meta.address||meta.formattedAddress||'',description:textOf(meta.description||meta.hotelDescription||meta.hotel_description),countryCode:hotelCountryCode,stars:meta.stars||meta.starRating||meta.star_rating||0,rating:meta.rating||meta.reviewRating||0,reviewCount:meta.reviewCount||meta.reviewsCount||0,hotelType:String(hotelType||''),hotelTypeId:typeId,chainName:String(chainName||''),chainId,facilities,roomAmenities,neighborhood:String(neighborhood||''),latitude:Number.isFinite(hotelLat)?hotelLat:null,longitude:Number.isFinite(hotelLng)?hotelLng:null,distanceKm,...offers[0],offers:offers.slice(0,8)});
     }
     hotels.sort((a,b)=>a.estimatedTotal-b.estimatedTotal);
     const bookingMode=bookingEnvironment(key);
