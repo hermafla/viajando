@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 const clean=(v,max=160)=>String(v??'').trim().slice(0,max);
 const respond=(res,status,body)=>res.status(status).json(body);
-const base=()=>process.env.SUPABASE_URL?.replace(/\\/$/,'');
+const base=()=>process.env.SUPABASE_URL?.replace(/\/$/,'');
 const headers=()=>({apikey:process.env.SUPABASE_SECRET_KEY,Authorization:'Bearer '+process.env.SUPABASE_SECRET_KEY,'Content-Type':'application/json'});
 const sameOrigin=req=>{
   try{const origin=new URL(req.headers?.origin);return origin.protocol==='https:'&&origin.host===req.headers?.host}catch{return false}
@@ -39,7 +39,7 @@ export default async function handler(req,res){
   if(clean(body.website,120))return respond(res,200,{ok:true,message:'Solicitud recibida.'});
   const email=clean(body.email,254).toLowerCase();
   const bookingId=clean(body.bookingId,120);
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return respond(res,400,{error:'Ingresá un email válido.'});
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return respond(res,400,{error:'Ingresá un email válido.'});
   if(!/^[A-Za-z0-9._-]{3,120}$/.test(bookingId))return respond(res,400,{error:'Revisá el código de reserva.'});
 
   try{
