@@ -35,7 +35,7 @@ button{font:inherit;cursor:pointer}.search-btn{height:42px;background:var(--oran
 .price-chart i{display:block;flex:1;background:#c9e4ff;border-radius:3px 3px 0 0;min-height:5px}
 .price-bounds{display:flex;justify-content:space-between;color:#6b7889;font-size:11px;margin-bottom:8px}
 input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
-.check-list{display:grid;gap:11px}.check{display:flex;align-items:center;gap:9px;color:#3e5065;font-size:13px;cursor:pointer}
+.check-list{display:grid;gap:11px}.occupancy-note{display:block;margin-top:5px;color:#66778a;font-size:10px;line-height:1.35}.check{display:flex;align-items:center;gap:9px;color:#3e5065;font-size:13px;cursor:pointer}
 .check input{accent-color:var(--blue);width:15px;height:15px;margin:0;flex:none}
 .check em{font-style:normal;color:#8a96a5;margin-left:auto;font-size:11px}
 .stars{display:flex;gap:7px;flex-wrap:wrap}.star-btn{border:1px solid #d8e0e8;background:#fff;color:#52657a;padding:7px 9px;border-radius:7px;font-size:12px}.star-btn.active{border-color:#8dbdff;background:#eff6ff;color:#075db8;font-weight:800}
@@ -67,7 +67,7 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
     <div class="dest-wrap"><label for="city">Destino</label><input id="city" autocomplete="off" required><input id="placeId" type="hidden"><input id="countryCode" type="hidden" value="AR"><div class="suggestions" id="suggestions" hidden></div></div>
     <div><label for="checkin">Entrada</label><input id="checkin" type="date" required></div>
     <div><label for="checkout">Salida</label><input id="checkout" type="date" required></div>
-    <div><label for="adults">Huéspedes</label><select id="adults"><option value="1">1 adulto</option><option value="2">2 adultos</option><option value="3">3 adultos</option><option value="4">4 adultos</option><option value="5">5 adultos</option><option value="6">6 adultos</option></select></div>
+    <div><label for="adults">Huéspedes</label><select id="adults"><option value="1">1 adulto</option><option value="2">2 adultos</option><option value="3">3 adultos</option><option value="4">4 adultos</option><option value="5">5 adultos</option><option value="6">6 adultos</option></select><small class="occupancy-note" id="occupancyNote"></small></div>
     <button class="search-btn" type="submit">Buscar</button>
   </form>
 
@@ -112,12 +112,13 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
 <script>
 const $=id=>document.getElementById(id),form=$('searchForm'),city=$('city'),placeId=$('placeId'),countryCode=$('countryCode'),suggestions=$('suggestions'),checkin=$('checkin'),checkout=$('checkout'),adults=$('adults'),results=$('results'),status=$('status');
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const params=new URLSearchParams(location.search);let displayCurrency=(params.get('currency')||sessionStorage.getItem('valijeandoCurrency')||'USD').toUpperCase();if(!['USD','ARS'].includes(displayCurrency))displayCurrency='USD';let cardRate=Number(sessionStorage.getItem('valijeandoHotelArsRate')||0);
+const params=new URLSearchParams(location.search);let initialOccupancies=[];try{const parsed=JSON.parse(params.get('occupancies')||'[]');if(Array.isArray(parsed))initialOccupancies=parsed.filter(x=>x&&Number(x.adults)>0).map(x=>({adults:Number(x.adults),children:Array.isArray(x.children)?x.children.map(Number):Number(x.children)||0,childAges:Array.isArray(x.childAges)?x.childAges.map(Number):[]}))}catch{}const originalAdultCount=initialOccupancies.reduce((n,r)=>n+r.adults,0);let displayCurrency=(params.get('currency')||sessionStorage.getItem('valijeandoCurrency')||'USD').toUpperCase();if(!['USD','ARS'].includes(displayCurrency))displayCurrency='USD';let cardRate=Number(sessionStorage.getItem('valijeandoHotelArsRate')||0);
 const today=new Date(),dateIso=d=>d.toISOString().slice(0,10),nextDay=d=>new Date(d.getTime()+86400000);
 city.value=params.get('city')||'Buenos Aires';placeId.value=params.get('placeId')||'';countryCode.value=params.get('countryCode')||'AR';
-checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';adults.value=params.get('adults')||'2';$('currencyView').value=displayCurrency;
+checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';const initialAdultValue=Number(params.get('adults'))||originalAdultCount||2;if(initialAdultValue>6)adults.add(new Option(initialAdultValue+' adultos',String(initialAdultValue)));adults.value=String(initialAdultValue);$('currencyView').value=displayCurrency;
 let hotels=[],selectedStars=0,searchTimer,requestId=0,currentPage=1,activeRateSessionId='',selectedHotel=null;const PAGE_SIZE=20,selectedFacets=new Map(),reviewCache=new Map();let reviewRequestId=0,hotelContentRequestId=0;
 const amount=h=>Number(h.estimatedTotal??h.retailRate??0);
+function activeOccupancies(){if(initialOccupancies.length&&Number(adults.value)===originalAdultCount)return initialOccupancies;return [{adults:Number(adults.value)||2,children:[]}]}function partyTotals(p=activeOccupancies()){return {adults:p.reduce((n,r)=>n+Number(r.adults||0),0),children:p.reduce((n,r)=>n+(Array.isArray(r.children)?r.children.length:Number(r.children)||0),0),rooms:p.length}}function updateOccupancyNote(){const note=$('occupancyNote'),p=activeOccupancies(),t=partyTotals(p);if(!note)return;note.textContent=(initialOccupancies.length&&t.adults===originalAdultCount)?t.rooms+' '+(t.rooms===1?'habitación':'habitaciones')+(t.children?' · '+t.children+' '+(t.children===1?'menor':'menores'):''):'1 habitación'+(initialOccupancies.length&&t.adults!==originalAdultCount?' · al cambiar adultos se buscará solo para 1 habitación':'')};updateOccupancyNote();adults.addEventListener('change',updateOccupancyNote);
 const rateList=h=>Array.isArray(h.offers)?h.offers:[h];
 const isRefundable=o=>String(o.refundableTag||o.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
 const hasBreakfast=o=>/desayun|breakfast|buffet/i.test(String(o.boardName||''));
@@ -139,8 +140,7 @@ async function runSearch(){
  if(!placeId.value){status.textContent='Elegí un destino de las sugerencias para iniciar la búsqueda.';city.focus();return}
  if(!checkin.value||!checkout.value||checkout.value<=checkin.value){status.textContent='Elegí fechas de entrada y salida válidas.';return}
  const thisRequest=++requestId;results.innerHTML='<div class="loading-box">Consultando disponibilidad y preparando los filtros…</div>';status.textContent='Buscando alojamientos…';
- const occupancies=JSON.stringify([{adults:Number(adults.value),children:[]}]);
- const occupanciesData=JSON.parse(occupancies);activeRateSessionId=window.crypto?.randomUUID?window.crypto.randomUUID():'vh-'+Date.now()+'-'+Math.random().toString(36).slice(2);const q=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:'USD',guestNationality:'AR',occupancies,sessionId:activeRateSessionId});
+ const occupanciesData=activeOccupancies(),party=partyTotals(occupanciesData),occupancies=JSON.stringify(occupanciesData);activeRateSessionId=window.crypto?.randomUUID?window.crypto.randomUUID():'vh-'+Date.now()+'-'+Math.random().toString(36).slice(2);const q=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:'USD',guestNationality:'AR',occupancies,sessionId:activeRateSessionId});
  const pageQuery=new URLSearchParams(q);pageQuery.set('currency',displayCurrency);history.replaceState(null,'',location.pathname+'?'+pageQuery.toString());updateMapLink();
  try{const r=await fetch('/api/nuitee-hotels?'+q.toString());const data=await r.json();if(thisRequest!==requestId)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar la disponibilidad.');hotels=Array.isArray(data.hotels)?data.hotels:[];rebuildFacetFilters();if(data.destination?.displayName){city.value=data.destination.displayName+(data.destination.formattedAddress?' · '+data.destination.formattedAddress.split(',').pop().trim():'');updateMapLink()}configurePriceFilter();applyFilters();const environment=data.bookingEnvironment==='production'?'Producción':'Sandbox · precios de prueba';status.textContent=hotels.length?hotels.length+' alojamientos · '+environment+' · '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'No hay alojamientos disponibles para esos datos.'}
  catch(err){if(thisRequest!==requestId)return;hotels=[];results.innerHTML='<div class="error">'+esc(err.message||'Ocurrió un error.')+'</div>';status.textContent='No se pudo completar la búsqueda.'}
@@ -211,14 +211,14 @@ function offerDiscount(o){
  return {sale,reference,percent:Math.round((1-sale/reference)*100)};
 }
 function hotelPageUrl(h){
- const occupancies=[{adults:Number(adults.value),children:[]}],encoded=JSON.stringify(occupancies);
- const back=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:adults.value,currency:displayCurrency,occupancies:encoded});
- const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:adults.value,children:'0',rooms:'1',currency:displayCurrency,countryCode:h.countryCode||countryCode.value,occupancies:encoded,rating:String(Number(h.rating)||0),reviewCount:String(Number(h.reviewCount)||0),backSearch:'/hoteles-filtros.html?'+back.toString()});
+ const occupancies=activeOccupancies(),party=partyTotals(occupancies),encoded=JSON.stringify(occupancies);
+ const back=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:displayCurrency,occupancies:encoded});
+ const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:displayCurrency,countryCode:h.countryCode||countryCode.value,occupancies:encoded,rating:String(Number(h.rating)||0),reviewCount:String(Number(h.reviewCount)||0),backSearch:'/hoteles-filtros.html?'+back.toString()});
  if(activeRateSessionId)qp.set('sessionId',activeRateSessionId);
  return '/hotel.html?'+qp.toString();
 }
 function rememberHotel(h){
- const occupancies=[{adults:Number(adults.value),children:[]}];
+ const occupancies=activeOccupancies();
  sessionStorage.setItem('hotelOffers:'+h.hotelId,JSON.stringify(h.offers||[]));
  sessionStorage.setItem('hotelSearch:'+h.hotelId,JSON.stringify({checkin:checkin.value,checkout:checkout.value,occupancies}));
 }
@@ -289,7 +289,7 @@ async function loadHotelDetails(h){
  }
 }
 function openOffers(h){
- selectedHotel=h;$('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+adults.value+' adultos';const offers=rateList(h),nights=stayNights();loadReviewSummary(h);loadHotelDetails(h);
+ selectedHotel=h;$('modalTitle').textContent=h.name||'Habitaciones disponibles';$('modalSubtitle').textContent=formatDate(checkin.value)+' → '+formatDate(checkout.value)+' · '+partyTotals().adults+' adultos · '+partyTotals().rooms+' '+(partyTotals().rooms===1?'habitación':'habitaciones');const offers=rateList(h),nights=stayNights();loadReviewSummary(h);loadHotelDetails(h);
  $('offerList').innerHTML=offers.map(o=>{
   const cancel=isRefundable(o),board=prettyBoard(o.boardName||'Régimen no informado');
   const room=Array.isArray(o.rates)?o.rates.map(r=>r.roomName).filter(Boolean).join(' + '):o.roomName||'Habitación';
