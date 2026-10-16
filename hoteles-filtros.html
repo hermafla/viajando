@@ -12,7 +12,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:14px Arial,Helvetica,sans-serif}
 main{width:min(1240px,94%);margin:26px auto 56px}
 .page-head{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:18px}
-.eyebrow{color:var(--blue);font-size:11px;font-weight:800;letter-spacing:1.2px;margin-bottom:7px}
+.eyebrow{color:var(--blue);font-size:14px;font-weight:700;letter-spacing:0;margin-bottom:7px}
 h1{font-size:27px;line-height:1.15;margin:0 0 5px;letter-spacing:-.3px}
 .page-head p{margin:0;color:var(--muted);font-size:14px}
 .test-note{flex:none;border:1px solid #c7e8d3;background:#f0faf4;color:#176b37;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700}
@@ -35,7 +35,7 @@ button{font:inherit;cursor:pointer}.search-btn{height:42px;background:var(--oran
 .price-chart i{display:block;flex:1;background:#c9e4ff;border-radius:3px 3px 0 0;min-height:5px}
 .price-bounds{display:flex;justify-content:space-between;color:#6b7889;font-size:11px;margin-bottom:8px}
 input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
-.check-list{display:grid;gap:11px}.occupancy-note{display:block;margin-top:5px;color:#66778a;font-size:10px;line-height:1.35}.check{display:flex;align-items:center;gap:9px;color:#3e5065;font-size:13px;cursor:pointer}
+.check-list{display:grid;gap:11px}.occupancy-note{display:inline;margin-left:4px;color:#66778a;font-size:9px;font-weight:400;line-height:1.2;white-space:nowrap}.check{display:flex;align-items:center;gap:9px;color:#3e5065;font-size:13px;cursor:pointer}
 .check input{accent-color:var(--blue);width:15px;height:15px;margin:0;flex:none}
 .check em{font-style:normal;color:#8a96a5;margin-left:auto;font-size:11px}
 .stars{display:flex;gap:7px;flex-wrap:wrap}.star-btn{border:1px solid #d8e0e8;background:#fff;color:#52657a;padding:7px 9px;border-radius:7px;font-size:12px}.star-btn.active{border-color:#8dbdff;background:#eff6ff;color:#075db8;font-weight:800}
@@ -61,13 +61,13 @@ input[type=range]{height:22px;padding:0;accent-color:var(--blue)}
 <header class="vh-header" data-valijeando-header></header>
 <main>
   <div class="page-head">
-    <div><div class="eyebrow">ALOJAMIENTOS EN VALIJEANDO</div><h1>Encontrá tu alojamiento ideal</h1><p>Compará precios, servicios y opciones para tus fechas.</p></div>
+    <div><div class="eyebrow">Alojamientos en Valijeando</div><h1>Encontrá tu alojamiento ideal</h1><p>Compará precios, servicios y opciones para tus fechas.</p></div>
   </div>
   <form class="search" id="searchForm">
     <div class="dest-wrap"><label for="city">Destino</label><input id="city" autocomplete="off" required><input id="placeId" type="hidden"><input id="countryCode" type="hidden" value="AR"><div class="suggestions" id="suggestions" hidden></div></div>
     <div><label for="checkin">Entrada</label><input id="checkin" type="date" required></div>
     <div><label for="checkout">Salida</label><input id="checkout" type="date" required></div>
-    <div><label for="adults">Huéspedes</label><select id="adults"><option value="1">1 adulto</option><option value="2">2 adultos</option><option value="3">3 adultos</option><option value="4">4 adultos</option><option value="5">5 adultos</option><option value="6">6 adultos</option></select><small class="occupancy-note" id="occupancyNote"></small></div>
+    <div><label for="adults">Huéspedes <small class="occupancy-note" id="occupancyNote"></small></label><select id="adults"><option value="1">1 adulto</option><option value="2">2 adultos</option><option value="3">3 adultos</option><option value="4">4 adultos</option><option value="5">5 adultos</option><option value="6">6 adultos</option></select></div>
     <button class="search-btn" type="submit">Buscar</button>
   </form>
 
@@ -117,7 +117,7 @@ city.value=params.get('city')||'Buenos Aires';placeId.value=params.get('placeId'
 checkin.value=params.get('checkin')||'2026-11-01';checkout.value=params.get('checkout')||'2026-11-02';const initialAdultValue=Number(params.get('adults'))||originalAdultCount||2;if(initialAdultValue>6)adults.add(new Option(initialAdultValue+' adultos',String(initialAdultValue)));adults.value=String(initialAdultValue);$('currencyView').value=displayCurrency;
 let hotels=[],selectedStars=0,searchTimer,requestId=0,currentPage=1,activeRateSessionId='',selectedHotel=null;const PAGE_SIZE=20,selectedFacets=new Map(),reviewCache=new Map();let reviewRequestId=0,hotelContentRequestId=0;
 const amount=h=>Number(h.estimatedTotal??h.retailRate??0);
-function activeOccupancies(){if(initialOccupancies.length&&Number(adults.value)===originalAdultCount)return initialOccupancies;return [{adults:Number(adults.value)||2,children:[]}]}function partyTotals(p=activeOccupancies()){return {adults:p.reduce((n,r)=>n+Number(r.adults||0),0),children:p.reduce((n,r)=>n+(Array.isArray(r.children)?r.children.length:Number(r.children)||0),0),rooms:p.length}}function updateOccupancyNote(){const note=$('occupancyNote'),p=activeOccupancies(),t=partyTotals(p);if(!note)return;note.textContent=(initialOccupancies.length&&t.adults===originalAdultCount)?t.rooms+' '+(t.rooms===1?'habitación':'habitaciones')+(t.children?' · '+t.children+' '+(t.children===1?'menor':'menores'):''):'1 habitación'+(initialOccupancies.length&&t.adults!==originalAdultCount?' · al cambiar adultos se buscará solo para 1 habitación':'')};updateOccupancyNote();adults.addEventListener('change',updateOccupancyNote);
+function activeOccupancies(){if(initialOccupancies.length&&Number(adults.value)===originalAdultCount)return initialOccupancies;return [{adults:Number(adults.value)||2,children:[]}]}function partyTotals(p=activeOccupancies()){return {adults:p.reduce((n,r)=>n+Number(r.adults||0),0),children:p.reduce((n,r)=>n+(Array.isArray(r.children)?r.children.length:Number(r.children)||0),0),rooms:p.length}}function updateOccupancyNote(){const note=$('occupancyNote'),p=activeOccupancies(),t=partyTotals(p);if(!note)return;note.textContent=(initialOccupancies.length&&t.adults===originalAdultCount)?t.rooms+' hab.'+(t.children?' · '+t.children+(t.children===1?' menor':' menores'):''):(initialOccupancies.length?'1 hab. · solo adultos':'')};updateOccupancyNote();adults.addEventListener('change',updateOccupancyNote);
 const rateList=h=>Array.isArray(h.offers)?h.offers:[h];
 const isRefundable=o=>String(o.refundableTag||o.cancellationPolicies?.refundableTag||'').toUpperCase()==='RFN';
 const hasBreakfast=o=>/desayun|breakfast|buffet/i.test(String(o.boardName||''));
