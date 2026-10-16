@@ -4,7 +4,7 @@
   header.innerHTML=`<div class="vh-inner">
     <a class="vh-brand" href="/" aria-label="Valijeando, inicio"><span class="vh-logo-frame"><img src="/valijeando-logo-original.png" alt="" width="58" height="58"></span><span class="vh-brand-copy"><span class="vh-wordmark">Valije<span>ando</span></span><span class="vh-tagline">BUSCÁ · COMPARÁ · VIAJÁ</span></span></a>
     <nav class="vh-links" id="vh-navigation" aria-label="Navegación principal">
-      <a class="vh-link" href="/hoteles-filtros.html" data-section="hoteles">Hoteles</a>
+      <a class="vh-link" href="/hoteles-filtros.html" data-section="hoteles">Alojamientos</a>
       <a class="vh-link" href="https://vuelos.valijeando.com.ar/" data-section="vuelos">Vuelos</a>
       <a class="vh-link" href="/servicios.html#traslados" data-section="traslados">Traslados</a>
       <a class="vh-link" href="/servicios.html#actividades" data-section="actividades">Actividades</a>
