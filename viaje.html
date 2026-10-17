@@ -64,7 +64,7 @@ ValijeandoParty.apply(p,party);
 const $=id=>document.getElementById(id),money=(n,c='USD')=>{try{return new Intl.NumberFormat('es-AR',{style:'currency',currency:c,maximumFractionDigits:2}).format(Number(n||0))}catch{return c+' '+Number(n||0).toLocaleString('es-AR')}};
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=s=>{if(!s)return '';const d=new Date(s+'T00:00:00Z');return new Intl.DateTimeFormat('es-AR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(d)};
-let hotels=[],selectedHotel=null,selectedOffer=null,flightSelection=null,flightRows=[],flightSandbox=false;
+let hotels=[],hotelVisibleLimit=12,selectedHotel=null,selectedOffer=null,flightSelection=null,flightRows=[],flightSandbox=false;
 $('tripTitle').textContent='Armá tu viaje a '+destination;document.title='Viaje a '+destination+' | Valijeando';$('tripChips').innerHTML=[originText+' → '+destination,checkin&&checkout?fmtDate(checkin)+' → '+fmtDate(checkout):'',party.reduce((n,r)=>n+(r.adults||0)+(r.childAges||r.children||[]).length,0)+' viajeros'].filter(Boolean).map(x=>'<span class="chip">'+esc(x)+'</span>').join('');
 const back=new URLSearchParams(p);['destino','etiqueta','vuelo','vueloReal','vueloSeleccionado','hotel','hotelId','hotelNombre','hotelRoomName','hotelBoardName','hotelOfferId','hotelSelected'].forEach(k=>back.delete(k));$('back').href='resultados.html?'+back.toString();
 function stayNights(){return checkin&&checkout?Math.max(1,(Date.parse(checkout)-Date.parse(checkin))/86400000):1}
@@ -117,7 +117,7 @@ function renderHotels(){const name=$('hotelNameFilter').value.trim().toLocaleLow
  const sortOrder=list.slice().sort(sorters[sort]||sorters.price);
  if(selectedHotel&&!sortOrder.some(h=>String(h.hotelId)===String(selectedHotel.hotelId))){selectedHotel=null;selectedOffer=null;updateHotelSide();$('stepHotelMeta').textContent='Alojamiento recomendado';$('hotelNote').textContent='La habitación elegida dejó de coincidir con los filtros. Elegí otra opción o limpiá los filtros.'}
  $('hotelCount').textContent=sortOrder.length+' de '+hotels.length+' alojamientos';if(!sortOrder.length){$('hotelResults').innerHTML='<div class="status">No hay alojamientos que coincidan con esos filtros. Probá quitar alguno.</div>';return}
- $('hotelResults').innerHTML=sortOrder.map((h,i)=>displayHotel(h,i===0&&String(h.hotelId)===initialHotelId)).join('');attachHotelButtons();
+ const visibleHotels=sortOrder.slice(0,hotelVisibleLimit);$('hotelResults').innerHTML=visibleHotels.map((h,i)=>displayHotel(h,i===0&&String(h.hotelId)===initialHotelId)).join('')+(sortOrder.length>visibleHotels.length?'<button id="showMoreHotels" class="filter-clear" type="button" style="width:100%;padding:12px">Mostrar 12 alojamientos más</button>':'');attachHotelButtons();document.getElementById('showMoreHotels')?.addEventListener('click',()=>{hotelVisibleLimit+=12;renderHotels()});
  if(selectedHotel){const visible=sortOrder.find(h=>String(h.hotelId)===String(selectedHotel.hotelId));if(visible){const offer=visible.offers?.find(o=>matchesOffer(o)&&String(o.offerId||'')===String(selectedOffer?.offerId||''))||visible.offers?.find(matchesOffer);if(offer)chooseOffer(visible,offer)}}
 }
 async function loadHotels(){if(!checkin||!checkout){$('hotelResults').innerHTML='<div class="status">Para elegir alojamiento en Viaje completo, seleccioná fechas de entrada y salida en la búsqueda.</div>';return}
