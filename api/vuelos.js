@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if(!origin||!destination)return res.status(400).json({ok:false,error:"Faltan origen o destino IATA"});
   if(process.env.VERCEL_ENV==='preview'){
     const liveUrl=new URL('https://www.valijeando.com.ar/api/vuelos');
-    for(const [key,value] of Object.entries({origin,destination,fechaIda,fechaVuelta,currency}))if(value)liveUrl.searchParams.set(key,key==='fechaIda'?'fechaIda':key==='fechaVuelta'?'fechaVuelta':key,value);
+    for(const [key,value] of Object.entries({origin,destination,fechaIda,fechaVuelta,currency}))if(value)liveUrl.searchParams.set(key,value);
     try{
       const live=await fetch(liveUrl,{signal:AbortSignal.timeout(15000)}),data=await live.json().catch(()=>({}));
       return res.status(live.status).json({...data,previewProxy:true});
