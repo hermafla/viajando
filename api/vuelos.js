@@ -1,13 +1,21 @@
 export default async function handler(req, res) {
   res.setHeader("Cache-Control","s-maxage=300, stale-while-revalidate=600");
   const token=process.env.TRAVELPAYOUTS_TOKEN;
-  if(!token)return res.status(500).json({ok:false,error:"Falta TRAVELPAYOUTS_TOKEN en Vercel"});
+  if(!token&&process.env.VERCEL_ENV==='production')return res.status(500).json({ok:false,error:"Falta TRAVELPAYOUTS_TOKEN en Vercel"});
   const origin=String(req.query.origin||req.query.origen||"").toUpperCase();
   const destination=String(req.query.destination||req.query.destino||"").toUpperCase();
   const fechaIda=String(req.query.fechaIda||req.query.depart_date||"");
   const fechaVuelta=String(req.query.fechaVuelta||req.query.return_date||"");
   const currency=String(req.query.currency||"usd").toLowerCase();
   if(!origin||!destination)return res.status(400).json({ok:false,error:"Faltan origen o destino IATA"});
+  if(process.env.VERCEL_ENV==='preview'){
+    const liveUrl=new URL('https://www.valijeando.com.ar/api/vuelos');
+    for(const [key,value] of Object.entries({origin,destination,fechaIda,fechaVuelta,currency}))if(value)liveUrl.searchParams.set(key,key==='fechaIda'?'fechaIda':key==='fechaVuelta'?'fechaVuelta':key,value);
+    try{
+      const live=await fetch(liveUrl,{signal:AbortSignal.timeout(15000)}),data=await live.json().catch(()=>({}));
+      return res.status(live.status).json({...data,previewProxy:true});
+    }catch{return res.status(502).json({ok:false,error:"No se pudo consultar la referencia Aviasales de Production."})}
+  }
   const url=new URL("https://api.travelpayouts.com/aviasales/v3/prices_for_dates");
   url.searchParams.set("origin",origin);
   url.searchParams.set("destination",destination);
