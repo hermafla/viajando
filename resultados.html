@@ -60,23 +60,26 @@ async function buscarVuelosNuitee(lista){
         const result=await response.json().catch(()=>({}));
         if(!response.ok||!result.ok)throw new Error(result.error||"No se pudo cotizar el vuelo.");
         const fare=leerOfertaNuitee(result.data);
-        actualizarTarifaVuelo(v,fare,fare?(result.sandbox?"Sandbox de Nuitee · no reservable":"Tarifa de Nuitee · se confirma al reservar"):"Nuitee no encontró vuelos para estas fechas.",result.sandbox===true);
-      }catch(error){actualizarTarifaVuelo(v,null,error.message||"No se pudo cotizar el vuelo.")}
+        if(result.sandbox){
+          actualizarTarifaVuelo(v,null,"Vista previa: ocultamos importes de prueba. La tarifa real se consulta en producción.");
+        }else{
+          actualizarTarifaVuelo(v,fare,fare?"Tarifa real de Nuitee · se confirma al reservar":"Nuitee no encontró vuelos para estas fechas.");
+        }
+  }catch(error){actualizarTarifaVuelo(v,null,error.message||"No se pudo cotizar el vuelo.")}
       done++;
       document.getElementById("notaPrecios").textContent=done<pendientes.length?"Tarifas aéreas de Nuitee: "+done+" de "+pendientes.length+" destinos consultados":"Hoteles y tarifas de vuelo consultados para "+done+" destinos";
     }
   }
   await Promise.all(Array.from({length:Math.min(2,pendientes.length)},worker));
 }
-function actualizarTarifaVuelo(v,fare,message,sandbox){
-  const code=codigosDestino[v.destino];vuelosNuiteeResultados.set(code,{fare,message,sandbox});
+function actualizarTarifaVuelo(v,fare,message){
+  const code=codigosDestino[v.destino];vuelosNuiteeResultados.set(code,{fare,message});
   const price=document.getElementById("vuelo-price-"+code),info=document.getElementById("vuelo-info-"+code),total=document.getElementById("trip-total-"+code),label=document.getElementById("trip-total-label-"+code);
   if(!price||!info||!total)return;
   if(fare){
     const sum=Number(v.hotelCalc||0)+fare.amount;
     price.textContent=precioVuelo(fare.amount,fare.currency);
     info.textContent=message+(fare.airline?" · "+fare.airline:"");
-    if(sandbox)info.textContent+=" · precio de prueba";
     total.textContent=precioVuelo(sum,fare.currency);
     label.textContent="Vuelo + alojamiento (cotización)";
   }else{
@@ -147,7 +150,7 @@ function mostrarDestinos(disponibles,fallidas){
   if(disponibles.length){
     const cantidad=Math.min(destinosVisibles,disponibles.length);
     grid.innerHTML=disponibles.slice(0,cantidad).map(card).join("");nota.textContent="Mostrando "+cantidad+" de "+disponibles.length+" destinos con hotel disponible"+(fallidas.length?" · "+fallidas.length+" consultas pendientes":"");nota.classList.add("real");
-    disponibles.slice(0,cantidad).forEach(v=>{const saved=vuelosNuiteeResultados.get(codigosDestino[v.destino]);if(saved)actualizarTarifaVuelo(v,saved.fare,saved.message,saved.sandbox)});
+    disponibles.slice(0,cantidad).forEach(v=>{const saved=vuelosNuiteeResultados.get(codigosDestino[v.destino]);if(saved)actualizarTarifaVuelo(v,saved.fare,saved.message)});
   }
   else if(fallidas.length){grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No pudimos completar la consulta de disponibilidad</h3><p>Podés volver a intentar con las mismas fechas y viajeros.</p></div>';nota.textContent="Consulta incompleta"}
   else{grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No encontramos alojamiento disponible para estas fechas</h3><p>Probá cambiando las fechas para buscar otras opciones.</p></div>';nota.textContent="Sin hoteles disponibles para estas fechas"}
