@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparar vuelos para tu viaje | Valijeando</title>
+<link rel="icon" type="image/svg+xml" href="/valijeando-favicon.svg">
+<link rel="stylesheet" href="/site-header.css"><script src="/site-header.js" defer></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f8fc;color:#172033;font-family:Arial,Helvetica,sans-serif}
+main{max-width:1120px;margin:28px auto;padding:0 18px 60px}.hero,.panel{background:#fff;border:1px solid #e5eaf2;border-radius:18px;box-shadow:0 6px 24px rgba(16,24,40,.05)}
+.hero{padding:24px;margin-bottom:16px}.hero h1{margin:0;font-size:28px}.hero p{margin:8px 0 0;color:#667085;line-height:1.5}
+.back{display:inline-block;margin:0 0 15px;color:#1677ff;text-decoration:none;font-weight:800}
+.warning{padding:14px 17px;border:1px solid #f3d58e;border-radius:14px;background:#fff9e9;color:#684b0b;font-size:13px;line-height:1.5;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.panel{overflow:hidden}.panel-head{padding:18px 19px;border-bottom:1px solid #edf0f3}.panel-head h2{font-size:19px;margin:0}.panel-head p{margin:6px 0 0;color:#667085;font-size:13px;line-height:1.45}
+.tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-bottom:9px}
+.tag.sandbox{background:#fff2d8;color:#855800}.tag.reference{background:#eaf3ff;color:#175cd3}
+.status{padding:18px;color:#667085;font-size:13px;line-height:1.5}.cards{display:grid;gap:10px;padding:0 12px 12px}
+.card{padding:14px;border:1px solid #e7ebf1;border-radius:13px;background:#fff}
+.cardtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.carrier{font-size:15px;font-weight:800}.price{font-size:18px;font-weight:800;color:#1677ff;white-space:nowrap}
+.leg{margin-top:9px;padding:9px 10px;background:#f8fafc;border-radius:9px;color:#475467;font-size:12px;line-height:1.45}.meta{margin-top:8px;color:#667085;font-size:12px;line-height:1.45}
+.empty{margin:0 12px 12px;padding:13px;border-radius:11px;background:#f8fafc;color:#667085;font-size:13px;line-height:1.5}
+.foot{padding:12px 18px;border-top:1px solid #edf0f3;color:#667085;font-size:11px;line-height:1.5}
+@media(max-width:760px){main{margin-top:16px}.grid{grid-template-columns:1fr}.hero h1{font-size:24px}.cardtop{gap:8px}}
+</style>
+</head>
+<body>
+<header class="vh-header" data-valijeando-header></header>
+<main>
+<a class="back" id="back" href="/viaje.html">← Volver a tu viaje</a>
+<section class="hero">
+<h1 id="title">Comparación de vuelos</h1>
+<p id="summary"></p>
+</section>
+<div class="warning"><strong>Vista de prueba:</strong> Nuitee se consulta en Sandbox y sus tarifas no son reales ni reservables. Aviasales muestra precios encontrados recientemente, que tampoco garantizan disponibilidad ni permiten comprar desde acá. Esta comparación no inicia pagos ni reservas.</div>
+<div class="grid">
+<section class="panel" aria-labelledby="nuitee-title">
+<div class="panel-head"><span class="tag sandbox">SANDBOX · NO RESERVABLE</span><h2 id="nuitee-title">Nuitee</h2><p>Resultados del ambiente de prueba de Nuitee para el flujo Viaje completo.</p></div>
+<div id="nuitee-status" class="status">Consultando Nuitee Sandbox…</div>
+<div id="nuitee-cards" class="cards" aria-live="polite"></div>
+<div class="foot">Los datos de Sandbox pueden estar incompletos o no representar disponibilidad, precio, equipaje ni condiciones comerciales reales.</div>
+</section>
+<section class="panel" aria-labelledby="avia-title">
+<div class="panel-head"><span class="tag reference">REFERENCIA · NO RESERVABLE</span><h2 id="avia-title">Aviasales</h2><p>Precios detectados por su Data API para las fechas exactas, como referencia para comparar proveedores.</p></div>
+<div id="avia-status" class="status">Consultando referencia de Aviasales…</div>
+<div id="avia-cards" class="cards" aria-live="polite"></div>
+<div class="foot">La referencia se basa en precios vistos recientemente y puede no coincidir con una tarifa disponible al abrir la búsqueda.</div>
+</section>
+</div>
+</main>
+<script src="/travel-party.js"></script>
+<script>
+(function(){
+  const p=new URLSearchParams(location.search);
+  const origin=(p.get("origin")||"").toUpperCase(),destination=(p.get("destination")||"").toUpperCase();
+  const departureDate=p.get("departureDate")||"",returnDate=p.get("returnDate")||"";
+  const returnValue=p.get("returnTrip")||"",occupancies=ValijeandoParty.fromParams(p),counts=ValijeandoParty.flightCounts(occupancies);
+  const pax=counts.adults+counts.children+counts.infants;
+  const back=ValijeandoParty.internalUrl(returnValue,"/viaje.html");
+  if(back)document.getElementById("back").href=back;
+  document.getElementById("title").textContent=origin+" → "+destination;
+  document.getElementById("summary").textContent=departureDate+" → "+returnDate+" · "+pax+(pax===1?" viajero":" viajeros");
+  const nStatus=document.getElementById("nuitee-status"),nCards=document.getElementById("nuitee-cards");
+  const aStatus=document.getElementById("avia-status"),aCards=document.getElementById("avia-cards");
+  function add(parent,tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=text;parent.appendChild(el);return el}
+  function fail(status,cards,message){status.textContent=message;status.className="status";cards.replaceChildren()}
+  function money(offer){
+    const pricing=offer?.pricing?.display||offer?.pricing?.original||offer?.pricing||{};
+    const total=typeof pricing.total==="number"?pricing.total:Number(pricing.total?.amount??pricing.amount??offer?.price);
+    const currency=String(pricing.currency||pricing.total?.currency||offer?.currency||"USD").toUpperCase();
+    return Number.isFinite(total)?{total,currency}:null;
+  }
+  function formatMoney(value,currency){
+    return new Intl.NumberFormat("es-AR",{style:"currency",currency:currency||"USD",maximumFractionDigits:2}).format(value);
+  }
+  function drawNuitee(data){
+    const batches=Array.isArray(data?.data)?data.data:[];
+    const rows=[];
+    batches.forEach(batch=>(batch?.journeys||[]).forEach(journey=>(journey?.offers||[]).forEach(offer=>{
+      const price=money(offer);if(price)rows.push({journey,offer,price});
+    })));
+    rows.sort((a,b)=>a.price.total-b.price.total);
+    if(!rows.length){fail(nStatus,nCards,"Nuitee Sandbox no devolvió tarifas para esta ruta. Esto no permite concluir si hay vuelos reales.");return}
+    nStatus.textContent=rows.length+" opciones devueltas por Sandbox";
+    rows.slice(0,10).forEach(({journey,offer,price})=>{
+      const card=add(nCards,"article","card","");
+      const top=add(card,"div","cardtop","");
+      const segments=Array.isArray(journey.segments)?journey.segments:[];
+      const carrier=segments.map(x=>x?.carrier?.marketingName).find(Boolean)||offer.providerName||offer.provider||"Vuelo";
+      add(top,"div","carrier",carrier);
+      add(top,"div","price",formatMoney(price.total,price.currency));
+      segments.forEach(seg=>{
+        const direction=seg.direction==="INBOUND"?"Regreso":"Ida";
+        const from=seg.originCode||seg.origin||"",to=seg.destinationCode||seg.destination||"";
+        const times=[seg.departureTime,seg.arrivalTime].filter(Boolean).map(x=>String(x).replace("T"," ").slice(0,16)).join(" · ");
+        const stops=Number(seg.stopCount||0);
+        add(card,"div","leg",direction+" · "+from+" → "+to+(times?" · "+times:"")+" · "+(stops===0?"directo":stops+" escala(s)"));
+      });
+      const terms=offer.terms||{},cabin=offer.cabinClass||offer.fare?.family||"";
+      const extras=[cabin,terms.refundable===true?"Reembolsable":terms.refundable===false?"No reembolsable":""].filter(Boolean);
+      if(extras.length)add(card,"div","meta",extras.join(" · "));
+    });
+  }
+  function drawAvia(data){
+    const rows=Array.isArray(data?.offers)?data.offers:[];
+    if(!rows.length){fail(aStatus,aCards,"Aviasales no devolvió precios para estas fechas exactas. Probá otras fechas o consultá Vuelos para ver opciones de compra.");return}
+    aStatus.textContent=rows.length+" precios de referencia";
+    rows.slice(0,10).forEach(offer=>{
+      const card=add(aCards,"article","card","");
+      const top=add(card,"div","cardtop","");
+      add(top,"div","carrier",offer.airline||"Aerolínea no informada");
+      add(top,"div","price",formatMoney(Number(offer.price),offer.currency||data.currency||"USD"));
+      const idaStops=offer.transfers==null?"":Number(offer.transfers)===0?"directo":offer.transfers+" escala(s)";
+      const vueltaStops=offer.return_transfers==null?"":Number(offer.return_transfers)===0?"directo":offer.return_transfers+" escala(s)";
+      add(card,"div","leg","Ida · "+origin+" → "+destination+(idaStops?" · "+idaStops:""));
+      add(card,"div","leg","Regreso · "+destination+" → "+origin+(vueltaStops?" · "+vueltaStops:""));
+      if(offer.found_at)add(card,"div","meta","Precio visto: "+String(offer.found_at));
+    });
+  }
+  if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||! /^\d{4}-\d{2}-\d{2}$/.test(departureDate)||! /^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){
+    fail(nStatus,nCards,"Elegí origen, destino y fechas exactas de ida y vuelta desde Viaje completo.");
+    fail(aStatus,aCards,"Elegí origen, destino y fechas exactas de ida y vuelta desde Viaje completo.");
+    return;
+  }
+  const childAges=occupancies.flatMap(r=>r.childAges||[]);
+  const childrenAges=childAges.filter(age=>age>=2&&age<12),infantAges=childAges.filter(age=>age<2);
+  const nuiteeRequest=fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    legs:[{origin,destination,date:departureDate},{origin:destination,destination:origin,date:returnDate}],
+    adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"
+  })}).then(async response=>{const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"No se pudo consultar Nuitee Sandbox.");drawNuitee(data.data)});
+  const params=new URLSearchParams({origin,destination,fechaIda:departureDate,fechaVuelta:returnDate,currency:"usd"});
+  const aviaRequest=fetch("/api/vuelos?"+params.toString()).then(async response=>{const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"No se pudo consultar Aviasales.");drawAvia(data)});
+  Promise.allSettled([nuiteeRequest,aviaRequest]).then(results=>{
+    if(results[0].status==="rejected")fail(nStatus,nCards,results[0].reason?.message||"No se pudo consultar Nuitee Sandbox.");
+    if(results[1].status==="rejected")fail(aStatus,aCards,results[1].reason?.message||"No se pudo consultar la referencia Aviasales.");
+  });
+})();
+</script>
+</body>
+</html>
