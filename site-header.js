@@ -20,6 +20,12 @@
     const footer=document.querySelector('.site-footer,footer');
     if(footer)footer.insertAdjacentHTML('beforebegin','<section class="vh-regret-card" aria-label="Arrepentimiento de compra"><div><strong>¿Te arrepentiste de tu compra?</strong><span>En general, podés solicitarlo dentro de los 10 días corridos desde la contratación. Para servicios turísticos con fecha determinada, enviá el aviso dentro de ese plazo y al menos 24 horas antes del inicio. Los vuelos regulares se rigen por la tarifa y la normativa aérea indicadas en el voucher.</span><a class="vh-regret-info" href="/derecho-arrepentimiento.html">Ver información y plazos</a></div><a href="/arrepentimiento.html">Botón de arrepentimiento</a></section>');
   }
+  const legalLinks=document.createElement('nav');
+  legalLinks.className='vh-legal-links';
+  legalLinks.setAttribute('aria-label','Información legal');
+  legalLinks.innerHTML='<a href="/terminos-y-condiciones.html">Términos y condiciones</a><a href="/derecho-arrepentimiento.html">Derecho de arrepentimiento</a><a href="/arrepentimiento.html">Botón de arrepentimiento</a>';
+  const pageFooter=document.querySelector('footer');
+  if(pageFooter)pageFooter.insertAdjacentElement('afterend',legalLinks);else document.body.appendChild(legalLinks);
   const nav=header.querySelector('.vh-links'),button=header.querySelector('.vh-menu-button'),more=header.querySelector('.vh-more');
   const closeMenu=()=>{nav.classList.remove('is-open');button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menú');more.open=false};
   button.addEventListener('click',()=>{const open=nav.classList.toggle('is-open');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú')});
