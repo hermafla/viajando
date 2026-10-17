@@ -316,7 +316,7 @@ $('currencyView').addEventListener('change',e=>changeCurrency(e.target.value));
 async function resolveInitialPlace(){
  const rawCity=city.value.trim().split(' · ')[0];
  if(!rawCity)return;
- const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
  const country=countryCode.value;
  const countryName=/^[a-z]{2}$/i.test(country)?new Intl.DisplayNames(['es'],{type:'region'}).of(country.toUpperCase()):'';
  const query=[rawCity,countryName].filter(Boolean).join(', ');
