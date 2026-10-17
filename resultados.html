@@ -146,7 +146,7 @@ let opciones=base.map(calcular).sort((a,b)=>{
 });
 document.getElementById("grid").innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:34px;text-align:center"><h3 style="font-size:22px;margin-bottom:8px">Buscando opciones para tu viaje…</h3><p style="color:#667085">Comprobamos alojamiento y tarifas aéreas de Nuitee para las fechas elegidas.</p></div>';
 let destinosVisibles=opciones.length;
-function mostrarDestinos(disponibles,fallidas){
+function mostrarDestinos(disponibles,fallidas,mostrarBoton=true){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios"),actions=document.getElementById("resultActions");
   actions.replaceChildren();nota.classList.remove("real");
   if(disponibles.length){
@@ -156,18 +156,27 @@ function mostrarDestinos(disponibles,fallidas){
   }
   else if(fallidas.length){grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No pudimos completar la consulta de disponibilidad</h3><p>Podés volver a intentar con las mismas fechas y viajeros.</p></div>';nota.textContent="Consulta incompleta"}
   else{grid.innerHTML='<div style="grid-column:1/-1;background:#fff;border:1px solid #eaecf0;border-radius:18px;padding:30px;text-align:center"><h3>No encontramos alojamiento disponible para estas fechas</h3><p>Probá cambiando las fechas para buscar otras opciones.</p></div>';nota.textContent="Sin hoteles disponibles para estas fechas"}
-  if(fallidas.length){const button=document.createElement('button');button.type='button';button.className='btn';button.textContent='Reintentar consultas pendientes';button.onclick=async()=>{button.disabled=true;await buscarDestinos()};actions.appendChild(button)}
+  if(fallidas.length&&mostrarBoton){const button=document.createElement('button');button.type='button';button.className='btn';button.textContent='Reintentar consultas pendientes';button.onclick=async()=>{button.disabled=true;await buscarDestinos()};actions.appendChild(button)}else if(fallidas.length){const pending=document.createElement('p');pending.className='estado';pending.textContent='Estamos reintentando automáticamente '+fallidas.length+' consulta(s) pendiente(s)…';actions.appendChild(pending)}
 }
-async function buscarDestinos(){
+async function buscarDestinos(autoIntento=0){
   const grid=document.getElementById("grid"),nota=document.getElementById("notaPrecios");
   if(!Number.isFinite(presupuesto)||presupuesto<=0){grid.innerHTML='<p>Indicá un presupuesto mayor que cero en el buscador.</p>';nota.textContent="Presupuesto inválido";return}
   const actualizadas=await aplicarHotelesReales(opciones);
-  const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError);
-  mostrarDestinos(disponibles,fallidas);
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> consultamos alojamientos y tarifas aéreas de Nuitee para tus fechas y pasajeros. El importe del vuelo queda sujeto a confirmación al iniciar la reserva.";
-  // Cotizamos en paralelo limitado las tarjetas que ya se muestran.
-  buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
+  const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError),habraReintento=fallidas.length>0&&autoIntento<2;
   opciones=actualizadas;
+  mostrarDestinos(disponibles,fallidas,!habraReintento);
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> consultamos alojamientos y tarifas aéreas de Nuitee para tus fechas y pasajeros. El importe del vuelo queda sujeto a confirmación al iniciar la reserva.";
+  // Consultar vuelos para los destinos disponibles sin bloquear las tarjetas de hotel.
+  buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
+  if(habraReintento){
+    const intento=autoIntento+1;
+    nota.textContent="Reintentando automáticamente "+fallidas.length+" consulta(s) pendiente(s) · intento "+intento+" de 2";
+    grid.setAttribute("aria-busy","true");
+    await new Promise(resolve=>setTimeout(resolve,900*intento));
+    grid.removeAttribute("aria-busy");
+    return buscarDestinos(intento);
+  }
 }
+
 buscarDestinos();
 </script></body></html>
