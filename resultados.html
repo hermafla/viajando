@@ -76,12 +76,12 @@ function actualizarTarifaVuelo(v,fare,message,sandbox){
     price.textContent=precioVuelo(fare.amount,fare.currency);
     info.textContent=message+(fare.airline?" · "+fare.airline:"");
     if(sandbox)info.textContent+=" · precio de prueba";
-    total.textContent=precioVu(sum,fare.currency);
+    total.textContent=precioVuelo(sum,fare.currency);
     label.textContent="Vuelo + alojamiento (cotización)";
   }else{
     price.textContent="A confirmar";
     info.textContent=message||"Tarifa aérea no disponible";
-    total.textContent=precioVu(Number(v.hotelCalc||0),"USD");
+    total.textContent=precioVuelo(Number(v.hotelCalc||0),"USD");
     label.textContent="Total parcial · falta vuelo";
   }
 }
