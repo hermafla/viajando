@@ -28,6 +28,21 @@ const imageUrls=value=>rowsOf(value).map(x=>typeof x==='string'?x:String(x?.url|
 
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
+  if(req.method==='POST'&&String(req.query.action||'')==='flights-prod-check'){
+    const expected=process.env.NUITEE_FLIGHTS_PROD_CHECK_TOKEN;
+    if(!expected||req.headers.authorization!=='Bearer '+expected)return res.status(404).json({ok:false});
+    const apiKey=process.env.NUITEE_API_KEY;
+    if(!apiKey)return res.status(503).json({ok:false,stage:'configuration'});
+    const requestBody={legs:[{origin:'BUE',destination:'FLN',date:'2026-11-20',direction:'OUTBOUND'},{origin:'FLN',destination:'BUE',date:'2026-11-27',direction:'INBOUND'}],adults:2,children:0,infants:0,currency:'USD',country:'AR'};
+    try{
+      const response=await fetch('https://api.liteapi.travel/v3.0/flights/rates',{method:'POST',headers:{'X-API-Key':apiKey,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(requestBody),signal:AbortSignal.timeout(20000)});
+      const body=await response.json().catch(()=>({}));
+      const collect=(v,d=0)=>{if(d>5||!v||typeof v!=='object')return null;if(Array.isArray(v))return v.length&&v.some(x=>x&&typeof x==='object')?v:null;for(const k of ['data','offers','rates','results','flights','itineraries']){const a=collect(v[k],d+1);if(a)return a}for(const x of Object.values(v)){const a=collect(x,d+1);if(a)return a}return null};
+      const offers=collect(body);
+      const amounts=(offers||[]).map(o=>{for(const v of [o?.price?.amount,o?.price?.total,o?.price,o?.total?.amount,o?.total?.value,o?.total,o?.grandTotal?.amount,o?.grandTotal,o?.amount]){const n=typeof v==='number'?v:Number(v);if(Number.isFinite(n)&&n>0)return n}return null}).filter(Number.isFinite).sort((a,b)=>a-b);
+      return res.status(200).json({ok:response.ok,providerStatus:response.status,itinerary:'BUE–FLN–BUE, 20–27 nov 2026, 2 adultos',currency:'USD',offersFound:offers?.length??0,sampleLowestAmounts:amounts.slice(0,5),responseKeys:Object.keys(body||{}).slice(0,12),offerKeys:offers?.[0]&&typeof offers[0]==='object'?Object.keys(offers[0]).slice(0,20):[],providerError:response.ok?undefined:String(body?.error?.message||body?.message||body?.error||'').slice(0,220)});
+    }catch(error){return res.status(200).json({ok:false,stage:'network',error:String(error?.name||'RequestError')})}
+  }
   if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key)return res.status(503).json({error:'La búsqueda de hoteles no está disponible en este momento.'});
