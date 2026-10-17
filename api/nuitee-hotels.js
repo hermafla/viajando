@@ -107,13 +107,12 @@ export default async function handler(req,res) {
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
     let providerCode=Number(rates.error?.code??rates.code)||null;
-    // LiteAPI puede limitar temporalmente las consultas con HTTP 429/4290.
-    // Hacemos un solo reintento espaciado para no multiplicar solicitudes.
+    // No reintentamos automáticamente los 429/4290: LiteAPI ya está limitando
+    // la cuenta y repetir enseguida aumenta la carga. Se informa al cliente para
+    // que la próxima búsqueda se haga después del enfriamiento del proveedor.
     const rateLimited=()=>rr.status===429||[4290,4291].includes(providerCode);
-    if(rateLimited()||providerCode===4011){
-      const retryAfter=Number(rr.headers.get('retry-after'));
-      const pause=Math.min(5000,Math.max(rateLimited()?1800:500,Number.isFinite(retryAfter)&&retryAfter>0?retryAfter*1000:0));
-      await new Promise(resolve=>setTimeout(resolve,pause));
+    if(providerCode===4011){
+      await new Promise(resolve=>setTimeout(resolve,500));
       rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest);rates=await rr.json();
       providerCode=Number(rates.error?.code??rates.code)||null;
     }
