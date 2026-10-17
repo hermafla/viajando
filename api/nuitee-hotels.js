@@ -29,16 +29,6 @@ async function searchNuiteeFlights(req,res) {
 
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
-  if(req.method==='GET'&&String(req.query.action||'')==='smoke-flights') {
-    if(process.env.VERCEL_ENV!=='preview')return res.status(404).json({ok:false,error:'Not found'});
-    return searchNuiteeFlights({body:{
-      legs:[
-        {origin:'EZE',destination:'GIG',date:'2026-11-10'},
-        {origin:'GIG',destination:'EZE',date:'2026-11-17'}
-      ],
-      adults:1,children:0,infants:0,currency:'USD'
-    }},res);
-  }
   if(req.method==='POST'&&String(req.query.action||'')==='flights')return searchNuiteeFlights(req,res);
   if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
