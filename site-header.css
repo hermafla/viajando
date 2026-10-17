@@ -45,3 +45,8 @@ header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:st
 
 .vh-regret-card .vh-regret-info{flex-basis:100%;color:#07558f;text-decoration:underline;text-underline-offset:2px;font-size:11px;font-weight:700}
 @media(max-width:650px){.vh-regret-card .vh-regret-info{margin-top:7px}}
+
+.vh-legal-links{width:min(1160px,92%);margin:8px auto 24px;padding:13px 0;border-top:1px solid #e6edf1;display:flex;justify-content:center;align-items:center;gap:10px 22px;flex-wrap:wrap;font:12px Arial,Helvetica,sans-serif}
+.vh-legal-links a{color:#536774;text-decoration:none;text-underline-offset:3px}
+.vh-legal-links a:hover{color:#07558f;text-decoration:underline}
+@media(max-width:650px){.vh-legal-links{gap:9px 16px;margin:6px auto 20px;padding:12px 0;font-size:11px}}
