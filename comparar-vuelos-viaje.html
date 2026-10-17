@@ -18,6 +18,7 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
 .cardtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.carrier{font-size:15px;font-weight:800}.price{font-size:18px;font-weight:800;color:#1677ff;white-space:nowrap}
 .leg{margin-top:9px;padding:9px 10px;background:#f8fafc;border-radius:9px;color:#475467;font-size:12px;line-height:1.45}.meta{margin-top:8px;color:#667085;font-size:12px;line-height:1.45}
 .foot{padding:12px 18px;border-top:1px solid #edf0f3;color:#667085;font-size:11px;line-height:1.5}
+.select-flight{display:block;width:100%;margin-top:12px;border:0;border-radius:10px;background:#1677ff;color:#fff;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}.select-flight:hover{background:#0864df}.select-flight:disabled{opacity:.7;cursor:wait}
 @media(max-width:760px){main{margin-top:16px}.hero h1{font-size:24px}.cardtop{gap:8px}.price{font-size:16px}}
 </style>
 </head>
@@ -83,6 +84,24 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
       const terms=offer.terms||{},cabin=offer.cabinClass||offer.fare?.family||"";
       const extras=[cabin,terms.refundable===true?"Reembolsable":terms.refundable===false?"No reembolsable":""].filter(Boolean);
       if(extras.length)add(card,"div","meta",extras.join(" · "));
+      const select=add(card,"button","select-flight","Elegir este vuelo");
+      select.type="button";
+      select.addEventListener("click",()=>{
+        const safeReturn=ValijeandoParty.internalUrl(returnValue,"/viaje.html");
+        const target=new URL(safeReturn,location.origin),resultParams=new URLSearchParams(target.search);
+        resultParams.set("vuelo",String(price.total));
+        resultParams.set("vueloReal","1");
+        resultParams.set("vueloSeleccionado","1");
+        resultParams.set("vueloProveedor",carrier);
+        resultParams.set("precioPersona",String(price.total/Math.max(1,pax)));
+        resultParams.set("fechaVuelo",departureDate);
+        resultParams.set("aeropuertoOrigen",origin);
+        resultParams.set("aeropuertoDestino",destination);
+        target.search=resultParams.toString();
+        select.disabled=true;
+        select.textContent="Volviendo al resumen…";
+        location.href=target.pathname+target.search+target.hash;
+      });
     });
   }
   if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)||!/^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){fail("Elegí origen, destino y fechas exactas desde Viaje completo.");return}
