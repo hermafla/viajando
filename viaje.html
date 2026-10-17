@@ -134,12 +134,20 @@ document.getElementById("resTotal").textContent=completo?"USD "+conocido.toLocal
 document.getElementById("cambiarVuelo").textContent=vueloReal?"Cambiar vuelo":"Seleccionar vuelo";
 document.getElementById("cambiarHotel").textContent=hotel>0?"Cambiar alojamiento":"Seleccionar alojamiento";
 document.getElementById("cambiarVuelo").onclick=buscarVuelo;
-document.getElementById("cambiarHotel").onclick=e=>{e.preventDefault();document.getElementById("verHotel").click()};
+function buscarAlojamientosDelViaje(){
+ if(!fechaIdaExacta||!fechaVueltaExacta){alert("Para cambiar el alojamiento en Viaje completo, primero elegí fechas exactas.");return}
+ const q=new URLSearchParams({city:p.get("hotelCity")||destino,countryCode:p.get("hotelCountryCode")||p.get("countryCode")||"",checkin:fechaIdaExacta,checkout:fechaVueltaExacta,currency:"USD",returnTrip:location.pathname+"?"+p.toString()});
+ const hotelPlaceId=p.get("hotelPlaceId")||p.get("placeId")||"";
+ if(hotelPlaceId)q.set("placeId",hotelPlaceId);
+ ValijeandoParty.apply(q,party);
+ location.href="/hoteles-filtros.html?"+q.toString();
+}
+document.getElementById("cambiarHotel").onclick=e=>{e.preventDefault();buscarAlojamientosDelViaje()};
 const vh=document.getElementById("verHotel");vh.textContent=hotelId?"🏨 Ver hotel y habitaciones →":"🏨 Buscar hoteles para tus fechas →";vh.onclick=e=>{
  e.preventDefault();if(!fechaIdaExacta||!fechaVueltaExacta)return;
  const q=new URLSearchParams({city:p.get("hotelCity")||destino,countryCode:p.get("hotelCountryCode")||"",checkin:fechaIdaExacta,checkout:fechaVueltaExacta,currency:"USD",returnTrip:location.pathname+"?"+p.toString()});
  ValijeandoParty.apply(q,party);
- if(hotelId&&sessionStorage.getItem('hotelSearch:'+hotelId)){q.set('hotelId',hotelId);q.set('backSearch','/hoteles.html?'+new URLSearchParams(q).toString());location.href="/hotel.html?"+q.toString()}
- else location.href="/hoteles.html?"+q.toString();
+ if(hotelId&&sessionStorage.getItem('hotelSearch:'+hotelId)){q.set('hotelId',hotelId);q.set('backSearch','/hoteles-filtros.html?'+new URLSearchParams(q).toString());location.href="/hotel.html?"+q.toString()}
+ else location.href="/hoteles-filtros.html?"+q.toString();
 };
 </script></body></html>

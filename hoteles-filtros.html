@@ -138,6 +138,7 @@ async function runSearch(){
  if(!checkin.value||!checkout.value||checkout.value<=checkin.value){status.textContent='Elegí fechas de entrada y salida válidas.';return}
  const thisRequest=++requestId;results.innerHTML='<div class="loading-box">Consultando disponibilidad y preparando los filtros…</div>';status.textContent='Buscando alojamientos…';
  const occupanciesData=activeOccupancies(),party=partyTotals(occupanciesData),occupancies=JSON.stringify(occupanciesData);activeRateSessionId=window.crypto?.randomUUID?window.crypto.randomUUID():'vh-'+Date.now()+'-'+Math.random().toString(36).slice(2);const q=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:'USD',guestNationality:'AR',occupancies,sessionId:activeRateSessionId});
+ if(params.get('returnTrip'))q.set('returnTrip',params.get('returnTrip'));
  const pageQuery=new URLSearchParams(q);pageQuery.set('currency',displayCurrency);history.replaceState(null,'',location.pathname+'?'+pageQuery.toString());
  try{const r=await fetch('/api/nuitee-hotels?'+q.toString());const data=await r.json();if(thisRequest!==requestId)return;if(!r.ok)throw new Error(data.error||'No se pudo consultar la disponibilidad.');hotels=Array.isArray(data.hotels)?data.hotels:[];rebuildFacetFilters();if(data.destination?.displayName){city.value=data.destination.displayName+(data.destination.formattedAddress?' · '+data.destination.formattedAddress.split(',').pop().trim():'')}configurePriceFilter();applyFilters();const environment=data.bookingEnvironment==='production'?'Producción':'Sandbox · precios de prueba';status.textContent=hotels.length?hotels.length+' alojamientos · '+environment+' · '+formatDate(checkin.value)+' → '+formatDate(checkout.value):'No hay alojamientos disponibles para esos datos.'}
  catch(err){if(thisRequest!==requestId)return;hotels=[];results.innerHTML='<div class="error">'+esc(err.message||'Ocurrió un error.')+'</div>';status.textContent='No se pudo completar la búsqueda.'}
@@ -210,7 +211,9 @@ function offerDiscount(o){
 function hotelPageUrl(h){
  const occupancies=activeOccupancies(),party=partyTotals(occupancies),encoded=JSON.stringify(occupancies);
  const back=new URLSearchParams({city:city.value,placeId:placeId.value,countryCode:countryCode.value,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:displayCurrency,occupancies:encoded});
+ if(params.get('returnTrip'))back.set('returnTrip',params.get('returnTrip'));
  const qp=new URLSearchParams({hotelId:h.hotelId,checkin:checkin.value,checkout:checkout.value,adults:String(party.adults),children:String(party.children),rooms:String(party.rooms),currency:displayCurrency,countryCode:h.countryCode||countryCode.value,occupancies:encoded,rating:String(Number(h.rating)||0),reviewCount:String(Number(h.reviewCount)||0),backSearch:'/hoteles-filtros.html?'+back.toString()});
+ if(params.get('returnTrip'))qp.set('returnTrip',params.get('returnTrip'));
  if(activeRateSessionId)qp.set('sessionId',activeRateSessionId);
  return '/hotel.html?'+qp.toString();
 }
@@ -310,7 +313,23 @@ document.addEventListener('change',e=>{const input=e.target.closest('input[data-
 document.querySelectorAll('.facet-search').forEach(input=>input.addEventListener('input',()=>{const q=input.value.trim().toLocaleLowerCase('es-AR'),container=$(input.dataset.target);container?.querySelectorAll('.facet-option').forEach(row=>{row.hidden=q&&!row.dataset.label.includes(q)})}));
 $('reset').addEventListener('click',()=>{$('nameFilter').value='';$('refundable').checked=false;$('breakfast').checked=false;$('propertyFees').checked=false;$('rating8').checked=false;$('discounted').checked=false;document.querySelectorAll('input[data-group]').forEach(x=>x.checked=false);document.querySelectorAll('.facet-search').forEach(x=>x.value='');document.querySelectorAll('.facet-option').forEach(x=>x.hidden=false);selectedFacets.clear();selectedStars=0;$('starFilters').querySelectorAll('.star-btn').forEach(x=>x.classList.remove('active'));configurePriceFilter();applyFilters()});
 $('currencyView').addEventListener('change',e=>changeCurrency(e.target.value));
-(async()=>{if(displayCurrency==='ARS')await loadCardRate();updateCurrencyNote();if(placeId.value)runSearch();else{status.textContent='Completá el destino y elegí una sugerencia para buscar.';results.innerHTML='<div class="empty">Preparado para consultar alojamientos de Nuitee.</div>'}})()
+async function resolveInitialPlace(){
+ const rawCity=city.value.trim().split(' · ')[0];
+ if(!rawCity)return;
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const country=countryCode.value;
+ const countryName=/^[a-z]{2}$/i.test(country)?new Intl.DisplayNames(['es'],{type:'region'}).of(country.toUpperCase()):'';
+ const query=[rawCity,countryName].filter(Boolean).join(', ');
+ try{
+  const r=await fetch('/api/nuitee-places?q='+encodeURIComponent(query)),d=await r.json(),places=Array.isArray(d.places)?d.places:[];
+  const candidates=country?places.filter(x=>!x.countryCode||String(x.countryCode).toUpperCase()===country.toUpperCase()):places;
+  const exact=candidates.find(x=>norm(x.displayName)===norm(rawCity));
+  const starts=candidates.find(x=>norm(x.displayName).startsWith(norm(rawCity)));
+  const chosen=exact||starts||candidates[0]||places[0];
+  if(chosen?.placeId){placeId.value=chosen.placeId;city.value=chosen.displayName||rawCity;countryCode.value=chosen.countryCode||country}
+ }catch{}
+}
+(async()=>{if(displayCurrency==='ARS')await loadCardRate();updateCurrencyNote();if(!placeId.value&&params.get('city')){status.textContent='Preparando la búsqueda de alojamientos…';await resolveInitialPlace()}if(placeId.value)runSearch();else{status.textContent='Completá el destino y elegí una sugerencia para buscar.';results.innerHTML='<div class="empty">Preparado para consultar alojamientos de Nuitee.</div>'}})()
 </script>
 </body>
 </html>
