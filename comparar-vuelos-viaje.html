@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vuelos para tu viaje | Valijeando</title>
+<link rel="icon" type="image/svg+xml" href="/valijeando-favicon.svg">
+<link rel="stylesheet" href="/site-header.css"><script src="/site-header.js" defer></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f8fc;color:#172033;font-family:Arial,Helvetica,sans-serif}
+main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{background:#fff;border:1px solid #e5eaf2;border-radius:18px;box-shadow:0 6px 24px rgba(16,24,40,.05)}
+.hero{padding:24px;margin-bottom:16px}.hero h1{margin:0;font-size:28px}.hero p{margin:8px 0 0;color:#667085;line-height:1.5}
+.back{display:inline-block;margin:0 0 15px;color:#1677ff;text-decoration:none;font-weight:800}
+.notice{padding:14px 17px;border:1px solid #cfe4ff;border-radius:14px;background:#eff8ff;color:#344054;font-size:13px;line-height:1.55;margin-bottom:18px}
+.panel{overflow:hidden}.panel-head{padding:18px 19px;border-bottom:1px solid #edf0f3}.panel-head h2{font-size:19px;margin:0}.panel-head p{margin:6px 0 0;color:#667085;font-size:13px;line-height:1.45}
+.tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;margin-bottom:9px;background:#eaf3ff;color:#175cd3}
+.status{padding:18px;color:#667085;font-size:13px;line-height:1.5}.cards{display:grid;gap:10px;padding:0 12px 12px}
+.card{padding:14px;border:1px solid #e7ebf1;border-radius:13px;background:#fff}
+.cardtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.carrier{font-size:15px;font-weight:800}.price{font-size:18px;font-weight:800;color:#1677ff;white-space:nowrap}
+.leg{margin-top:9px;padding:9px 10px;background:#f8fafc;border-radius:9px;color:#475467;font-size:12px;line-height:1.45}.meta{margin-top:8px;color:#667085;font-size:12px;line-height:1.45}
+.foot{padding:12px 18px;border-top:1px solid #edf0f3;color:#667085;font-size:11px;line-height:1.5}
+@media(max-width:760px){main{margin-top:16px}.hero h1{font-size:24px}.cardtop{gap:8px}.price{font-size:16px}}
+</style>
+</head>
+<body>
+<header class="vh-header" data-valijeando-header></header>
+<main>
+<a class="back" id="back" href="/viaje.html">← Volver a tu viaje</a>
+<section class="hero">
+<h1 id="title">Vuelos para tu viaje</h1>
+<p id="summary"></p>
+</section>
+<div class="notice"><strong>Importante:</strong> Esta búsqueda consulta tarifas de Nuitee. El precio y la disponibilidad deben volver a validarse antes de reservar. Ver una tarifa aquí no emite ni confirma un pasaje.</div>
+<section class="panel" aria-labelledby="nuitee-title">
+<div class="panel-head"><span class="tag" id="environment">CONSULTA DE TARIFAS</span><h2 id="nuitee-title">Opciones de vuelo</h2><p>Tarifas de ida y vuelta para las fechas y pasajeros de tu viaje completo.</p></div>
+<div id="status" class="status" aria-live="polite">Buscando opciones en Nuitee…</div>
+<div id="cards" class="cards" aria-live="polite"></div>
+<div class="foot">La búsqueda no reserva el vuelo ni inicia un cobro. La reserva requiere confirmar la tarifa y completar los datos de los pasajeros en el flujo de compra.</div>
+</section>
+</main>
+<script src="/travel-party.js"></script>
+<script>
+(function(){
+  const p=new URLSearchParams(location.search);
+  const origin=(p.get("origin")||"").toUpperCase(),destination=(p.get("destination")||"").toUpperCase();
+  const departureDate=p.get("departureDate")||"",returnDate=p.get("returnDate")||"",returnValue=p.get("returnTrip")||"";
+  const occupancies=ValijeandoParty.fromParams(p),counts=ValijeandoParty.flightCounts(occupancies),pax=counts.adults+counts.children+counts.infants;
+  const back=ValijeandoParty.internalUrl(returnValue,"/viaje.html");
+  if(back)document.getElementById("back").href=back;
+  document.getElementById("title").textContent=origin+" → "+destination;
+  document.getElementById("summary").textContent=departureDate+" → "+returnDate+" · "+pax+(pax===1?" viajero":" viajeros");
+  const status=document.getElementById("status"),cards=document.getElementById("cards");
+  function add(parent,tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=text;parent.appendChild(el);return el}
+  function fail(message){status.textContent=message;cards.replaceChildren()}
+  function money(offer){
+    const pricing=offer?.pricing?.display||offer?.pricing?.original||offer?.pricing||{};
+    const total=typeof pricing.total==="number"?pricing.total:Number(pricing.total?.amount??pricing.amount??offer?.price);
+    const currency=String(pricing.currency||pricing.total?.currency||offer?.currency||"USD").toUpperCase();
+    return Number.isFinite(total)?{total,currency}:null;
+  }
+  function formatMoney(value,currency){try{return new Intl.NumberFormat("es-AR",{style:"currency",currency:currency||"USD",maximumFractionDigits:2}).format(value)}catch{return (currency||"USD")+" "+Number(value).toLocaleString("es-AR",{maximumFractionDigits:2})}}
+  function draw(data){
+    document.getElementById("environment").textContent=data?.sandbox?"SANDBOX · PRUEBA":"NUITEE · TARIFAS";
+    const batches=Array.isArray(data?.data?.data)?data.data.data:[];
+    const rows=[];
+    batches.forEach(batch=>(batch?.journeys||[]).forEach(journey=>(journey?.offers||[]).forEach(offer=>{
+      const price=money(offer);if(price)rows.push({journey,offer,price});
+    })));
+    rows.sort((a,b)=>a.price.total-b.price.total);
+    if(!rows.length){fail(data?.sandbox?"Sandbox no devolvió opciones para esta ruta.":"Nuitee no encontró tarifas para esta ruta y fechas.");return}
+    status.textContent=rows.length+" opciones devueltas por Nuitee"+(data?.sandbox?" · ambiente de prueba":"");
+    rows.slice(0,10).forEach(({journey,offer,price})=>{
+      const card=add(cards,"article","card","");
+      const top=add(card,"div","cardtop","");
+      const segments=Array.isArray(journey.segments)?journey.segments:[];
+      const carrier=segments.map(x=>x?.carrier?.marketingName).find(Boolean)||offer.providerName||offer.provider||"Vuelo";
+      add(top,"div","carrier",carrier);add(top,"div","price",formatMoney(price.total,price.currency));
+      segments.forEach(seg=>{
+        const direction=seg.direction==="INBOUND"?"Regreso":"Ida",from=seg.originCode||seg.origin||"",to=seg.destinationCode||seg.destination||"";
+        const times=[seg.departureTime,seg.arrivalTime].filter(Boolean).map(x=>String(x).replace("T"," ").slice(0,16)).join(" · ");
+        const stops=Number(seg.stopCount||0);
+        add(card,"div","leg",direction+" · "+from+" → "+to+(times?" · "+times:"")+" · "+(stops===0?"directo":stops+" escala(s)"));
+      });
+      const terms=offer.terms||{},cabin=offer.cabinClass||offer.fare?.family||"";
+      const extras=[cabin,terms.refundable===true?"Reembolsable":terms.refundable===false?"No reembolsable":""].filter(Boolean);
+      if(extras.length)add(card,"div","meta",extras.join(" · "));
+    });
+  }
+  if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)||!/^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){fail("Elegí origen, destino y fechas exactas desde Viaje completo.");return}
+  const childAges=occupancies.flatMap(r=>r.childAges||[]),childrenAges=childAges.filter(age=>age>=2&&age<12),infantAges=childAges.filter(age=>age<2);
+  fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    legs:[{origin,destination,date:departureDate},{origin:destination,destination:origin,date:returnDate}],
+    adults:counts.adults,children:counts.children,infants:counts.infants,childrenAges,infantAges,currency:"USD"
+  })}).then(async response=>{const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||"No se pudo consultar Nuitee.");draw(result)}).catch(error=>fail(error.message||"No se pudo consultar Nuitee."));
+})();
+</script>
+</body>
+</html>

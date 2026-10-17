@@ -101,11 +101,18 @@ async function buscarVuelo(e){
   const fmt=x=>{const [y,m,d]=x.split("-");return d+m};
   if(fechaIdaExacta&&fechaVueltaExacta){
     const retorno=location.pathname+location.search;
-    let qVuelo;try{qVuelo=new URLSearchParams({flightSearch:ValijeandoParty.flightSearch(origin,destination,fechaIdaExacta,fechaVueltaExacta,party),returnTrip:retorno})}catch(err){alert(err.message);return}
-    location.href="prueba-vuelos.html?"+qVuelo.toString();
+    const qVuelo=new URLSearchParams({
+      origin,
+      destination,
+      departureDate:fechaIdaExacta,
+      returnDate:fechaVueltaExacta,
+      returnTrip:retorno,
+      occupancies:JSON.stringify(party)
+    });
+    location.href="comparar-vuelos-viaje.html?"+qVuelo.toString();
     return;
   }
-  location.href="prueba-vuelos.html";
+  alert("Para buscar vuelos de Nuitee en Viaje completo, primero elegí fechas exactas de ida y vuelta.");
 }
 document.getElementById("verVuelo").onclick=buscarVuelo;
 if(vueloSeleccionado){
