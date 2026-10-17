@@ -141,7 +141,7 @@ function rowCarriers(row){return [...new Set((row?.journey?.segments||[]).map(se
 function rowStopCount(row){return Math.max(0,...(row?.journey?.segments||[]).map(s=>Number(s.stopCount||0)))}
 function segmentMinutes(seg){const start=Date.parse(seg?.departureTime||''),end=Date.parse(seg?.arrivalTime||'');return Number.isFinite(start)&&Number.isFinite(end)?Math.max(0,Math.round((end-start)/60000)):null}
 function rowDuration(row){return (row?.journey?.segments||[]).reduce((sum,s)=>sum+(segmentMinutes(s)||0),0)}
-function clockValue(value){const m=String(value||'').match(/[T ](\d{2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null}
+function clockValue(value){const m=String(value||'').match(/(?:^|[T ])(\d{2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null}
 function clockLabel(value){const t=clockValue(value);return t==null?'':String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 function durationLabel(minutes){if(!Number.isFinite(minutes)||minutes<=0)return '';const h=Math.floor(minutes/60),m=minutes%60;return (h?h+'h ':'')+(m?m+'m':'')}
 function directionSegments(row,direction){return (row?.journey?.segments||[]).filter(s=>direction==='out'?s.direction!=='INBOUND':s.direction==='INBOUND')}
