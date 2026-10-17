@@ -107,15 +107,18 @@ export default async function handler(req,res) {
     const rateRequest={method:'POST',body:JSON.stringify({...locationQuery,...(sessionId?{sessionId}:{}),checkin,checkout,currency,guestNationality,occupancies,margin:effectiveMargin,maxRatesPerHotel:hotelId?20:8,timeout:10,limit:1500,roomMapping:true,includeHotelData:true})};
     let rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest),rates=await rr.json();
     let providerCode=Number(rates.error?.code??rates.code)||null;
-    // Reintentamos una sola vez las fallas temporales explícitas, nunca una reserva.
-    if([4011,4291].includes(providerCode)){
-      await new Promise(resolve=>setTimeout(resolve,400));
+    // No reintentamos automáticamente los 429/4290: LiteAPI ya está limitando
+    // la cuenta y repetir enseguida aumenta la carga. Se informa al cliente para
+    // que la próxima búsqueda se haga después del enfriamiento del proveedor.
+    const rateLimited=()=>rr.status===429||[4290,4291].includes(providerCode);
+    if(providerCode===4011){
+      await new Promise(resolve=>setTimeout(resolve,500));
       rr=await request('https://api.liteapi.travel/v3.0/hotels/rates',rateRequest);rates=await rr.json();
       providerCode=Number(rates.error?.code??rates.code)||null;
     }
     // LiteAPI puede devolver HTTP 200 con código 2001: es falta de disponibilidad.
     if(providerCode===2001)rates={data:[],hotels:[]};
-    else if(!rr.ok||rates.error){console.error('Nuitee rates',rr.status,providerCode);return res.status(502).json({error:'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:'provider_error',stage:'rates',providerCode})}
+    else if(!rr.ok||rates.error){const limited=rr.status===429||[4290,4291].includes(providerCode);console.error('Nuitee rates',rr.status,providerCode);return res.status(502).json({error:limited?'El proveedor está limitando temporalmente las búsquedas. Esperá un momento y volvé a intentar.':'No pudimos consultar la disponibilidad. Intentá nuevamente con las mismas fechas.',reason:limited?'provider_rate_limited':'provider_error',stage:'rates',providerCode})}
     const rateHotels=Array.isArray(rates.data)?rates.data:rates.data?.hotels||[];
     const [staticHotels,referenceData]=await Promise.all([catalogPromise,referencePromise]);
     const [facilityRows,typeRows,chainRows]=referenceData;
