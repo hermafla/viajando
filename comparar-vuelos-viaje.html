@@ -59,6 +59,30 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
     return Number.isFinite(total)?{total,currency}:null;
   }
   function formatMoney(value,currency){try{return new Intl.NumberFormat("es-AR",{style:"currency",currency:currency||"USD",maximumFractionDigits:2}).format(value)}catch{return (currency||"USD")+" "+Number(value).toLocaleString("es-AR",{maximumFractionDigits:2})}}
+  function timeOf(value){const m=String(value||"").match(/(?:T|\s)(\d{2}:\d{2})/);return m?m[1]:""}
+  function dateOf(value){const raw=String(value||"").slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return "";return new Intl.DateTimeFormat("es-AR",{day:"numeric",month:"short",timeZone:"UTC"}).format(new Date(raw+"T00:00:00Z"))}
+  function baggageSummary(baggage){
+    if(!baggage||typeof baggage!=="object")return "No informado por Nuitee";
+    const parts=[];
+    if(typeof baggage.hasCarryOnBag==="boolean")parts.push(baggage.hasCarryOnBag?"Cabina incluida":"Cabina no incluida");
+    if(typeof baggage.hasCheckedBag==="boolean")parts.push(baggage.hasCheckedBag?"Bodega incluida":"Bodega no incluida");
+    if(parts.length)return parts.join(" · ");
+    const descriptions=(Array.isArray(baggage.included)?baggage.included:[]).map(x=>String(x?.description||"").trim()).filter(Boolean);
+    return descriptions.length?descriptions.join(" · "):"No informado por Nuitee";
+  }
+  function itinerarySummary(journey,offer){
+    const segments=Array.isArray(journey?.segments)?journey.segments:[];
+    const makeLeg=(direction,label)=>{
+      const legs=segments.filter(s=>direction==="out"?s?.direction!=="INBOUND":s?.direction==="INBOUND");
+      if(!legs.length)return label+" · Sin detalle informado";
+      const first=legs[0],last=legs[legs.length-1],origin=first.originCode||first.origin||"",destination=last.destinationCode||last.destination||"",departure=timeOf(first.departureTime),arrival=timeOf(last.arrivalTime),date=dateOf(first.departureTime);
+      const departDate=Date.parse(String(first.departureTime||"").slice(0,10)+"T00:00:00Z"),arriveDate=Date.parse(String(last.arrivalTime||"").slice(0,10)+"T00:00:00Z"),dayDiff=Number.isFinite(departDate)&&Number.isFinite(arriveDate)?Math.max(0,Math.round((arriveDate-departDate)/86400000)):0;
+      const stops=Math.max(0,legs.length-1)+legs.reduce((sum,s)=>sum+Math.max(0,Number(s.stopCount||0)),0);
+      return label+(date?" · "+date:"")+" · "+origin+(departure?" "+departure:"")+" → "+destination+(arrival?" "+arrival:"")+(dayDiff>0?" (+"+dayDiff+" día"+(dayDiff===1?"":"s")+")":"")+" · "+(stops===0?"Directo":stops+" "+(stops===1?"escala":"escalas"));
+    };
+    return {ida:makeLeg("out","Ida"),vuelta:makeLeg("back","Vuelta"),equipaje:baggageSummary(offer?.baggage)};
+  }
+  function baggageLabel(baggage){return "Equipaje · "+baggageSummary(baggage)}
   function draw(data){
     document.getElementById("environment").textContent=data?.sandbox?"SANDBOX · PRUEBA":"NUITEE · TARIFAS";
     const batches=Array.isArray(data?.data?.data)?data.data.data:[];
@@ -75,15 +99,10 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
       const segments=Array.isArray(journey.segments)?journey.segments:[];
       const carrier=segments.map(x=>x?.carrier?.marketingName).find(Boolean)||offer.providerName||offer.provider||"Vuelo";
       add(top,"div","carrier",carrier);add(top,"div","price",formatMoney(price.total,price.currency));
-      segments.forEach(seg=>{
-        const direction=seg.direction==="INBOUND"?"Regreso":"Ida",from=seg.originCode||seg.origin||"",to=seg.destinationCode||seg.destination||"";
-        const times=[seg.departureTime,seg.arrivalTime].filter(Boolean).map(x=>String(x).replace("T"," ").slice(0,16)).join(" · ");
-        const stops=Number(seg.stopCount||0);
-        add(card,"div","leg",direction+" · "+from+" → "+to+(times?" · "+times:"")+" · "+(stops===0?"directo":stops+" escala(s)"));
-      });
-      const terms=offer.terms||{},cabin=offer.cabinClass||offer.fare?.family||"";
-      const extras=[cabin,terms.refundable===true?"Reembolsable":terms.refundable===false?"No reembolsable":""].filter(Boolean);
-      if(extras.length)add(card,"div","meta",extras.join(" · "));
+      const details=itinerarySummary(journey,offer);
+      add(card,"div","leg",details.ida);
+      add(card,"div","leg",details.vuelta);
+      add(card,"div","meta",baggageLabel(offer?.baggage));
       const select=add(card,"button","select-flight","Elegir este vuelo");
       select.type="button";
       select.addEventListener("click",()=>{
@@ -92,7 +111,7 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
         resultParams.set("vuelo",String(price.total));
         resultParams.set("vueloReal","1");
         resultParams.set("vueloSeleccionado","1");
-        resultParams.set("vueloProveedor",carrier);
+        resultParams.set("vueloProveedor",carrier);resultParams.set("vueloDetalle",JSON.stringify(details));
         resultParams.set("precioPersona",String(price.total/Math.max(1,pax)));
         resultParams.set("fechaVuelo",departureDate);
         resultParams.set("aeropuertoOrigen",origin);
