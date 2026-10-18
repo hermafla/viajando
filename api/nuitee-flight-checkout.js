@@ -135,9 +135,9 @@ async function book(req, res) {
   try { row = await load(req.body?.checkoutToken); }
   catch { return json(res, 401, { error: 'La sesión de pago del vuelo venció. No se creó otra reserva.' }); }
   if (row.state === 'confirmed' && row.provider_booking_id) return json(res, 200, { ok: true, status: 'CONFIRMED', bookingId: row.provider_booking_id, bookingRef: row.booking_ref, saved: true, alreadyConfirmed: true, flight: row.flight });
-  if (row.state === 'uncertain' || row.state === 'booking') return json(res, 409, { error: 'Estamos verificando la confirmación del vuelo. No vuelvas a pagar. Revisá Mi cuenta antes de intentar de nuevo.', reason: 'booking_uncertain' });
-  if (row.state !== 'prepared' || (row.expires_at && Date.parse(row.expires_at) < Date.now())) return json(res, 409, { error: 'La tarifa reservada venció. No se creó el vuelo; volvé a buscar y empezá de nuevo.', reason: 'expired' });
-  const claimed = await db('flight_checkouts', '?id=eq.' + encodeURIComponent(row.id) + '&state=eq.prepared', { method: 'PATCH', prefer: 'return=representation', body: { state: 'booking', updated_at: new Date().toISOString() } });
+  if (row.state === 'booking') return json(res, 409, { error: 'La confirmación del vuelo está en proceso. No vuelvas a pagar.', reason: 'booking_uncertain' });
+  if (!['prepared','uncertain'].includes(row.state) || (row.state === 'prepared' && row.expires_at && Date.parse(row.expires_at) < Date.now())) return json(res, 409, { error: 'La tarifa reservada venció. No se creó el vuelo; volvé a buscar y empezá de nuevo.', reason: 'expired' });
+  const claimed = await db('flight_checkouts', '?id=eq.' + encodeURIComponent(row.id) + '&state=in.(prepared,uncertain)', { method: 'PATCH', prefer: 'return=representation', body: { state: 'booking', updated_at: new Date().toISOString() } });
   if (claimed.length !== 1) return json(res, 409, { error: 'La confirmación del vuelo ya está en proceso. No vuelvas a pagar.', reason: 'booking_uncertain' });
   try {
     const response = await fetch('https://api.liteapi.travel/v3.0/flights/bookings', {
@@ -158,7 +158,7 @@ async function book(req, res) {
     const pending = Boolean(bookingId) && ['PENDING_CONFIRMATION', 'PENDING', 'PROCESSING'].includes(providerStatus);
     if (!bookingId || (!confirmed && !pending)) {
       await db('flight_checkouts', '?id=eq.' + encodeURIComponent(row.id), { method: 'PATCH', prefer: 'return=minimal', body: { state: 'uncertain', provider_result: { status: providerStatus }, updated_at: new Date().toISOString() } }).catch(() => {});
-      return json(res, 202, { ok: true, status: 'PENDING_CONFIRMATION', error: 'El pago fue enviado y Nuitee está terminando de confirmar el vuelo. No vuelvas a pagar.', bookingId: bookingId || null, flight: row.flight });
+      return json(res, 202, { ok: true, status: 'PENDING_CONFIRMATION', error: 'Nuitee está terminando de confirmar el vuelo. No vuelvas a pagar; si sigue pendiente, contactá a Valijeando.', bookingId: bookingId || null, flight: row.flight });
     }
     const status = confirmed ? 'confirmada' : 'pendiente';
     await db('reservas_vuelos', '?on_conflict=provider_booking_id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: {
@@ -171,7 +171,7 @@ async function book(req, res) {
   } catch (error) {
     await db('flight_checkouts', '?id=eq.' + encodeURIComponent(row.id), { method: 'PATCH', prefer: 'return=minimal', body: { state: 'uncertain', updated_at: new Date().toISOString() } }).catch(() => {});
     console.error('Nuitee flight booking status uncertain', error?.message || error);
-    return json(res, 202, { error: 'No pudimos verificar el resultado del pago y la reserva. No vuelvas a pagar; revisá Mi cuenta antes de intentar de nuevo.', reason: 'booking_uncertain' });
+    return json(res, 202, { error: 'No pudimos verificar el resultado del pago y la reserva. No vuelvas a pagar; podés volver a consultar la confirmación con el mismo prebook.', reason: 'booking_uncertain' });
   }
 }
 export default async function handler(req, res) {
