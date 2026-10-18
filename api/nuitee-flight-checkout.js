@@ -152,7 +152,7 @@ async function book(req, res) {
       await db('flight_checkouts', '?id=eq.' + encodeURIComponent(row.id), { method: 'PATCH', prefer: 'return=minimal', body: { state: uncertain ? 'uncertain' : 'rejected', updated_at: new Date().toISOString() } }).catch(() => {});
       return json(res, uncertain ? 502 : response.status || 502, { error: uncertain ? 'No pudimos confirmar el estado del vuelo. No vuelvas a pagar; consultá Mi cuenta antes de reintentar.' : 'Nuitee no confirmó la reserva del vuelo. Volvé a consultar la tarifa.', reason: uncertain ? 'booking_uncertain' : 'provider_rejected' });
     }
-    const bookingId = clean(data.bookingId || data.id), bookingRef = clean(data.bookingRef || data.bookingReference || data.pnr || '');
+    const bookingId = clean(data.bookingId || data.id), airlineRef = data.booking?.order?.reference?.airlineBookings?.[0]?.airlinePnr || data.order?.reference?.airlineBookings?.[0]?.airlinePnr || '', bookingRef = clean(data.bookingRef || data.bookingReference || data.pnr || airlineRef || data.booking?.order?.reference?.orderId || data.order?.reference?.orderId || '');
     const providerStatus = clean(data.status || '').toUpperCase();
     const confirmed = Boolean(bookingId) && ['CONFIRMED', 'TICKETED', 'OK'].includes(providerStatus);
     const pending = Boolean(bookingId) && ['PENDING_CONFIRMATION', 'PENDING', 'PROCESSING'].includes(providerStatus);
