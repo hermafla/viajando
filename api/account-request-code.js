@@ -28,7 +28,10 @@ export default async function handler(req,res){
       const rr=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select='+encodeURIComponent(select)+'&email=eq.'+encodeURIComponent(session.email)+'&order=creado_en.desc',{headers:sbHeaders(supabaseKey)});
       if(!rr.ok) return json(res,503,{error:'No pudimos cargar tus reservas.'});
       const rows=await rr.json();
-      return json(res,200,{email:session.email,reservations:rows.map(row=>({...row,isTest:row.booking_environment==='sandbox'}))});
+      const flightsResponse=await fetch(supabaseUrl+'/rest/v1/reservas_vuelos?select=provider_booking_id,booking_ref,origen,destino,salida,regreso,moneda,total,estado,creado_en&email=eq.'+encodeURIComponent(session.email)+'&order=creado_en.desc',{headers:sbHeaders(supabaseKey)});
+      if(!flightsResponse.ok)return json(res,503,{error:'No pudimos cargar tus reservas.'});
+      const flights=await flightsResponse.json();
+      return json(res,200,{email:session.email,reservations:rows.map(row=>({...row,tipo:'hotel',isTest:row.booking_environment==='sandbox'})),flightReservations:flights.map(row=>({...row,tipo:'vuelo'}))});
     }catch(e){return json(res,503,{error:'No pudimos cargar tus reservas.'});}
   }
   if(req.method==='PUT'){
@@ -85,8 +88,10 @@ export default async function handler(req,res){
   try{
     const lookup=await fetch(supabaseUrl+'/rest/v1/reservas_hoteles?select=id&email=eq.'+encodeURIComponent(email)+'&limit=1',{headers:sbHeaders(supabaseKey)});
     const rows=lookup.ok?await lookup.json():[];
+    const flightLookup=await fetch(supabaseUrl+'/rest/v1/reservas_vuelos?select=id&email=eq.'+encodeURIComponent(email)+'&limit=1',{headers:sbHeaders(supabaseKey)});
+    const flightRows=flightLookup.ok?await flightLookup.json():[];
     // Respuesta deliberadamente igual exista o no el email, para no revelar clientes.
-    if(!Array.isArray(rows)||!rows.length) return json(res,200,{ok:true,message:'Si ese email tiene reservas en Valijeando, vas a recibir un código de acceso.'});
+    if((!Array.isArray(rows)||!rows.length)&&(!Array.isArray(flightRows)||!flightRows.length)) return json(res,200,{ok:true,message:'Si ese email tiene reservas en Valijeando, vas a recibir un código de acceso.'});
     const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
     const expires=new Date(Date.now()+10*60*1000).toISOString();
     const tokenHash=hash(email,code,secret);
