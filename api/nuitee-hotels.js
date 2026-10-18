@@ -1,4 +1,5 @@
 import { bookingEnvironment, occupanciesFromQuery, mapOffer, applyArgentineHotelTaxEstimate } from '../lib/nuitee.js';
+import flightCheckout from '../lib/nuitee-flight-checkout.js';
 
 const countryCodeFrom=value=>{if(value&&typeof value==='object')return countryCodeFrom(value.countryCode||value.code||value.isoCode||value.shortText||value.shortName||value.short_name||value.longText||value.long_name||value.name);const text=String(value||'').trim();if(/^AR$/i.test(text)||/argentina/i.test(text))return 'AR';return /^[A-Za-z]{2}$/.test(text)?text.toUpperCase():'';};
 async function searchNuiteeFlights(req,res) {
@@ -52,6 +53,7 @@ const imageUrls=value=>rowsOf(value).map(x=>typeof x==='string'?x:String(x?.url|
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
   if(req.method==='POST'&&String(req.query.action||'')==='flights')return searchNuiteeFlights(req,res);
+  if(req.method==='POST'&&String(req.query.action||'')==='flight-checkout')return flightCheckout(req,res);
   if(req.method!=='GET')return res.status(405).json({error:'Método no permitido'});
   const key=process.env.NUITEE_API_KEY;
   if(!key)return res.status(503).json({error:'La búsqueda de hoteles no está disponible en este momento.'});
