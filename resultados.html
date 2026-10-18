@@ -72,7 +72,17 @@ async function buscarVuelosNuitee(lista){
   }
   await Promise.all(Array.from({length:Math.min(2,pendientes.length)},worker));
 }
+function mensajeVueloVisible(message){
+  return String(message||"")
+    .replace(/Tarifa de prueba de Nuitee/gi,"Tarifa de prueba")
+    .replace(/Tarifa de Nuitee/gi,"La tarifa")
+    .replace(/Elegí fechas exactas para buscar una tarifa de Nuitee/gi,"Elegí fechas exactas para cotizar el vuelo")
+    .replace(/Nuitee no encontró vuelos/gi,"No encontramos vuelos")
+    .replace(/Sandbox no devolvió tarifa/gi,"No hay tarifa disponible")
+    .replace(/Nuitee/gi,"nuestro proveedor");
+}
 function actualizarTarifaVuelo(v,fare,message){
+  const visibleMessage=mensajeVueloVisible(message);
   const code=codigosDestino[v.destino];vuelosNuiteeResultados.set(code,{fare,message});
   const price=document.getElementById("vuelo-price-"+code),info=document.getElementById("vuelo-info-"+code),total=document.getElementById("trip-total-"+code),label=document.getElementById("trip-total-label-"+code);
   if(!price||!info||!total)return;
@@ -80,13 +90,13 @@ function actualizarTarifaVuelo(v,fare,message){
     const sum=Number(v.hotelCalc||0)+fare.amount;
     info.classList.toggle("vuelo-demo",Boolean(message&&message.includes("prueba")));
     price.classList.remove("tarifa-loading");price.textContent=precioVuelo(fare.amount,fare.currency);
-    info.textContent=message+(fare.airline?" · "+fare.airline:"");
+    info.textContent=visibleMessage+(fare.airline?" · "+fare.airline:"");
     total.textContent=precioVuelo(sum,fare.currency);
     label.textContent=message&&message.includes("prueba")?"Vuelo + alojamiento · tarifa de prueba":"Vuelo + alojamiento (cotización)";
   }else{
     info.classList.remove("vuelo-demo");
     price.classList.remove("tarifa-loading");price.textContent=message&&message.includes("Elegí fechas exactas")?"Elegí fechas":"No disponible";
-    info.textContent=message||"Tarifa aérea no disponible";
+    info.textContent=visibleMessage||"Tarifa aérea no disponible";
     total.textContent=precioVuelo(Number(v.hotelCalc||0),"USD");
     label.textContent="Total parcial · falta vuelo";
   }
@@ -133,10 +143,10 @@ function card(v){
   detalle.set("destino",v.destino);detalle.set("etiqueta",v.etiqueta);detalle.set("vuelo","0");detalle.set("hotel",v.hotelCalc);detalle.set("otros","0");detalle.delete("total");detalle.set("vueloReal","0");detalle.set("vueloReferencia","0");
   if(v.hotelId)detalle.set("hotelId",v.hotelId);if(v.hotelCity)detalle.set("hotelCity",v.hotelCity);if(v.hotelCountryCode)detalle.set("hotelCountryCode",v.hotelCountryCode);
   if(v.hotelNombre)detalle.set("hotelNombre",v.hotelNombre);
-  const code=codigosDestino[v.destino]||"vuelo",placeholder=fechaIdaExacta&&fechaVueltaExacta?"Buscando tarifa de Nuitee…":"Elegí fechas exactas para cotizar el vuelo";
+  const code=codigosDestino[v.destino]||"vuelo",placeholder=fechaIdaExacta&&fechaVueltaExacta?"Buscando tarifa aérea…":"Elegí fechas exactas para cotizar el vuelo";
   if(codigosDestino[v.destino])detalle.set("aeropuertoDestino",codigosDestino[v.destino]);
   const viajeUrl="viaje.html?"+detalle.toString();
-  return '<article class="card"><a href="'+viajeUrl+'" class="foto '+v.clase+'" aria-label="Ver opciones de viaje para '+v.destino+'"><span>'+v.destino+'</span></a><div class="contenido"><div class="topline"><span class="tag">'+v.etiqueta+'</span></div><div class="linea"><span>✈️ Vuelo</span><b id="vuelo-price-'+code+'"'+(fechaIdaExacta&&fechaVueltaExacta?' class="tarifa-loading" aria-live="polite"><span class="tarifa-spinner" aria-hidden="true"></span><span>Buscando tarifa</span>':' aria-live="polite">Elegí fechas')+'</b></div><div class="vuelo-real alt" id="vuelo-info-'+code+'">'+placeholder+'</div><div class="linea"><span>🏨 Hotel</span><b>USD '+Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})+'</b></div><div class="hotel-real">✓ '+(v.hotelNombre||"Tarifa disponible para tus fechas")+'</div><div class="linea"><span>🚕 Traslados y extras</span><b>A confirmar</b></div><div class="total"><span id="trip-total-label-'+code+'">Total parcial · falta vuelo</span><strong id="trip-total-'+code+'">USD '+Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})+'</strong></div><div class="estado">La tarifa aérea se consulta en Nuitee para estas fechas y pasajeros.</div><a href="'+viajeUrl+'" class="btn">Ver hotel y revisar vuelo</a></div></article>';
+  return '<article class="card"><a href="'+viajeUrl+'" class="foto '+v.clase+'" aria-label="Ver opciones de viaje para '+v.destino+'"><span>'+v.destino+'</span></a><div class="contenido"><div class="topline"><span class="tag">'+v.etiqueta+'</span></div><div class="linea"><span>✈️ Vuelo</span><b id="vuelo-price-'+code+'"'+(fechaIdaExacta&&fechaVueltaExacta?' class="tarifa-loading" aria-live="polite"><span class="tarifa-spinner" aria-hidden="true"></span><span>Buscando tarifa</span>':' aria-live="polite">Elegí fechas')+'</b></div><div class="vuelo-real alt" id="vuelo-info-'+code+'">'+placeholder+'</div><div class="linea"><span>🏨 Hotel</span><b>USD '+Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})+'</b></div><div class="hotel-real">✓ '+(v.hotelNombre||"Tarifa disponible para tus fechas")+'</div><div class="total"><span id="trip-total-label-'+code+'">Total parcial · falta vuelo</span><strong id="trip-total-'+code+'">USD '+Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})+'</strong></div><div class="estado">La tarifa del vuelo se confirma antes de reservar.</div><a href="'+viajeUrl+'" class="btn">Ver hotel y revisar vuelo</a></div></article>';
 }
 let opciones=base.map(calcular).sort((a,b)=>{
   const aTipo=tipo==="Sorprendeme"||a.tipos.includes(tipo),bTipo=tipo==="Sorprendeme"||b.tipos.includes(tipo);
