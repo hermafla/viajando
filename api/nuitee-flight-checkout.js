@@ -62,10 +62,12 @@ const normalizePassengers = (value, count) => {
   if (!Array.isArray(value) || value.length !== count || count < 1 || count > 9) throw Error('passengers');
   return value.map(p => {
     const firstName = clean(p.firstName).slice(0, 100), lastName = clean(p.lastName).slice(0, 100);
-    const birthday = clean(p.birthday), documentNumber = clean(p.documentNumber).replace(/\s/g, '').slice(0, 40);
-    const documentType = clean(p.documentType).toUpperCase();
-    if (!firstName || !lastName || !/^\d{4}-\d{2}-\d{2}$/.test(birthday) || !documentNumber || !['PASSPORT', 'ID'].includes(documentType)) throw Error('passengers');
-    return { firstName, lastName, birthday, documentNumber, documentType, nationality: clean(p.nationality || 'AR').toUpperCase() };
+    const birthday = clean(p.birthday), documentNumber = clean(p.documentNumber).replace(/\\s/g, '').slice(0, 40);
+    const documentType = clean(p.documentType).toLowerCase();
+    const nationality = clean(p.nationality || 'AR').toUpperCase(), documentIssueCountry = clean(p.documentIssueCountry || nationality).toUpperCase();
+    const documentExpiry = clean(p.documentExpiry), gender = clean(p.gender).toUpperCase();
+    if (!firstName || !lastName || !/^\\d{4}-\\d{2}-\\d{2}$/.test(birthday) || !documentNumber || !['passport', 'id'].includes(documentType) || !/^[A-Z]{2}$/.test(nationality) || !/^[A-Z]{2}$/.test(documentIssueCountry) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(documentExpiry) || !['M','F'].includes(gender)) throw Error('passengers');
+    return { firstName, lastName, birthday, gender, nationality, documentType, documentNumber, documentIssueCountry, documentExpiry };
   });
 };
 const parseResult = async response => {
