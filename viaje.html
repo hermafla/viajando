@@ -48,6 +48,50 @@
 .step-flight-summary .step-edit{display:inline-block;margin-top:3px;color:#1768c5;font-size:8px;font-weight:700;text-decoration:none}
 #stepHotel.has-summary>.stepmeta,#stepFlight.has-summary>.stepmeta{display:none}
 @media(max-width:560px){.step-title-row{gap:5px}.step-title-row .stepname{font-size:10px}.step-hotel-summary{min-height:88px;gap:6px;margin-top:5px}.step-hotel-media{flex-basis:86px}.step-hotel-thumb{width:76px;height:76px;flex-basis:76px}.step-hotel-media .step-edit{font-size:7px}.step-hotel-title{font-size:10px}.step-hotel-detail{font-size:8px}.step-hotel-price{font-size:10px}.step-flight-summary{margin-top:5px}.step-flight-summary .flight-step-leg{grid-template-columns:27px minmax(29px,.55fr) 7px minmax(29px,.55fr) minmax(28px,.48fr);gap:1px}.step-flight-summary .flight-step-time strong{font-size:8px}.step-flight-summary .flight-step-stops{font-size:6px}}
+
+/* Ajuste móvil: pasos legibles y sin grilla de tres columnas. */
+@media(max-width:560px){
+ .stepbar{
+  position:static;
+  top:auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  overflow:hidden;
+  margin-bottom:18px;
+ }
+ .step{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:0;
+  padding:10px 12px;
+  border-right:0;
+  border-bottom:1px solid var(--line);
+ }
+ .step:last-child{border-bottom:0}
+ .step-title-row{align-items:center;flex-wrap:wrap;gap:4px 8px}
+ .stepcap,.stepname{
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  line-height:1.25;
+ }
+ .stepname{font-size:12px}
+ .stepmeta{
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  margin-top:4px;
+ }
+ .step-hotel-summary.visible,
+ .step-flight-summary.visible{grid-column:1/-1}
+ .step-hotel-summary.visible{min-height:0}
+ .step-hotel-media{flex:0 0 60px}
+ .step-hotel-thumb{width:56px;height:56px;flex-basis:56px}
+ .step-hotel-media .step-edit{font-size:9px}
+ .step-hotel-title{font-size:11px}
+ .step-hotel-detail{font-size:9px}
+ .step-hotel-price{font-size:11px}
+}
 </style></head>
 <body><header class="vh-header" data-valijeando-header></header><main>
 <a class="back" id="back" href="resultados.html">← Volver a destinos</a>
