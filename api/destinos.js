@@ -12,7 +12,7 @@ export default async function handler(req,res){
     const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
     const nq=norm(q);
     const out=cities.filter(x=>norm(x.name).includes(nq)||norm(x.code).includes(nq))
-      .sort((a,b)=>{const aa=norm(a.name).startsWith(nq)?0:1,bb=norm(b.name).startsWith(nq)?0:1;return aa-bb||String(a.name).localeCompare(String(b.name),"es")})
+      .sort((a,b)=>{const prioritario=x=>nq.startsWith("buenos")&&norm(x.name)==="buenos aires"&&x.country_code==="AR"?0:1,pa=prioritario(a),pb=prioritario(b);if(pa!==pb)return pa-pb;const aa=norm(a.name).startsWith(nq)?0:1,bb=norm(b.name).startsWith(nq)?0:1;return aa-bb||String(a.name).localeCompare(String(b.name),"es")})
       .slice(0,8).map(x=>({name:x.name,country:cmap[x.country_code]||x.country_code||"",countryCode:x.country_code||"",iata:x.code||""}));
     res.setHeader("Cache-Control","s-maxage=86400, stale-while-revalidate=604800");
     return res.status(200).json(out);
