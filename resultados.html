@@ -196,7 +196,7 @@ async function buscarDestinos(autoIntento=0){
   const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError),habraReintento=fallidas.length>0&&autoIntento<2;
   opciones=actualizadas;
   mostrarDestinos(disponibles,fallidas,!habraReintento);
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje a medida:</strong> consultamos alojamientos y tarifas aéreas de Nuitee para tus fechas y pasajeros. El importe del vuelo queda sujeto a confirmación al iniciar la reserva.";
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje a medida:</strong> ordenamos primero las opciones cuyo vuelo y alojamiento cotizados entran en tu presupuesto. El vuelo puede variar y se confirma antes de reservar; no incluimos gastos personales ni extras.";
   // Esperar las cotizaciones aéreas para ordenar primero los viajes que entran en el presupuesto.
   await buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
   const ordenadas=ordenarPorPresupuesto(disponibles);
