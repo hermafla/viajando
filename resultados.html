@@ -85,21 +85,33 @@ function actualizarTarifaVuelo(v,fare,message){
   const visibleMessage=mensajeVueloVisible(message);
   const code=codigosDestino[v.destino];vuelosNuiteeResultados.set(code,{fare,message});
   const price=document.getElementById("vuelo-price-"+code),info=document.getElementById("vuelo-info-"+code),total=document.getElementById("trip-total-"+code),label=document.getElementById("trip-total-label-"+code);
-  if(!price||!info||!total)return;
   if(fare){
-    const sum=Number(v.hotelCalc||0)+fare.amount;
-    info.classList.toggle("vuelo-demo",Boolean(message&&message.includes("prueba")));
-    price.classList.remove("tarifa-loading");price.textContent=precioVuelo(fare.amount,fare.currency);
-    info.textContent=visibleMessage+(fare.airline?" · "+fare.airline:"");
-    total.textContent=precioVuelo(sum,fare.currency);
-    label.textContent=message&&message.includes("prueba")?"Vuelo + alojamiento · tarifa de prueba":"Vuelo + alojamiento (cotización)";
+    const sum=Number(v.hotelCalc||0)+Number(fare.amount);
+    v.vueloCalc=Number(fare.amount);v.vueloCurrency=String(fare.currency||"USD").toUpperCase();v.vueloSandbox=Boolean(message&&message.includes("prueba"));v.total=sum;v.vueloReal=true;
+    if(info)info.classList.toggle("vuelo-demo",Boolean(message&&message.includes("prueba")));
+    if(price){price.classList.remove("tarifa-loading");price.textContent=precioVuelo(fare.amount,fare.currency)}
+    if(info)info.textContent=visibleMessage+(fare.airline?" · "+fare.airline:"");
+    if(total)total.textContent=precioVuelo(sum,fare.currency);
+    if(label)label.textContent=message&&message.includes("prueba")?"Vuelo + alojamiento · tarifa de prueba":"Vuelo + alojamiento (cotización)";
   }else{
-    info.classList.remove("vuelo-demo");
-    price.classList.remove("tarifa-loading");price.textContent=message&&message.includes("Elegí fechas exactas")?"Elegí fechas":"No disponible";
-    info.textContent=visibleMessage||"Tarifa aérea no disponible";
-    total.textContent=precioVuelo(Number(v.hotelCalc||0),"USD");
-    label.textContent="Total parcial · falta vuelo";
+    v.vueloCalc=null;v.vueloCurrency="";v.total=null;v.vueloReal=false;
+    if(info)info.classList.remove("vuelo-demo");
+    if(price){price.classList.remove("tarifa-loading");price.textContent=message&&message.includes("Elegí fechas exactas")?"Elegí fechas":"No disponible"}
+    if(info)info.textContent=visibleMessage||"Tarifa aérea no disponible";
+    if(total)total.textContent=precioVuelo(Number(v.hotelCalc||0),"USD");
+    if(label)label.textContent="Total parcial · falta vuelo";
   }
+}
+function ordenarPorPresupuesto(lista){
+  const tieneTotalUSD=v=>v.vueloReal&&!v.vueloSandbox&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total));
+  return [...lista].sort((a,b)=>{
+    const aValido=tieneTotalUSD(a),bValido=tieneTotalUSD(b);
+    if(aValido!==bValido)return aValido?-1:1;
+    if(!aValido)return Number(a.hotelCalc||0)-Number(b.hotelCalc||0);
+    const aEntra=a.total<=presupuesto,bEntra=b.total<=presupuesto;
+    if(aEntra!==bEntra)return aEntra?-1:1;
+    return a.total-b.total;
+  });
 }
 async function aplicarHotelesReales(opciones){
   if(!fechaIdaExacta||!fechaVueltaExacta)return opciones.map(v=>({...v,hotelError:true}));
@@ -184,9 +196,21 @@ async function buscarDestinos(autoIntento=0){
   const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError),habraReintento=fallidas.length>0&&autoIntento<2;
   opciones=actualizadas;
   mostrarDestinos(disponibles,fallidas,!habraReintento);
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> consultamos alojamientos y tarifas aéreas de Nuitee para tus fechas y pasajeros. El importe del vuelo queda sujeto a confirmación al iniciar la reserva.";
-  // Consultar vuelos para los destinos disponibles sin bloquear las tarjetas de hotel.
-  buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje a medida:</strong> ordenamos primero las opciones cuyo vuelo y alojamiento cotizados entran en tu presupuesto. El vuelo puede variar y se confirma antes de reservar; no incluimos gastos personales ni extras.";
+  // Esperar las cotizaciones aéreas para ordenar primero los viajes que entran en el presupuesto.
+  await buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
+  const ordenadas=ordenarPorPresupuesto(disponibles);
+  mostrarDestinos(ordenadas,fallidas,!habraReintento);
+  const cotizadas=ordenadas.filter(v=>v.vueloReal&&!v.vueloSandbox&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total)));
+  const dentroDePresupuesto=cotizadas.filter(v=>v.total<=presupuesto).length;
+  const sinVuelo=ordenadas.length-cotizadas.length;
+  if(dentroDePresupuesto){
+    nota.textContent=dentroDePresupuesto+" destinos cotizados entran en tu presupuesto de USD "+presupuesto+"; mostramos esos primero"+(sinVuelo?" · "+sinVuelo+" sin tarifa aérea":"");
+  }else if(cotizadas.length){
+    nota.textContent="Ningún destino cotizado entra en USD "+presupuesto+"; mostramos primero los más económicos"+(sinVuelo?" · "+sinVuelo+" sin tarifa aérea":"");
+  }else{
+    nota.textContent="Aún no tenemos tarifas aéreas para comparar con tu presupuesto";
+  }
   if(habraReintento){
     const intento=autoIntento+1;
     nota.textContent="Reintentando automáticamente "+fallidas.length+" consulta(s) pendiente(s) · intento "+intento+" de 2";
