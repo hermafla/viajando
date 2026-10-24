@@ -87,7 +87,7 @@ function actualizarTarifaVuelo(v,fare,message){
   const price=document.getElementById("vuelo-price-"+code),info=document.getElementById("vuelo-info-"+code),total=document.getElementById("trip-total-"+code),label=document.getElementById("trip-total-label-"+code);
   if(fare){
     const sum=Number(v.hotelCalc||0)+Number(fare.amount);
-    v.vueloCalc=Number(fare.amount);v.vueloCurrency=String(fare.currency||"USD").toUpperCase();v.total=sum;v.vueloReal=true;
+    v.vueloCalc=Number(fare.amount);v.vueloCurrency=String(fare.currency||"USD").toUpperCase();v.vueloSandbox=Boolean(message&&message.includes("prueba"));v.total=sum;v.vueloReal=true;
     if(info)info.classList.toggle("vuelo-demo",Boolean(message&&message.includes("prueba")));
     if(price){price.classList.remove("tarifa-loading");price.textContent=precioVuelo(fare.amount,fare.currency)}
     if(info)info.textContent=visibleMessage+(fare.airline?" · "+fare.airline:"");
@@ -103,7 +103,7 @@ function actualizarTarifaVuelo(v,fare,message){
   }
 }
 function ordenarPorPresupuesto(lista){
-  const tieneTotalUSD=v=>v.vueloReal&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total));
+  const tieneTotalUSD=v=>v.vueloReal&&!v.vueloSandbox&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total));
   return [...lista].sort((a,b)=>{
     const aValido=tieneTotalUSD(a),bValido=tieneTotalUSD(b);
     if(aValido!==bValido)return aValido?-1:1;
@@ -201,7 +201,7 @@ async function buscarDestinos(autoIntento=0){
   await buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
   const ordenadas=ordenarPorPresupuesto(disponibles);
   mostrarDestinos(ordenadas,fallidas,!habraReintento);
-  const cotizadas=ordenadas.filter(v=>v.vueloReal&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total)));
+  const cotizadas=ordenadas.filter(v=>v.vueloReal&&!v.vueloSandbox&&v.vueloCurrency==="USD"&&Number.isFinite(Number(v.total)));
   const dentroDePresupuesto=cotizadas.filter(v=>v.total<=presupuesto).length;
   const sinVuelo=ordenadas.length-cotizadas.length;
   if(dentroDePresupuesto){
