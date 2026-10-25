@@ -33,12 +33,12 @@ test('uses suggested selling price as a clearly labelled reference when no expli
   const offer={currency:'USD',retailRate:1347.59,offerInitialPrice:1347.59,suggestedSellingPrice:1408.85};
   const details=Discount.details(offer);
   assert.equal(details.hasPriceDiscount,true);
-  assert.equal(details.referenceLabel,'Precio de referencia Nuitee');
+  assert.equal(details.referenceLabel,'Precio de referencia del mercado');
   assert.equal(details.original,1408.85);
   assert.equal(details.current,1347.59);
   assert.equal(details.percent,4);
   const html=Discount.markup(offer,money,esc);
-  assert.match(html,/Precio de referencia Nuitee/);
+  assert.match(html,/Precio de referencia del mercado/);
   assert.match(html,/USD 1408\.85/);
   assert.match(html,/USD 1347\.59/);
   assert.doesNotMatch(html,/Antes/);
