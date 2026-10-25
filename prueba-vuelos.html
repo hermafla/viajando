@@ -40,7 +40,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
     #selected-fare-continue{width:100%;border:0;color:#172033;font-weight:800}
     .fare-note{margin-top:12px;padding:0;font-size:13px;line-height:1.45;color:#334155;text-align:center;font-weight:700;background:transparent;border:0;border-radius:0;text-shadow:-1px -1px 0 rgba(255,255,255,.95),1px -1px 0 rgba(255,255,255,.95),-1px 1px 0 rgba(255,255,255,.95),1px 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(255,255,255,.95)}
     @media(max-width:700px){header{padding:0 16px}header .nav{min-height:72px}.logo img{width:165px}.menu a:not(.account){display:none}main{width:calc(100% - 20px);margin-top:18px}.notice h1{font-size:22px}#selected-fare.is-open{width:calc(100vw - 20px)!important;max-height:calc(100vh - 20px)!important;overflow:auto!important}.fare-head{padding:18px 20px 15px}.fare-body{padding:17px 20px 19px}#selected-fare-main{font-size:29px!important}.fare-actions{gap:8px;margin-top:11px}.fare-add-trip,#selected-fare-continue{padding:13px 12px!important}.fare-note{font-size:12px}}
-  </style>
+  .currency-savings{display:flex;align-items:center;gap:10px;margin:0 0 20px;padding:11px 14px;border-left:3px solid #21a366;border-radius:0 9px 9px 0;background:#effaf3;color:#176b37;font-size:12px;line-height:1.45}.currency-savings strong{white-space:nowrap;font-size:12px}.currency-savings span{font-weight:600}@media(max-width:600px){.currency-savings{align-items:flex-start;flex-direction:column;gap:3px;padding:10px 12px}.currency-savings strong{font-size:11px}.currency-savings span{font-size:11px}}</style>
   <script>
     // El motor puede reemplazar la URL al cargar. Guardar el regreso antes de iniciarlo.
     (function(){
@@ -78,6 +78,7 @@ main{width:min(1160px,calc(100% - 32px));margin:26px auto}
       <h1>Encontrá tu próximo vuelo</h1>
       <p>Compará opciones disponibles y elegí la que mejor se adapte a tu viaje. La tarifa seleccionada y las condiciones se confirman en el sitio del proveedor.</p>
     </section>
+    <aside class="currency-savings"><strong>Pagando en dólares</strong><span>Pagando con dólares desde tu cuenta o tarjeta, ahorrás al menos un 20% frente al precio en pesos. También aplica a vuelos y hoteles en Argentina.</span></aside>
     <div id="tpwl-search"></div>
     <div id="tpwl-tickets"></div>
     <div id="selected-fare-backdrop"></div>
