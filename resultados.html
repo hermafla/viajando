@@ -95,8 +95,8 @@ function actualizarTarifaVuelo(v,fare,message){
     label.textContent=message&&message.includes("prueba")?"Vuelo + alojamiento · tarifa de prueba":"Vuelo + alojamiento (cotización)";
     const diferencia=document.getElementById("budget-diff-"+code);
     if(diferencia){
-      const moneda=String(fare.currency||"USD").toUpperCase(),esPrueba=Boolean(message&&message.toLowerCase().includes("prueba"));
-      if(moneda==="USD"&&!esPrueba){
+      const moneda=String(fare.currency||"USD").toUpperCase();
+      if(moneda==="USD"){
         const saldo=presupuesto-sum;
         diferencia.textContent=saldo>=0?"Te sobran "+precioVuelo(saldo,"USD")+" con esta opción.":"Esta opción supera tu presupuesto por "+precioVu(-saldo,"USD")+".";
         diferencia.style.color=saldo>=0?"#067647":"#b42318";diferencia.style.display="block";
