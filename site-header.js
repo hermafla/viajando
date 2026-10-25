@@ -8,7 +8,6 @@
       <a class="vh-link" href="https://vuelos.valijeando.com.ar/" data-section="vuelos">Vuelos</a>
       <a class="vh-link" href="/servicios.html#traslados" data-section="traslados">Traslados</a>
       <a class="vh-link" href="/servicios.html#actividades" data-section="actividades">Actividades</a>
-      <a class="vh-link" href="/servicios.html#asistencia" data-section="asistencia">Asistencia al viajero</a>
       <a class="vh-link" href="/servicios.html#autos" data-section="autos">Alquiler de autos</a>
       <details class="vh-more"><summary>Más</summary><div class="vh-more-panel"><a href="/servicios.html#esim" data-section="esim">eSIM e internet</a><a href="/#buscar">Viaje completo</a><a href="/guias.html">Guías para viajar</a><a href="/consejos.html">Consejos</a><a href="/#destinos">Destinos</a><a href="/#porque">¿Por qué Valijeando?</a></div></details>
     </nav>
