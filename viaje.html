@@ -137,7 +137,7 @@ function drawHotelFacets(){
  const popularRows=popularTerms.map(([label,re])=>[label,hotels.filter(h=>hotelValues(h.facilities).some(x=>re.test(x))).length]).filter(x=>x[1]);
  render("hotelPopularFilters","popular",popularRows);
 }
-function offerHasDiscount(o){const now=Number(o.retailRate),old=Number(o.offerInitialPrice);return (Number.isFinite(old)&&Number.isFinite(now)&&old>now+0.009)||(Array.isArray(o.promotions)&&o.promotions.length>0)}
+function offerHasDiscount(o){return Boolean(window.ValijeandoDiscount?.details(o).hasPriceDiscount)||(Array.isArray(o.promotions)&&o.promotions.length>0)}
 function renderHotels(){const name=$('hotelNameFilter').value.trim().toLocaleLowerCase('es-AR'),max=Number($('hotelMaxFilter').value||Infinity),refundable=$('hotelRefundableFilter').checked,breakfast=$('hotelBreakfastFilter').checked,noFees=$('hotelFeesFilter').checked,discount=$('hotelDiscountFilter').checked;
  const matchesOffer=o=>{const price=Number(o.estimatedTotal??o.retailRate??Infinity);if(price>max)return false;if(refundable&&String(o.refundableTag||'').toUpperCase()!=='RFN')return false;if(breakfast&&!/breakfast|desayun/i.test(String(o.boardName||'')))return false;if(noFees&&Number(o.dueAtProperty||0)>0)return false;if(discount&&!offerHasDiscount(o))return false;if(hotelFacetSelection.meal.size&&!hotelFacetSelection.meal.has(String(o.boardName||'').trim()))return false;return true};
  let list=hotels.filter(h=>{if(name&&!String(h.name||'').toLocaleLowerCase('es-AR').includes(name))return false;
