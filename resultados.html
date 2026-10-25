@@ -93,6 +93,15 @@ function actualizarTarifaVuelo(v,fare,message){
     info.textContent=visibleMessage+(fare.airline?" · "+fare.airline:"");
     total.textContent=precioVuelo(sum,fare.currency);
     label.textContent=message&&message.includes("prueba")?"Vuelo + alojamiento · tarifa de prueba":"Vuelo + alojamiento (cotización)";
+    const diferencia=document.getElementById("budget-diff-"+code);
+    if(diferencia){
+      const moneda=String(fare.currency||"USD").toUpperCase(),esPrueba=Boolean(message&&message.toLowerCase().includes("prueba"));
+      if(moneda==="USD"&&!esPrueba){
+        const saldo=presupuesto-sum;
+        diferencia.textContent=saldo>=0?"Te sobran "+precioVuelo(saldo,"USD")+" con esta opción.":"Esta opción supera tu presupuesto por "+precioVu(-saldo,"USD")+".";
+        diferencia.style.color=saldo>=0?"#067647":"#b42318";diferencia.style.display="block";
+      }else{diferencia.style.display="none"}
+    }
   }else{
     info.classList.remove("vuelo-demo");
     price.classList.remove("tarifa-loading");price.textContent=message&&message.includes("Elegí fechas exactas")?"Elegí fechas":"No disponible";
@@ -146,7 +155,7 @@ function card(v){
   const code=codigosDestino[v.destino]||"vuelo",placeholder=fechaIdaExacta&&fechaVueltaExacta?"Buscando tarifa aérea…":"Elegí fechas exactas para cotizar el vuelo";
   if(codigosDestino[v.destino])detalle.set("aeropuertoDestino",codigosDestino[v.destino]);
   const viajeUrl="viaje.html?"+detalle.toString();
-  return '<article class="card"><a href="'+viajeUrl+'" class="foto '+v.clase+'" aria-label="Ver opciones de viaje para '+v.destino+'"><span>'+v.destino+'</span></a><div class="contenido"><div class="topline"><span class="tag">'+v.etiqueta+'</span></div><div class="linea"><span>✈️ Vuelo</span><b id="vuelo-price-'+code+'"'+(fechaIdaExacta&&fechaVueltaExacta?' class="tarifa-loading" aria-live="polite"><span class="tarifa-spinner" aria-hidden="true"></span><span>Buscando tarifa</span>':' aria-live="polite">Elegí fechas')+'</b></div><div class="vuelo-real alt" id="vuelo-info-'+code+'">'+placeholder+'</div><div class="linea"><span>🏨 Hotel</span><b>USD '+Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})+'</b></div><div class="hotel-real">✓ '+(v.hotelNombre||"Tarifa disponible para tus fechas")+'</div><div class="total"><span id="trip-total-label-'+code+'">Total parcial · falta vuelo</span><strong id="trip-total-'+code+'">USD '+Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})+'</strong></div><div class="estado">La tarifa del vuelo se confirma con el proveedor antes de reservar.</div><a href="'+viajeUrl+'" class="btn">Ver hotel y revisar vuelo</a></div></article>';
+  return '<article class="card"><a href="'+viajeUrl+'" class="foto '+v.clase+'" aria-label="Ver opciones de viaje para '+v.destino+'"><span>'+v.destino+'</span></a><div class="contenido"><div class="topline"><span class="tag">'+v.etiqueta+'</span></div><div class="linea"><span>✈️ Vuelo</span><b id="vuelo-price-'+code+'"'+(fechaIdaExacta&&fechaVueltaExacta?' class="tarifa-loading" aria-live="polite"><span class="tarifa-spinner" aria-hidden="true"></span><span>Buscando tarifa</span>':' aria-live="polite">Elegí fechas')+'</b></div><div class="vuelo-real alt" id="vuelo-info-'+code+'">'+placeholder+'</div><div class="linea"><span>🏨 Hotel</span><b>USD '+Number(v.hotelCalc).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:2})+'</b></div><div class="hotel-real">✓ '+(v.hotelNombre||"Tarifa disponible para tus fechas")+'</div><div class="total"><span id="trip-total-label-'+code+'">Total parcial · falta vuelo</span><strong id="trip-total-'+code+'">USD '+Number(v.hotelCalc).toLocaleString("es-AR",{maximumFractionDigits:2})+'</strong></div><div id="budget-diff-'+code+'" aria-live="polite" style="display:none;margin:-8px 0 12px;font-size:13px;font-weight:700"></div><div class="estado">La tarifa del vuelo se confirma con el proveedor antes de reservar.</div><a href="'+viajeUrl+'" class="btn">Ver hotel y revisar vuelo</a></div></article>';
 }
 let opciones=base.map(calcular).sort((a,b)=>{
   const aTipo=tipo==="Sorprendeme"||a.tipos.includes(tipo),bTipo=tipo==="Sorprendeme"||b.tipos.includes(tipo);
