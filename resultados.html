@@ -6,7 +6,7 @@
 .currency-savings{display:flex;align-items:center;gap:10px;margin:14px 0;padding:11px 14px;border-left:3px solid #21a366;border-radius:0 9px 9px 0;background:#effaf3;color:#176b37;font-size:12px;line-height:1.45}.currency-savings strong{white-space:nowrap;font-size:12px}.currency-savings span{font-weight:600}@media(max-width:600px){.currency-savings{align-items:flex-start;flex-direction:column;gap:3px;padding:10px 12px}.currency-savings strong{font-size:11px}.currency-savings span{font-size:11px}}</style><link rel="stylesheet" href="/site-header.css"><script src="/site-header.js" defer></script></head><body>
 <header class="vh-header" data-valijeando-header></header><div class="vh-return"><a class="volver" href="index.html">← Cambiar búsqueda</a></div>
 <section class="hero"><div class="hero-inner"><h1>¿Hasta dónde puede llevarte tu presupuesto?</h1><p id="subtitulo"></p><div class="resumen" id="resumen"></div></div></section>
-<main><div class="encabezado"><div><h2>Opciones pensadas para tu presupuesto</h2><p>Primero te mostramos las opciones que mejor encajan con tu búsqueda y presupuesto.</p></div><div class="nota" id="notaPrecios" role="status">Buscando alojamientos para tus fechas…</div></div><aside class="currency-savings"><span>Pagando con dólares desde tu cuenta o tarjeta, ahorrás al menos un 20% frente al precio en pesos. También aplica a vuelos y hoteles en Argentina.</span></aside><div class="grid" id="grid"></div><div class="result-actions" id="resultActions"></div><div class="aviso" id="avisoResultados"><strong>Cómo leer estos resultados:</strong> buscamos coincidencias de vuelo y hotel para tus fechas. El vuelo mostrado sirve como referencia encontrada recientemente; la tarifa disponible se confirma al abrir el motor de vuelos. El alojamiento corresponde a disponibilidad consultada para tus fechas.</div></main>
+<main><div class="encabezado"><div><h2>Opciones pensadas para tu presupuesto</h2><p>Compará las opciones y mirá cuánto te sobra o cuánto supera cada una tu presupuesto cuando hay tarifas disponibles.</p></div><div class="nota" id="notaPrecios" role="status">Buscando alojamientos para tus fechas…</div></div><aside class="currency-savings"><span>Pagando con dólares desde tu cuenta o tarjeta, ahorrás al menos un 20% frente al precio en pesos. También aplica a vuelos y hoteles en Argentina.</span></aside><div class="grid" id="grid"></div><div class="result-actions" id="resultActions"></div><div class="aviso" id="avisoResultados"><strong>Cómo leer estos resultados:</strong> consultamos alojamientos y cotizaciones de vuelos para tus fechas y viajeros. Los precios y la disponibilidad pueden cambiar; se reconfirman antes de continuar con la reserva.</div></main>
 <footer>© 2026 Valijeando · Plataforma independiente de búsqueda, comparación y planificación de viajes.</footer>
 <script src="/travel-party.js"></script><script>
 const p=new URLSearchParams(location.search),origen=p.get("origen")||"Buenos Aires",aeropuertoOrigen=p.get("aeropuertoOrigen")||"",cuando=p.get("cuando")||"Cualquier fecha",flexibilidad=p.get("flexibilidad")||"Fechas flexibles",party=ValijeandoParty.fromParams(p),partyTotals=ValijeandoParty.totals(party),viajeros=partyTotals.adults+partyTotals.children,duracion=p.get("duracion")||"Cualquier duración",presupuesto=Number(p.get("presupuesto")||2000),tipo=p.get("tipo")||"Sorprendeme",fechaIdaExacta=p.get("fechaIda")||"",fechaVueltaExacta=p.get("fechaVuelta")||"";
@@ -51,7 +51,7 @@ async function buscarVuelosNuitee(lista){
   async function worker(){
     while(next<pendientes.length){
       const v=pendientes[next++],destination=codigosDestino[v.destino];
-      document.getElementById("notaPrecios").textContent="Buscando tarifas aéreas de Nuitee: "+done+" de "+pendientes.length;
+      document.getElementById("notaPrecios").textContent="Consultando vuelos: "+done+" de "+pendientes.length;
       try{
         const response=await fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
           legs:[{origin,destination,date:fechaIdaExacta},{origin:destination,destination:origin,date:fechaVueltaExacta}],
@@ -67,7 +67,7 @@ async function buscarVuelosNuitee(lista){
         }
   }catch(error){actualizarTarifaVuelo(v,null,error.message||"No se pudo cotizar el vuelo.")}
       done++;
-      document.getElementById("notaPrecios").textContent=done<pendientes.length?"Tarifas aéreas de Nuitee: "+done+" de "+pendientes.length+" destinos consultados":"Hoteles y tarifas de vuelo consultados para "+done+" destinos";
+      document.getElementById("notaPrecios").textContent=done<pendientes.length?"Vuelos consultados: "+done+" de "+pendientes.length+" destinos consultados":"Hoteles y tarifas de vuelo consultados para "+done+" destinos";
     }
   }
   await Promise.all(Array.from({length:Math.min(2,pendientes.length)},worker));
@@ -193,7 +193,7 @@ async function buscarDestinos(autoIntento=0){
   const disponibles=actualizadas.filter(x=>x.hotelReal).sort((a,b)=>a.hotelCalc-b.hotelCalc),fallidas=actualizadas.filter(x=>x.hotelError),habraReintento=fallidas.length>0&&autoIntento<2;
   opciones=actualizadas;
   mostrarDestinos(disponibles,fallidas,!habraReintento);
-  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje completo:</strong> consultamos alojamientos y tarifas aéreas de Nuitee para tus fechas y pasajeros. El importe del vuelo queda sujeto a confirmación al iniciar la reserva.";
+  document.getElementById("avisoResultados").innerHTML="<strong>Cómo funciona Viaje a medida:</strong> consultamos alojamientos y cotizaciones de vuelos para tus fechas y viajeros. Los precios y la disponibilidad se reconfirman antes de continuar con la reserva.";
   // Consultar vuelos para los destinos disponibles sin bloquear las tarjetas de hotel.
   buscarVuelosNuitee(disponibles.slice(0,destinosVisibles));
   if(habraReintento){

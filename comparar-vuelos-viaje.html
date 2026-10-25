@@ -32,7 +32,7 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
 </section>
 <div class="notice"><strong>Importante:</strong> Esta búsqueda consulta tarifas de Nuitee. El precio y la disponibilidad deben volver a validarse antes de reservar. Ver una tarifa aquí no emite ni confirma un pasaje.</div>
 <section class="panel" aria-labelledby="nuitee-title">
-<div class="panel-head"><span class="tag" id="environment">CONSULTA DE TARIFAS</span><h2 id="nuitee-title">Opciones de vuelo</h2><p>Tarifas de ida y vuelta para las fechas y pasajeros de tu viaje completo.</p></div>
+<div class="panel-head"><span class="tag" id="environment">CONSULTA DE TARIFAS</span><h2 id="nuitee-title">Opciones de vuelo</h2><p>Tarifas de ida y vuelta para las fechas y pasajeros de Viaje a medida.</p></div>
 <div id="status" class="status" aria-live="polite">Buscando opciones en Nuitee…</div>
 <div id="cards" class="cards" aria-live="polite"></div>
 <div class="foot">La búsqueda no reserva el vuelo ni inicia un cobro. La reserva requiere confirmar la tarifa y completar los datos de los pasajeros en el flujo de compra.</div>
@@ -123,7 +123,7 @@ main{max-width:980px;margin:28px auto;padding:0 18px 60px}.hero,.panel{backgroun
       });
     });
   }
-  if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)||!/^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){fail("Elegí origen, destino y fechas exactas desde Viaje completo.");return}
+  if(!/^[A-Z]{3}$/.test(origin)||!/^[A-Z]{3}$/.test(destination)||!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)||!/^\d{4}-\d{2}-\d{2}$/.test(returnDate)||returnDate<=departureDate){fail("Elegí origen, destino y fechas exactas desde Viaje a medida.");return}
   const childAges=occupancies.flatMap(r=>r.childAges||[]),childrenAges=childAges.filter(age=>age>=2&&age<12),infantAges=childAges.filter(age=>age<2);
   fetch("/api/nuitee-hotels?action=flights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
     legs:[{origin,destination,date:departureDate},{origin:destination,destination:origin,date:returnDate}],
