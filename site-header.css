@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&display=swap');
 header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:sticky;top:0;z-index:80;background:#fff;border:0;border-bottom:1px solid #e4eaf1;color:#172b4d;font-family:Arial,Helvetica,sans-serif;line-height:1.2}
 .vh-header *{box-sizing:border-box}
 .vh-inner{width:min(1240px,94%);min-height:78px;margin:auto;display:flex;align-items:center;gap:24px}
@@ -50,3 +51,5 @@ header.vh-header{height:auto;min-height:78px;padding:0;display:block;position:st
 .vh-legal-links a{color:#536774;text-decoration:none;text-underline-offset:3px}
 .vh-legal-links a:hover{color:#07558f;text-decoration:underline}
 @media(max-width:650px){.vh-legal-links{gap:9px 16px;margin:6px auto 20px;padding:12px 0;font-size:11px}}
+/* Tipografía global de Valijeando */
+body, body *{font-family:'Roboto',Arial,Helvetica,sans-serif!important}
