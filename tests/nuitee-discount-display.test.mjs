@@ -28,3 +28,18 @@ test('shows promotion name without inventing a comparison when Nuitee gives no o
 test('does not show a discount when original price is not higher and no promotion was returned',()=>{
   assert.equal(Discount.markup({offerInitialPrice:150,retailRate:150},money,esc),'');
 });
+
+test('uses suggested selling price as a clearly labelled reference when no explicit sale price exists',()=>{
+  const offer={currency:'USD',retailRate:1347.59,offerInitialPrice:1347.59,suggestedSellingPrice:1408.85};
+  const details=Discount.details(offer);
+  assert.equal(details.hasPriceDiscount,true);
+  assert.equal(details.referenceLabel,'Precio de referencia Nuitee');
+  assert.equal(details.original,1408.85);
+  assert.equal(details.current,1347.59);
+  assert.equal(details.percent,4);
+  const html=Discount.markup(offer,money,esc);
+  assert.match(html,/Precio de referencia Nuitee/);
+  assert.match(html,/USD 1408\.85/);
+  assert.match(html,/USD 1347\.59/);
+  assert.doesNotMatch(html,/Antes/);
+});
