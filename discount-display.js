@@ -12,7 +12,7 @@
       .filter(p=>p&&typeof p==='object')
       .map(p=>[String(p.name||p.promotionCode||JSON.stringify(p)),p])).values()];
     const names=[...new Set(promotions.map(p=>String(p.name||'').trim()).filter(Boolean))];
-    return {currency,original,current,hasPriceDiscount,referenceLabel:hasSuggestedPriceDiscount?'Precio de referencia Nuitee':'Antes',percent:hasPriceDiscount?Math.round((original-current)/original*100):null,saved:hasPriceDiscount?Math.round((original-current+Number.EPSILON)*100)/100:0,promotions,names};
+    return {currency,original,current,hasPriceDiscount,referenceLabel:hasSuggestedPriceDiscount?'Precio de referencia del mercado':'Antes',percent:hasPriceDiscount?Math.round((original-current)/original*100):null,saved:hasPriceDiscount?Math.round((original-current+Number.EPSILON)*100)/100:0,promotions,names};
   }
   function markup(offer,money,esc){
     const d=details(offer);
