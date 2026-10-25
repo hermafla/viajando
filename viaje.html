@@ -53,6 +53,18 @@
 .currency-savings{display:flex;align-items:center;gap:10px;margin:14px 0;padding:11px 14px;border-left:3px solid #21a366;border-radius:0 9px 9px 0;background:#effaf3;color:#176b37;font-size:12px;line-height:1.45}.currency-savings strong{white-space:nowrap;font-size:12px}.currency-savings span{font-weight:600}@media(max-width:600px){.currency-savings{align-items:flex-start;flex-direction:column;gap:3px;padding:10px 12px}.currency-savings strong{font-size:11px}.currency-savings span{font-size:11px}}.hotel-title,.offer-price,.current-price,.old-price,.review-price,.total{font-family:'Roboto',Arial,Helvetica,sans-serif}
 .offer-row{display:flex;justify-content:flex-end}.offer-row>.offer-price{display:flex;flex-direction:column;align-items:flex-end;width:min(100%,420px);min-width:0;white-space:normal;text-align:right}.trip-offer-current{font:800 22px 'Roboto',Arial,Helvetica,sans-serif;color:#142e49}.offer-price small{display:block;margin-top:3px}.offer-price .provider-discount{display:grid;gap:2px;width:100%;max-width:100%;min-width:0}.offer-price .provider-discount>span{max-width:100%;overflow-wrap:anywhere;white-space:normal}.offer-price .choose{display:block;width:max-content;max-width:100%;margin:9px 0 0 auto;text-align:center;white-space:normal}
 @media(max-width:760px){.offer-row{display:flex}.offer-row>.offer-price{width:100%;align-items:stretch;text-align:right}.offer-price .provider-discount{justify-items:end}.offer-price .choose{width:100%;margin:10px 0 0}}
+
+/* Tarjeta de hotel en dos columnas: foto completa a la izquierda e información a la derecha. */
+.hotel-card{display:grid;grid-template-columns:minmax(205px,34%) minmax(0,1fr);grid-template-rows:auto auto;align-items:stretch}
+.hotel-content{display:contents}
+.hotel-card>.hotel-content .photo{grid-column:1;grid-row:1 / span 2;min-height:260px;height:100%}
+.hotel-card>.hotel-content .photo .photo-link,.hotel-card>.hotel-content .photo img,.hotel-card>.hotel-content .photo .no-photo{display:block;width:100%;height:100%;min-height:260px;object-fit:cover}
+.hotel-card>.hotel-content .photo .no-photo{display:grid;place-items:center}
+.hotel-card>.hotel-content .hotel-body{grid-column:2;grid-row:1;padding:16px 16px 8px;min-width:0}
+.hotel-card>.offer-list{grid-column:2;grid-row:2;border-top:0;padding:0 16px 16px;min-width:0}
+.hotel-card .offer-row{border:0;padding:0;gap:8px}
+.hotel-card .offer-price{width:100%;max-width:none}
+@media(max-width:760px){.hotel-card{grid-template-columns:minmax(112px,38%) minmax(0,1fr)}.hotel-card>.hotel-content .photo{min-height:275px}.hotel-card>.hotel-content .photo .photo-link,.hotel-card>.hotel-content .photo img,.hotel-card>.hotel-content .photo .no-photo{min-height:275px}.hotel-card>.hotel-content .hotel-body{padding:12px 12px 6px}.hotel-card>.offer-list{padding:0 12px 12px}.hotel-title{font-size:15px}.hotel-card .address,.hotel-card .meta{font-size:10px}.hotel-card .rating{gap:5px;margin-top:7px}.hotel-card .rating-score{padding:3px 5px}.hotel-card .trip-offer-current{font-size:18px}.hotel-card .provider-discount{font-size:9px}.hotel-card .choose{font-size:12px;padding:8px 9px}}
 </style></head>
 <body><header class="vh-header" data-valijeando-header></header><main>
 <a class="back" id="back" href="resultados.html">← Volver a destinos</a>
