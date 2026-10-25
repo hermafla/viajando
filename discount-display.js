@@ -18,7 +18,7 @@
     const d=details(offer);
     if(!d.hasPriceDiscount&&!d.promotions.length)return '';
     const label=d.hasPriceDiscount
-      ?'<span class="provider-discount-badge">'+(d.referenceLabel==='Antes'?'Descuento aplicado':d.percent+'% menos')+'</span><span>'+esc(d.referenceLabel)+' <s>'+esc(money(d.original,d.currency))+'</s> · precio Valijeando <strong>'+esc(money(d.current,d.currency))+'</strong> · diferencia '+esc(money(d.saved,d.currency))+(d.percent>0?' ('+d.percent+'%)':'')+'</span>'
+      ?'<span class="provider-discount-badge">'+(d.referenceLabel==='Antes'?'Descuento aplicado':d.percent+'% menos')+'</span><span>'+esc(d.referenceLabel)+' <s>'+esc(money(d.original,d.currency))+'</s></span><span>Valijeando <strong>'+esc(money(d.current,d.currency))+'</strong> · ahorrás '+esc(money(d.saved,d.currency))+'</span>'
       :'<span class="provider-discount-badge">Promoción disponible</span>';
     const promotion=d.names.length?'<span class="provider-discount-name">'+esc(d.names.join(' · '))+'</span>':'';
     return '<div class="provider-discount">'+label+promotion+'</div>';
