@@ -98,7 +98,7 @@ function actualizarTarifaVuelo(v,fare,message){
       const moneda=String(fare.currency||"USD").toUpperCase();
       if(moneda==="USD"){
         const saldo=presupuesto-sum;
-        diferencia.textContent=saldo>=0?"Te sobran "+precioVuelo(saldo,"USD")+" con esta opción.":"Esta opción supera tu presupuesto por "+precioVu(-saldo,"USD")+".";
+        diferencia.textContent=saldo>=0?"Te sobran "+precioVuelo(saldo,"USD")+" con esta opción.":"Esta opción supera tu presupuesto por "+precioVuelo(-saldo,"USD")+".";
         diferencia.style.color=saldo>=0?"#067647":"#b42318";diferencia.style.display="block";
       }else{diferencia.style.display="none"}
     }
