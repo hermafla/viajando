@@ -50,7 +50,7 @@
 @media(max-width:560px){.step-title-row{gap:5px}.step-title-row .stepname{font-size:10px}.step-hotel-summary{min-height:88px;gap:6px;margin-top:5px}.step-hotel-media{flex-basis:86px}.step-hotel-thumb{width:76px;height:76px;flex-basis:76px}.step-hotel-media .step-edit{font-size:7px}.step-hotel-title{font-size:10px}.step-hotel-detail{font-size:8px}.step-hotel-price{font-size:10px}.step-flight-summary{margin-top:5px}.step-flight-summary .flight-step-leg{grid-template-columns:27px minmax(29px,.55fr) 7px minmax(29px,.55fr) minmax(28px,.48fr);gap:1px}.step-flight-summary .flight-step-time strong{font-size:8px}.step-flight-summary .flight-step-stops{font-size:6px}}
 
 .step-hotel-summary.visible,.step-flight-summary.visible{cursor:pointer;border-radius:8px;transition:background .15s ease}.step-hotel-summary.visible:hover,.step-flight-summary.visible:hover,.step-hotel-summary.visible:focus-visible,.step-flight-summary.visible:focus-visible{background:#f2f7fb;outline:2px solid #8ab8e8;outline-offset:2px}
-</style></head>
+.currency-savings{display:flex;align-items:center;gap:10px;margin:14px 0;padding:11px 14px;border-left:3px solid #21a366;border-radius:0 9px 9px 0;background:#effaf3;color:#176b37;font-size:12px;line-height:1.45}.currency-savings strong{white-space:nowrap;font-size:12px}.currency-savings span{font-weight:600}@media(max-width:600px){.currency-savings{align-items:flex-start;flex-direction:column;gap:3px;padding:10px 12px}.currency-savings strong{font-size:11px}.currency-savings span{font-size:11px}}</style></head>
 <body><header class="vh-header" data-valijeando-header></header><main>
 <a class="back" id="back" href="resultados.html">← Volver a destinos</a>
 <section class="trip-head"><div><h1 id="tripTitle">Armá tu viaje</h1><p id="tripSub">Elegí cada parte con el resumen siempre a la vista.</p><div class="chips" id="tripChips"></div></div></section>
@@ -59,6 +59,7 @@
  <div class="step" id="stepFlight"><div class="step-title-row"><div class="stepcap">Paso 2 de 5</div><div class="stepname">Elegí tu vuelo</div></div><div class="stepmeta" id="stepFlightMeta">Todavía sin elegir</div><div class="step-flight-summary" id="stepFlightSummary" aria-live="polite" role="link" tabindex="0" aria-label="Cambiar vuelo"></div></div>
  <div class="step" id="stepReview"><div class="stepcap">Paso 3 de 5</div><div class="stepname">Pagá tu vuelo</div><div class="stepmeta" id="stepReviewMeta">Después del vuelo, el hotel</div></div><div class="step"><div class="stepcap">Paso 4 de 5</div><div class="stepname">Pagá tu hotel</div><div class="stepmeta">Tarifa reconfirmada</div></div><div class="step"><div class="stepcap">Paso 5 de 5</div><div class="stepname">Tu viaje</div><div class="stepmeta">Confirmaciones</div></div>
 </nav>
+<aside class="currency-savings"><strong>Pagando en dólares</strong><span>Pagando con dólares desde tu cuenta o tarjeta, ahorrás al menos un 20% frente al precio en pesos. También aplica a vuelos y hoteles en Argentina.</span></aside>
 <section id="hotelStep">
  <div class="section-head"><div><h2>Elegí tu hotel</h2><p>Empezamos con la propuesta de Valijeando. Podés cambiar el alojamiento y la habitación.</p></div><div class="count" id="hotelCount"></div></div>
  <div class="hotel-layout">
