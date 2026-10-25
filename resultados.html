@@ -70,7 +70,9 @@ async function buscarVuelosNuitee(lista){
       document.getElementById("notaPrecios").textContent=done<pendientes.length?"Vuelos consultados: "+done+" de "+pendientes.length+" destinos consultados":"Hoteles y tarifas de vuelo consultados para "+done+" destinos";
     }
   }
-  await Promise.all(Array.from({length:Math.min(2,pendientes.length)},worker));
+  // Consultar más destinos a la vez para que la cotización de vuelos no deje
+  // varias opciones mostrando el spinner durante demasiado tiempo.
+  await Promise.all(Array.from({length:Math.min(4,pendientes.length)},worker));
 }
 function mensajeVueloVisible(message){
   return String(message||"")
