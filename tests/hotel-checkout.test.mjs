@@ -75,6 +75,23 @@ test('confirmation email retry uses its original reservation and labels sandbox 
   env();let bookCalls=0,insertCalls=0,mailCalls=0;
   await mockFetch(async(url,options)=>{if(url.includes('/rates/book'))bookCalls++;if(url.includes('reservas_hoteles')){if(options.method==='POST')insertCalls++;return response([{booking_id:'booking-test',estado:'confirmada',datos_proveedor:{valijeandoEmailSent:false}}])}if(url.includes('resend.com')){mailCalls++;const mail=JSON.parse(options.body);assert.ok(mail.subject.startsWith('[PRUEBA]'));assert.ok(mail.html.includes('No tiene validez'));assert.equal(mail.reply_to,'hola@valijeando.com.ar');assert.ok(options.headers['Idempotency-Key']);return response({id:'mail'})}throw Error('Unexpected')},async()=>{const r=await call(book,{prebookId:'prebook-test',firstName:'Uno',lastName:'Dos',email:'test@example.test',reservation:verified});assert.equal(r.code,200);assert.equal(r.data.saved,true);assert.equal(r.data.emailSent,true);assert.equal(bookCalls,0);assert.equal(insertCalls,0);assert.equal(mailCalls,1)});
 });
+test('the console switch delegates the hotel confirmation email to Nuitee without sending Resend',async()=>{
+  env();let savedRow=null,mailCalls=0;
+  await mockFetch(async(url,options)=>{
+    if(url.includes('/valijeando_settings'))return response([{setting_value:false}]);
+    if(url.includes('reservas_hoteles')){
+      if(options.method==='POST')savedRow=JSON.parse(options.body);
+      return response(options.method==='GET'?[]:{});
+    }
+    if(url.includes('/rates/book'))return response({data:{bookingId:'booking-test',status:'CONFIRMED'}});
+    if(url.includes('resend.com'))mailCalls++;
+    throw Error('Unexpected');
+  },async()=>{
+    const r=await call(book,{prebookId:'prebook-test',firstName:'Uno',lastName:'Dos',email:'test@example.test',reservation:verified});
+    assert.equal(r.code,200);assert.equal(r.data.emailSent,false);assert.equal(r.data.emailDelegated,true);assert.equal(r.data.emailError,'');
+    assert.equal(savedRow.datos_proveedor.valijeandoEmailProvider,'nuitee');assert.equal(mailCalls,0);
+  });
+});
 test('a concurrent reservation insert is verified by booking ID and owner before reporting saved',async()=>{
   env();let row={...checkout('confirmed'),provider_result:{bookingId:'booking-test',status:'CONFIRMED'}};
   await mockFetch(async(url,options)=>{
