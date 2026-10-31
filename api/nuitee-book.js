@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { bookingEnvironment, occupanciesFromQuery } from '../lib/nuitee.js';
 import { loadCheckout, checkoutDatabase, liveBookingEnabled } from '../lib/hotel-checkout.js';
+import { nuiteeConfirmationEmailEnabled } from '../lib/booking-email-settings.js';
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST') return res.status(405).json({error:'Método no permitido'});
@@ -38,14 +39,16 @@ export default async function handler(req,res){
   const sbHeaders={'apikey':supabaseKey,'Authorization':'Bearer '+supabaseKey,'Content-Type':'application/json'};
   if(!supabaseUrl||!supabaseKey||!reservation)return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'});
   let existingRow=null;
+  let sendValijeandoEmail=true;
   // Verificar el registro antes de Book evita volver a reservar al repetir la solicitud.
   try{
     const prior=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles?select=booking_id,confirmacion_hotel,estado,datos_proveedor,email,nombre,apellido,telefono&datos_proveedor->>valijeandoClientReference=eq.'+encodeURIComponent(clientReference)+'&limit=1',{headers:sbHeaders});
     if(!prior.ok)return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'});
     const rows=await prior.json();existingRow=rows?.[0]||null;
     if(existingRow?.estado==='cancelada')return res.status(409).json({error:'Esta reserva ya fue cancelada. Realizá una búsqueda nueva.',reason:'provider_rejected'});
-    if(existingRow&&existingRow.datos_proveedor?.valijeandoEmailSent!==false)return res.status(200).json({sandbox:mode==='sandbox',bookingEnvironment:mode,bookingId:existingRow.booking_id,hotelConfirmationCode:existingRow.confirmacion_hotel,status:existingRow.estado,saved:true,emailSent:existingRow.datos_proveedor?.valijeandoEmailSent===true||!!sdkCheckout?.email_sent,emailStatus:'already_confirmed',alreadyConfirmed:true});
+    if(existingRow&&(existingRow.datos_proveedor?.valijeandoEmailSent!==false||existingRow.datos_proveedor?.valijeandoEmailProvider==='nuitee'))return res.status(200).json({sandbox:mode==='sandbox',bookingEnvironment:mode,bookingId:existingRow.booking_id,hotelConfirmationCode:existingRow.confirmacion_hotel,status:existingRow.estado,saved:true,emailSent:existingRow.datos_proveedor?.valijeandoEmailSent===true||!!sdkCheckout?.email_sent,emailDelegated:existingRow.datos_proveedor?.valijeandoEmailProvider==='nuitee',emailStatus:'already_confirmed',alreadyConfirmed:true});
     if(existingRow?.email){email=existingRow.email;firstName=existingRow.nombre||firstName;lastName=existingRow.apellido||lastName;phone=existingRow.telefono||phone;}
+    sendValijeandoEmail=await nuiteeConfirmationEmailEnabled();
   }catch{return res.status(503).json({error:'No pudimos preparar el registro de la reserva. Intentá más tarde.'})}
 
   const num=v=>{if(v==null||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null};
@@ -117,7 +120,7 @@ export default async function handler(req,res){
         pagado:false,
         cargos_alojamiento_usd:num(reservation.dueAtProperty)||0,
         estado:dbStatus,
-        datos_proveedor:{...d,valijeandoArsCardRate:cardRate,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:false}
+        datos_proveedor:{...d,valijeandoArsCardRate:cardRate,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:false,...(!sendValijeandoEmail?{valijeandoEmailProvider:'nuitee'}:{})}
       };
       try{
         const sr=await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles',{
@@ -141,7 +144,9 @@ export default async function handler(req,res){
     // El correo es posterior a la confirmación de Nuitee: si falla, la reserva sigue confirmada y NO se reintenta el Book.
     let emailSent=false,emailError='';
     const resendKey=process.env.RESEND_API_KEY;
-    if(resendKey){
+    if(!sendValijeandoEmail){
+      emailError='El correo propio está apagado. Revisá si Nuitee envió la confirmación al email del huésped.';
+    }else if(resendKey){
       try{
         const htmlEscape=v=>clean(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
         const hotelName=htmlEscape(reservation?.hotelName)||'tu alojamiento';
@@ -171,8 +176,8 @@ export default async function handler(req,res){
       }catch(ee){emailError=ee?.message||'No se pudo enviar el correo';console.error('Resend confirmación',emailError);}
     }else emailError='Falta configurar RESEND_API_KEY';
 
-    if(saved&&emailSent)await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles?booking_id=eq.'+encodeURIComponent(bookingId),{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({datos_proveedor:{...d,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:true}})}).catch(()=>{});
+    if(saved&&(emailSent||!sendValijeandoEmail))await fetch(supabaseUrl.replace(/\/$/,'')+'/rest/v1/reservas_hoteles?booking_id=eq.'+encodeURIComponent(bookingId),{method:'PATCH',headers:{...sbHeaders,'Prefer':'return=minimal'},body:JSON.stringify({datos_proveedor:{...d,valijeandoClientReference:clientReference,valijeandoOccupancies:rooms,valijeandoEnvironment:mode,valijeandoPaymentMethod:payload.payment.method,valijeandoEmailSent:emailSent,...(!sendValijeandoEmail?{valijeandoEmailProvider:'nuitee'}:{})}})}).catch(()=>{});
     if(sdkCheckout)await checkoutDatabase('?id=eq.'+encodeURIComponent(sdkCheckout.id),{method:'PATCH',body:{saved,email_sent:emailSent},representation:false}).catch(()=>{});
-    return res.status(200).json({sandbox:mode==='sandbox',bookingEnvironment:mode,bookingId,hotelConfirmationCode,status,saved,saveError:saved?'':'La reserva se confirmó, pero no pudimos guardarla en Mi cuenta. Conservá el código.',emailSent,emailError:emailSent?'':'No pudimos enviar el correo de confirmación. Conservá el código.'});
+    return res.status(200).json({sandbox:mode==='sandbox',bookingEnvironment:mode,bookingId,hotelConfirmationCode,status,saved,saveError:saved?'':'La reserva se confirmó, pero no pudimos guardarla en Mi cuenta. Conservá el código.',emailSent,emailDelegated:!sendValijeandoEmail,emailError:emailSent||!sendValijeandoEmail?'':emailError||'No pudimos enviar el correo de confirmación. Conservá el código.'});
   }catch(e){return res.status(502).json({error:'No pudimos verificar la confirmación. Consultá Mi cuenta antes de repetir la reserva.',reason:'booking_uncertain'});}
 }
